@@ -24,7 +24,15 @@ try {
   // Create shim directory
   fs.mkdirSync(shimDir, { recursive: true });
   
-  const shimContent = `'use strict';
+  // Use the enhanced codegen from codegen-direct.js
+  let shimContent;
+  
+  if (fs.existsSync(codegenDirectPath)) {
+    console.log('[ajv-codegen-shim] Using enhanced codegen from codegen-direct.js');
+    shimContent = fs.readFileSync(codegenDirectPath, 'utf8');
+  } else {
+    console.log('[ajv-codegen-shim] Using fallback shim content');
+    shimContent = `'use strict';
 // Enhanced shim for ajv/dist/compile/codegen expected by ajv-keywords
 class CodeGen {
   constructor(options = {}) {
@@ -97,6 +105,7 @@ module.exports = {
   }
 };
 `;
+  }
   
   const indexContent = `'use strict';
 module.exports = require('./codegen.js');
@@ -106,14 +115,8 @@ module.exports = require('./codegen.js');
   console.log('[ajv-codegen-shim] Writing shim files...');
   fs.writeFileSync(shimPath, shimContent);
   
-  // Use the direct codegen file if it exists, otherwise use the shim
-  if (fs.existsSync(codegenDirectPath)) {
-    console.log('[ajv-codegen-shim] Using codegen-direct.js');
-    const directContent = fs.readFileSync(codegenDirectPath, 'utf8');
-    fs.writeFileSync(ajvCodegenPath, directContent);
-  } else {
-    fs.writeFileSync(ajvCodegenPath, shimContent);
-  }
+  // Write the shim content to the target location
+  fs.writeFileSync(ajvCodegenPath, shimContent);
   
   fs.writeFileSync(ajvIndexPath, indexContent);
   
