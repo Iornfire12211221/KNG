@@ -16,17 +16,10 @@ RUN npm i --no-audit --no-fund --legacy-peer-deps
 # Copy the rest of the app
 COPY . .
 
-# Apply AJV fix using our script
-RUN node scripts/fix-dependencies.js
+# Do NOT run Expo export (avoids ajv/expo toolchain entirely)
+# We serve only API unless a prebuilt ./dist is present at runtime
 
-# Verify the fix works
-RUN node -e "try { const ajv = require('./node_modules/ajv/dist/compile/codegen.js'); if (ajv.CodeGen) { console.log('✓ AJV codegen verified - CodeGen class found'); } else { throw new Error('CodeGen not found'); } } catch(e) { console.error('✗ AJV verification failed:', e.message); process.exit(1); }"
-
-# Run pre-export fix and build
-RUN node scripts/pre-export-fix.js && npx expo export --platform web
-
-# Optional debug
-RUN ls -la ./dist || true
+ENV NODE_ENV=production
 
 EXPOSE 8081
 CMD ["npx", "tsx", "backend/hono.ts"]
