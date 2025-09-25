@@ -520,7 +520,7 @@ export default function MapScreen() {
   };
 
   const handleMapLongPress = (event: any) => {
-    if (Platform.OS === 'web') return;
+    console.log('Map long press detected', { platform: Platform.OS, event });
     
     // Проверяем кулдаун
     if (cooldownSeconds > 0) {
@@ -533,6 +533,7 @@ export default function MapScreen() {
     }
     
     const { latitude, longitude } = event.nativeEvent.coordinate;
+    console.log('Setting quick add location:', { latitude, longitude });
     setTempPinLocation({ latitude, longitude });
     setQuickAddLocation({ latitude, longitude });
     setQuickAddDescription('');
