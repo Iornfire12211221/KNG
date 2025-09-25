@@ -84,25 +84,62 @@ export const MapView = (props: any) => {
 
     if (onLongPress) {
       let pressTimer: number;
+      let startCoordinate: any = null;
+      
+      // Mouse events for desktop
       map.on('mousedown', (e: any) => {
+        startCoordinate = e.lngLat;
         pressTimer = window.setTimeout(() => {
-          onLongPress({
-            nativeEvent: {
-              coordinate: {
-                latitude: e.lngLat.lat,
-                longitude: e.lngLat.lng
+          if (startCoordinate) {
+            onLongPress({
+              nativeEvent: {
+                coordinate: {
+                  latitude: startCoordinate.lat,
+                  longitude: startCoordinate.lng
+                }
               }
-            }
-          });
+            });
+          }
         }, 500);
       });
       
       map.on('mouseup', () => {
         window.clearTimeout(pressTimer);
+        startCoordinate = null;
       });
       
       map.on('mousemove', () => {
         window.clearTimeout(pressTimer);
+        startCoordinate = null;
+      });
+      
+      // Touch events for mobile/Telegram
+      map.on('touchstart', (e: any) => {
+        if (e.originalEvent && e.originalEvent.touches && e.originalEvent.touches.length === 1) {
+          startCoordinate = e.lngLat;
+          pressTimer = window.setTimeout(() => {
+            if (startCoordinate) {
+              onLongPress({
+                nativeEvent: {
+                  coordinate: {
+                    latitude: startCoordinate.lat,
+                    longitude: startCoordinate.lng
+                  }
+                }
+              });
+            }
+          }, 500);
+        }
+      });
+      
+      map.on('touchend', () => {
+        window.clearTimeout(pressTimer);
+        startCoordinate = null;
+      });
+      
+      map.on('touchmove', () => {
+        window.clearTimeout(pressTimer);
+        startCoordinate = null;
       });
     }
 
@@ -219,7 +256,59 @@ export const MapView = (props: any) => {
     <View style={[styles.webMapContainer, style]} {...otherProps}>
       <div 
         ref={mapContainerRef} 
-        style={styles.webMapContainer as any} 
+        style={styles.webMapContainerWithTouch as any}
+        onTouchStart={(e) => {
+          // Дополнительная обработка touch-событий для Telegram
+          if (onLongPress && e.touches.length === 1) {
+            const touch = e.touches[0];
+            const rect = mapContainerRef.current?.getBoundingClientRect();
+            if (rect && mapRef.current) {
+              const x = touch.clientX - rect.left;
+              const y = touch.clientY - rect.top;
+              
+              // Преобразуем координаты экрана в географические
+              const point = mapRef.current.unproject([x, y]);
+              
+              let longPressTimer: number;
+              const startLongPress = () => {
+                longPressTimer = window.setTimeout(() => {
+                  console.log('Alternative long press triggered', { lat: point.lat, lng: point.lng });
+                  onLongPress({
+                    nativeEvent: {
+                      coordinate: {
+                        latitude: point.lat,
+                        longitude: point.lng
+                      }
+                    }
+                  });
+                }, 600); // Немного дольше для надежности
+              };
+              
+              const cancelLongPress = () => {
+                if (longPressTimer) {
+                  window.clearTimeout(longPressTimer);
+                }
+              };
+              
+              startLongPress();
+              
+              const handleTouchEnd = () => {
+                cancelLongPress();
+                document.removeEventListener('touchend', handleTouchEnd);
+                document.removeEventListener('touchmove', handleTouchMove);
+              };
+              
+              const handleTouchMove = () => {
+                cancelLongPress();
+                document.removeEventListener('touchend', handleTouchEnd);
+                document.removeEventListener('touchmove', handleTouchMove);
+              };
+              
+              document.addEventListener('touchend', handleTouchEnd);
+              document.addEventListener('touchmove', handleTouchMove);
+            }
+          }
+        }}
       />
 
     </View>
@@ -242,7 +331,15 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-
+  webMapContainerWithTouch: {
+    position: 'relative',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    overflow: 'hidden',
+    width: '100%',
+    height: '100%',
+    touchAction: 'manipulation',
+  },
   webMarker: {
     position: 'absolute',
   },

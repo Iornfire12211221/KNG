@@ -520,7 +520,11 @@ export default function MapScreen() {
   };
 
   const handleMapLongPress = (event: any) => {
-    console.log('Map long press detected', { platform: Platform.OS, event });
+    console.log('Map long press detected', { 
+      platform: Platform.OS, 
+      event: event?.nativeEvent?.coordinate,
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
+    });
     
     // Проверяем кулдаун
     if (cooldownSeconds > 0) {
@@ -534,6 +538,13 @@ export default function MapScreen() {
     
     const { latitude, longitude } = event.nativeEvent.coordinate;
     console.log('Setting quick add location:', { latitude, longitude });
+    
+    // Показываем уведомление о том, что долгое нажатие сработало
+    if (Platform.OS === 'web') {
+      // Для веба показываем небольшое уведомление
+      console.log('Long press successful - opening add post modal');
+    }
+    
     setTempPinLocation({ latitude, longitude });
     setQuickAddLocation({ latitude, longitude });
     setQuickAddDescription('');
