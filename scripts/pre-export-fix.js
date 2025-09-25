@@ -1,9 +1,39 @@
 const fs = require('fs');
 const path = require('path');
 
-console.log('[pre-export-fix] Applying AJV fix before Expo export...');
+console.log('[pre-export-fix] Starting pre-export fixes...');
 
 try {
+  // Fix package.json structure first
+  const packageJsonPath = path.join(process.cwd(), 'package.json');
+  if (fs.existsSync(packageJsonPath)) {
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    
+    // Ensure proper structure
+    const fixedPackageJson = {
+      name: packageJson.name,
+      main: packageJson.main,
+      version: packageJson.version,
+      scripts: packageJson.scripts,
+      dependencies: packageJson.dependencies,
+      devDependencies: {
+        "@babel/core": "^7.25.2",
+        "@expo/ngrok": "^4.1.0",
+        "@types/react": "~19.0.10",
+        "eslint": "^9.31.0",
+        "eslint-config-expo": "^9.2.0",
+        "typescript": "~5.8.3"
+      },
+      private: packageJson.private,
+      resolutions: packageJson.resolutions
+    };
+    
+    fs.writeFileSync(packageJsonPath, JSON.stringify(fixedPackageJson, null, 2));
+    console.log('[pre-export-fix] Fixed package.json structure');
+  }
+  
+  console.log('[pre-export-fix] Applying AJV fix before Expo export...');
+  
   const ajvPaths = [
     'node_modules/ajv/dist/compile/codegen.js',
     'node_modules/ajv/lib/compile/codegen.js',
@@ -52,6 +82,6 @@ try {
   }
   
 } catch (error) {
-  console.error('[pre-export-fix] Error applying AJV fix:', error.message);
+  console.error('[pre-export-fix] Error during pre-export fixes:', error.message);
   process.exit(1);
 }

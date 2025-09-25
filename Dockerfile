@@ -11,6 +11,9 @@ WORKDIR /app
 COPY package.json ./
 COPY scripts/ ./scripts/
 
+# Fix package.json structure first
+RUN node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); const fixed={name:pkg.name,main:pkg.main,version:pkg.version,scripts:pkg.scripts,dependencies:pkg.dependencies,devDependencies:{'@babel/core':'^7.25.2','@expo/ngrok':'^4.1.0','@types/react':'~19.0.10','eslint':'^9.31.0','eslint-config-expo':'^9.2.0','typescript':'~5.8.3'},private:pkg.private,resolutions:pkg.resolutions}; fs.writeFileSync('package.json',JSON.stringify(fixed,null,2)); console.log('✓ Fixed package.json structure');"
+
 # Update npm to latest version and clean install dependencies
 RUN npm install -g npm@latest
 RUN npm cache clean --force
