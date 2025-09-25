@@ -16,8 +16,11 @@ RUN npm i --no-audit --no-fund --legacy-peer-deps
 # Copy the rest of the app
 COPY . .
 
-# Do NOT run Expo export (avoids ajv/expo toolchain entirely)
-# We serve only API unless a prebuilt ./dist is present at runtime
+# Fix AJV dependencies before any expo commands
+RUN node scripts/fix-dependencies.js
+
+# Try to build web export, but don't fail if it doesn't work
+RUN npx expo export --platform web || echo "Expo export failed, continuing with API-only mode"
 
 ENV NODE_ENV=production
 
