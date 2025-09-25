@@ -18,6 +18,20 @@ try {
     fs.rmSync(nodeModulesPath, { recursive: true, force: true });
   }
   
+  // Remove any cached files that might cause issues
+  const cachePaths = [
+    path.join(process.cwd(), '.expo'),
+    path.join(process.cwd(), 'dist'),
+    path.join(process.cwd(), '.next')
+  ];
+  
+  cachePaths.forEach(cachePath => {
+    if (fs.existsSync(cachePath)) {
+      console.log(`[fix-dependencies] Removing cache directory: ${cachePath}`);
+      fs.rmSync(cachePath, { recursive: true, force: true });
+    }
+  });
+  
   console.log('[fix-dependencies] Dependency cleanup completed');
 } catch (e) {
   console.error('[fix-dependencies] Error during cleanup:', e);

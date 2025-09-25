@@ -13,6 +13,7 @@ try {
   const ajvCompilePath = path.join(process.cwd(), 'node_modules', 'ajv', 'dist', 'compile');
   const ajvDistPath = path.join(process.cwd(), 'node_modules', 'ajv', 'dist');
   const ajvPath = path.join(process.cwd(), 'node_modules', 'ajv');
+  const codegenDirectPath = path.join(process.cwd(), 'scripts', 'codegen-direct.js');
   
   // Ensure all directories exist
   console.log('[ajv-codegen-shim] Creating directories...');
@@ -104,7 +105,16 @@ module.exports = require('./codegen.js');
   // Write shim to all locations
   console.log('[ajv-codegen-shim] Writing shim files...');
   fs.writeFileSync(shimPath, shimContent);
-  fs.writeFileSync(ajvCodegenPath, shimContent);
+  
+  // Use the direct codegen file if it exists, otherwise use the shim
+  if (fs.existsSync(codegenDirectPath)) {
+    console.log('[ajv-codegen-shim] Using codegen-direct.js');
+    const directContent = fs.readFileSync(codegenDirectPath, 'utf8');
+    fs.writeFileSync(ajvCodegenPath, directContent);
+  } else {
+    fs.writeFileSync(ajvCodegenPath, shimContent);
+  }
+  
   fs.writeFileSync(ajvIndexPath, indexContent);
   
   // Also create a main ajv index if it doesn't exist

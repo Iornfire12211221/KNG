@@ -45,14 +45,21 @@ class Name {
   toString() { return this.str; }
 }
 
+// Export all the functions and classes that ajv-keywords expects
 module.exports = {
   CodeGen,
   Name,
   nil: null,
   stringify: JSON.stringify,
-  strConcat: (...args) => args.filter(Boolean).join(''),
-  getProperty: (key) => typeof key === 'string' ? key : String(key),
-  safeStringify: (value) => JSON.stringify(value),
+  strConcat: function(...args) {
+    return args.filter(Boolean).join('');
+  },
+  getProperty: function(key) {
+    return typeof key === 'string' ? key : String(key);
+  },
+  safeStringify: function(value) {
+    return JSON.stringify(value);
+  },
   operators: {
     AND: '&&',
     OR: '||',
@@ -68,5 +75,19 @@ module.exports = {
     MUL: '*',
     DIV: '/',
     MOD: '%'
+  },
+  // Additional exports that might be needed
+  _: {
+    nil: null,
+    stringify: JSON.stringify,
+    str: JSON.stringify,
+    strConcat: function(...args) {
+      return args.filter(Boolean).join('');
+    }
   }
 };
+
+// Also export as default for ES6 compatibility
+module.exports.default = module.exports;
+
+console.log('[codegen-direct] AJV codegen shim loaded successfully');
