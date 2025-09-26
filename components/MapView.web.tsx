@@ -26,30 +26,41 @@ export const MapView = (props: any) => {
   const initializeMap = React.useCallback(() => {
     if (!mapContainerRef.current || !window.mapboxgl || isMapInitializing) return;
     
-    // Reuse existing map if available and container is different
-    if (globalMapInstance && globalMapContainer !== mapContainerRef.current) {
+    // Reuse existing map if available
+    if (globalMapInstance && globalMapContainer) {
       try {
-        // Move existing map to new container
-        const mapCanvas = globalMapContainer?.querySelector('.mapboxgl-canvas');
-        if (mapCanvas && mapContainerRef.current) {
-          mapContainerRef.current.appendChild(mapCanvas.parentElement!);
-          globalMapContainer = mapContainerRef.current;
-          mapRef.current = globalMapInstance;
-          setMapLoaded(true);
-          setIsLoading(false);
-          return;
+        // If we have a different container, move the map
+        if (globalMapContainer !== mapContainerRef.current) {
+          const mapWrapper = globalMapContainer.querySelector('.mapboxgl-map');
+          if (mapWrapper && mapContainerRef.current) {
+            // Clear the new container first
+            mapContainerRef.current.innerHTML = '';
+            // Move the map wrapper to new container
+            mapContainerRef.current.appendChild(mapWrapper);
+            globalMapContainer = mapContainerRef.current;
+          }
         }
+        
+        mapRef.current = globalMapInstance;
+        setMapLoaded(true);
+        setIsLoading(false);
+        
+        // Update initial region if provided
+        if (initialRegion) {
+          globalMapInstance.flyTo({
+            center: [initialRegion.longitude, initialRegion.latitude],
+            zoom: 14,
+            duration: 0 // Instant for cached map
+          });
+        }
+        
+        return;
       } catch (error) {
         console.log('Error reusing map:', error);
+        // If reuse fails, create new map
+        globalMapInstance = null;
+        globalMapContainer = null;
       }
-    }
-    
-    // Create new map only if needed
-    if (globalMapInstance) {
-      mapRef.current = globalMapInstance;
-      setMapLoaded(true);
-      setIsLoading(false);
-      return;
     }
     
     isMapInitializing = true;
@@ -73,6 +84,8 @@ export const MapView = (props: any) => {
       isMapInitializing = false;
       setMapLoaded(true);
       setIsLoading(false);
+      
+      console.log('Map loaded and cached successfully');
       
       // Set map language to Russian (with error handling)
       try {
@@ -136,6 +149,8 @@ export const MapView = (props: any) => {
       let startCoords: { lat: number; lng: number } | null = null;
       let startTime: number = 0;
       let hasMoved = false;
+      let isMapMoving = false;
+      let startPixelCoords: { x: number; y: number } | null = null;
       
       const clearTimer = () => {
         if (pressTimer !== null) {
@@ -143,8 +158,10 @@ export const MapView = (props: any) => {
           pressTimer = null;
         }
         startCoords = null;
+        startPixelCoords = null;
         startTime = 0;
         hasMoved = false;
+        isMapMoving = false;
       };
       
       const triggerLongPress = (coords: { lat: number; lng: number }) => {
@@ -159,20 +176,38 @@ export const MapView = (props: any) => {
         });
       };
       
+      // Track map movement to prevent long press during zoom/pan
+      const handleMapMoveStart = () => {
+        isMapMoving = true;
+        clearTimer();
+      };
+      
+      const handleMapMoveEnd = () => {
+        setTimeout(() => {
+          isMapMoving = false;
+        }, 100); // Small delay to prevent immediate triggering
+      };
+      
       // Mouse events for desktop
       const handleMouseDown = (e: any) => {
         try {
-          e.preventDefault();
+          // Don't start long press if map is currently moving
+          if (isMapMoving) return;
+          
+          // Only handle left mouse button
+          if (e.originalEvent && e.originalEvent.button !== 0) return;
+          
           startCoords = { lat: e.lngLat.lat, lng: e.lngLat.lng };
+          startPixelCoords = { x: e.point.x, y: e.point.y };
           startTime = Date.now();
           hasMoved = false;
           
           pressTimer = window.setTimeout(() => {
-            if (startCoords && !hasMoved) {
+            if (startCoords && !hasMoved && !isMapMoving) {
               triggerLongPress(startCoords);
               clearTimer();
             }
-          }, 600); // Slightly longer for better UX
+          }, 800); // Longer delay to avoid conflicts with zoom
         } catch (error) {
           console.log('Error in mousedown handler:', error);
         }
@@ -181,7 +216,7 @@ export const MapView = (props: any) => {
       const handleMouseUp = (e: any) => {
         try {
           const duration = Date.now() - startTime;
-          if (duration >= 600 && startCoords && !hasMoved) {
+          if (duration >= 800 && startCoords && !hasMoved && !isMapMoving) {
             triggerLongPress(startCoords);
           }
         } catch (error) {
@@ -192,13 +227,13 @@ export const MapView = (props: any) => {
       
       const handleMouseMove = (e: any) => {
         try {
-          if (startCoords) {
-            // Check if mouse moved too far from start position
-            const distance = Math.sqrt(
-              Math.pow(e.lngLat.lat - startCoords.lat, 2) + 
-              Math.pow(e.lngLat.lng - startCoords.lng, 2)
+          if (startPixelCoords && !isMapMoving) {
+            // Check pixel distance to be more accurate
+            const pixelDistance = Math.sqrt(
+              Math.pow(e.point.x - startPixelCoords.x, 2) + 
+              Math.pow(e.point.y - startPixelCoords.y, 2)
             );
-            if (distance > 0.0005) { // Smaller threshold for more sensitivity
+            if (pixelDistance > 10) { // 10 pixels threshold
               hasMoved = true;
               clearTimer();
             }
@@ -211,17 +246,21 @@ export const MapView = (props: any) => {
       // Touch events for mobile/tablet (including Telegram WebApp)
       const handleTouchStart = (e: any) => {
         try {
+          // Don't start long press if map is currently moving
+          if (isMapMoving) return;
+          
+          // Only handle single touch
           if (e.originalEvent && e.originalEvent.touches && e.originalEvent.touches.length === 1) {
-            e.preventDefault();
             const touch = e.originalEvent.touches[0];
             const rect = map.getContainer().getBoundingClientRect();
             const point = map.unproject([touch.clientX - rect.left, touch.clientY - rect.top]);
             startCoords = { lat: point.lat, lng: point.lng };
+            startPixelCoords = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
             startTime = Date.now();
             hasMoved = false;
             
             pressTimer = window.setTimeout(() => {
-              if (startCoords && !hasMoved) {
+              if (startCoords && !hasMoved && !isMapMoving) {
                 // Add haptic feedback for mobile
                 if (navigator.vibrate) {
                   navigator.vibrate(50);
@@ -229,7 +268,7 @@ export const MapView = (props: any) => {
                 triggerLongPress(startCoords);
                 clearTimer();
               }
-            }, 600);
+            }, 800); // Longer delay for mobile
           }
         } catch (error) {
           console.log('Error in touchstart handler:', error);
@@ -239,7 +278,7 @@ export const MapView = (props: any) => {
       const handleTouchEnd = (e: any) => {
         try {
           const duration = Date.now() - startTime;
-          if (duration >= 600 && startCoords && !hasMoved) {
+          if (duration >= 800 && startCoords && !hasMoved && !isMapMoving) {
             if (navigator.vibrate) {
               navigator.vibrate(50);
             }
@@ -253,17 +292,16 @@ export const MapView = (props: any) => {
       
       const handleTouchMove = (e: any) => {
         try {
-          if (startCoords && e.originalEvent && e.originalEvent.touches && e.originalEvent.touches.length === 1) {
+          if (startPixelCoords && e.originalEvent && e.originalEvent.touches && e.originalEvent.touches.length === 1 && !isMapMoving) {
             const touch = e.originalEvent.touches[0];
             const rect = map.getContainer().getBoundingClientRect();
-            const point = map.unproject([touch.clientX - rect.left, touch.clientY - rect.top]);
             
-            // Check if touch moved too far from start position
-            const distance = Math.sqrt(
-              Math.pow(point.lat - startCoords.lat, 2) + 
-              Math.pow(point.lng - startCoords.lng, 2)
+            // Check pixel distance for touch movement
+            const pixelDistance = Math.sqrt(
+              Math.pow((touch.clientX - rect.left) - startPixelCoords.x, 2) + 
+              Math.pow((touch.clientY - rect.top) - startPixelCoords.y, 2)
             );
-            if (distance > 0.0005) { // Smaller threshold for more sensitivity
+            if (pixelDistance > 15) { // 15 pixels threshold for touch
               hasMoved = true;
               clearTimer();
             }
@@ -278,6 +316,16 @@ export const MapView = (props: any) => {
         e.preventDefault();
         return false;
       };
+      
+      // Add map movement listeners
+      map.on('movestart', handleMapMoveStart);
+      map.on('moveend', handleMapMoveEnd);
+      map.on('zoomstart', handleMapMoveStart);
+      map.on('zoomend', handleMapMoveEnd);
+      map.on('rotatestart', handleMapMoveStart);
+      map.on('rotateend', handleMapMoveEnd);
+      map.on('pitchstart', handleMapMoveStart);
+      map.on('pitchend', handleMapMoveEnd);
       
       map.on('mousedown', handleMouseDown);
       map.on('mouseup', handleMouseUp);
@@ -428,6 +476,13 @@ export const MapView = (props: any) => {
 
     const initMap = async () => {
       try {
+        // If we already have a cached map, show it immediately
+        if (globalMapInstance && mapboxResourcesLoaded) {
+          setIsLoading(false);
+          initializeMap();
+          return;
+        }
+        
         // Show loading only if resources aren't loaded yet
         if (!mapboxResourcesLoaded) {
           setIsLoading(true);
