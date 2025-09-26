@@ -3,82 +3,26 @@ import { View, StyleSheet, Platform } from 'react-native';
 
 const MAPBOX_TOKEN = 'pk.eyJ1IjoicnJheG85NiIsImEiOiJjbWZ0Zzg5bjEwNTJ2MmlwaHNlNnh4ajd2In0.kPa-PYwEP58w8-QJKGHz5A';
 
+let globalMap: any | null = null;
+let globalMapLoaded = false;
+let globalMarkers: any[] = [];
+let globalContainerEl: HTMLDivElement | null = null;
+let lastViewState: { center: [number, number]; zoom: number } | null = null;
+
 export const MapView = (props: any) => {
   const { style, children, initialRegion, onPress, onLongPress, ...otherProps } = props;
-  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const hostContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapLoaded, setMapLoaded] = useState<boolean>(false);
   const markersRef = useRef<any[]>([]);
 
-  const initializeMap = React.useCallback(() => {
-    if (!mapContainerRef.current || !window.mapboxgl) return;
-
-    window.mapboxgl.accessToken = MAPBOX_TOKEN;
-
-    const map = new window.mapboxgl.Map({
-      container: mapContainerRef.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: initialRegion ? [initialRegion.longitude, initialRegion.latitude] : [28.6134, 59.3733],
-      zoom: initialRegion ? 14 : 13,
-      attributionControl: false,
-    });
-
-    map.on('load', () => {
-      setMapLoaded(true);
-
-      const ruLayers = ['country-label', 'state-label', 'settlement-label', 'poi-label'];
-      try {
-        ruLayers.forEach((layerId) => {
-          if (map.getLayer && map.getLayer(layerId)) {
-            map.setLayoutProperty(layerId, 'text-field', ['get', 'name_ru']);
-          }
-        });
-      } catch (e) {
-        console.log('Map language set failed', e);
-      }
-
-      const hideMapboxElements = () => {
-        const elementsToHide = [
-          '.mapboxgl-ctrl-logo',
-          '.mapboxgl-ctrl-attrib',
-          '.mapboxgl-ctrl-attrib-button',
-          '.mapboxgl-ctrl-attrib-inner',
-          '.mapboxgl-ctrl-bottom-right',
-          '.mapboxgl-ctrl-bottom-left',
-        ];
-        elementsToHide.forEach((selector) => {
-          try {
-            const sanitizedSelector = (selector || '').trim();
-            if (!sanitizedSelector || sanitizedSelector.length > 100) return;
-            const elements = mapContainerRef.current?.querySelectorAll(sanitizedSelector);
-            elements?.forEach((element) => {
-              const htmlElement = element as HTMLElement;
-              htmlElement.style.display = 'none';
-              htmlElement.style.visibility = 'hidden';
-              htmlElement.style.opacity = '0';
-              htmlElement.style.pointerEvents = 'none';
-              htmlElement.remove();
-            });
-          } catch (e) {
-            console.log('Hide mapbox element failed', e);
-          }
-        });
-      };
-
-      setTimeout(hideMapboxElements, 100);
-      setTimeout(hideMapboxElements, 500);
-      setTimeout(hideMapboxElements, 1000);
-    });
-
+  const attachHandlers = (map: any) => {
     if (onPress) {
       map.on('click', (e: any) => {
         try {
           onPress({
             nativeEvent: {
-              coordinate: {
-                latitude: e.lngLat.lat,
-                longitude: e.lngLat.lng,
-              },
+              coordinate: { latitude: e.lngLat.lat, longitude: e.lngLat.lng },
             },
             stopPropagation: () => {},
           });
@@ -101,10 +45,7 @@ export const MapView = (props: any) => {
               console.log('Web long press triggered', startCoordinate);
               onLongPress({
                 nativeEvent: {
-                  coordinate: {
-                    latitude: startCoordinate.lat,
-                    longitude: startCoordinate.lng,
-                  },
+                  coordinate: { latitude: startCoordinate.lat, longitude: startCoordinate.lng },
                 },
                 stopPropagation: () => {},
               });
@@ -129,7 +70,6 @@ export const MapView = (props: any) => {
         clear();
       };
 
-      // Mouse events
       map.on('mousedown', (e: any) => {
         try {
           startCoordinate = e.lngLat;
@@ -143,7 +83,6 @@ export const MapView = (props: any) => {
       map.on('mousemove', handleMove);
       map.on('drag', clear);
 
-      // Touch events
       map.on('touchstart', (e: any) => {
         try {
           if (e.originalEvent && e.originalEvent.touches && e.originalEvent.touches.length === 1) {
@@ -159,72 +98,133 @@ export const MapView = (props: any) => {
       map.on('touchmove', handleMove);
       map.on('touchcancel', clear);
     }
+  };
 
-    mapRef.current = map;
+  const hideMapboxElements = () => {
+    const elementsToHide = [
+      '.mapboxgl-ctrl-logo',
+      '.mapboxgl-ctrl-attrib',
+      '.mapboxgl-ctrl-attrib-button',
+      '.mapboxgl-ctrl-attrib-inner',
+      '.mapboxgl-ctrl-bottom-right',
+      '.mapboxgl-ctrl-bottom-left',
+    ];
+    elementsToHide.forEach((selector) => {
+      try {
+        const sanitizedSelector = (selector || '').trim();
+        if (!sanitizedSelector || sanitizedSelector.length > 100) return;
+        const elements = (hostContainerRef.current || globalContainerEl)?.querySelectorAll?.(sanitizedSelector);
+        elements?.forEach((element) => {
+          const htmlElement = element as HTMLElement;
+          htmlElement.style.display = 'none';
+          htmlElement.style.visibility = 'hidden';
+          htmlElement.style.opacity = '0';
+          htmlElement.style.pointerEvents = 'none';
+          htmlElement.remove();
+        });
+      } catch (e) {
+        console.log('Hide mapbox element failed', e);
+      }
+    });
+  };
 
-    if (props.ref) {
-      props.ref.current = {
-        animateToRegion: (region: any, duration = 1000) => {
-          map.flyTo({
-            center: [region.longitude, region.latitude],
-            zoom: 15,
-            duration,
-          });
-        },
-        zoomIn: () => map.zoomIn(),
-        zoomOut: () => map.zoomOut(),
-        resetNorth: () => map.resetNorth(),
-        getCenter: () => {
-          const center = map.getCenter();
-          return { latitude: center.lat, longitude: center.lng };
-        },
-        getZoom: () => map.getZoom(),
-      };
+  const initializeMap = React.useCallback(() => {
+    if (!hostContainerRef.current || !window.mapboxgl) return;
+
+    window.mapboxgl.accessToken = MAPBOX_TOKEN;
+
+    if (globalMap) {
+      const container = globalMap.getContainer();
+      if (container && hostContainerRef.current) {
+        hostContainerRef.current.innerHTML = '';
+        hostContainerRef.current.appendChild(container);
+        globalMap.resize();
+        setMapLoaded(globalMapLoaded);
+        mapRef.current = globalMap;
+        hideMapboxElements();
+        return;
+      }
     }
-  }, [initialRegion, onPress, onLongPress, props.ref]);
+
+    const containerDiv = document.createElement('div');
+    containerDiv.style.width = '100%';
+    containerDiv.style.height = '100%';
+    hostContainerRef.current.appendChild(containerDiv);
+
+    const map = new window.mapboxgl.Map({
+      container: containerDiv,
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: lastViewState?.center || (initialRegion ? [initialRegion.longitude, initialRegion.latitude] : [28.6134, 59.3733]),
+      zoom: lastViewState?.zoom ?? (initialRegion ? 14 : 13),
+      attributionControl: false,
+      fadeDuration: 0,
+    });
+
+    map.on('load', () => {
+      setMapLoaded(true);
+      globalMapLoaded = true;
+
+      const ruLayers = ['country-label', 'state-label', 'settlement-label', 'poi-label'];
+      try {
+        ruLayers.forEach((layerId) => {
+          if (map.getLayer && map.getLayer(layerId)) {
+            map.setLayoutProperty(layerId, 'text-field', ['get', 'name_ru']);
+          }
+        });
+      } catch (e) {
+        console.log('Map language set failed', e);
+      }
+
+      setTimeout(hideMapboxElements, 50);
+      setTimeout(hideMapboxElements, 250);
+      setTimeout(hideMapboxElements, 600);
+    });
+
+    map.on('moveend', () => {
+      try {
+        const c = map.getCenter();
+        lastViewState = { center: [c.lng, c.lat], zoom: map.getZoom() };
+      } catch {}
+    });
+
+    attachHandlers(map);
+
+    globalMap = map;
+    globalContainerEl = containerDiv;
+    mapRef.current = map;
+  }, [initialRegion, onPress, onLongPress]);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
 
-    const script = document.createElement('script');
-    script.src = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
-    script.onload = () => {
-      const link = document.createElement('link');
-      link.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
-      link.rel = 'stylesheet';
-      document.head.appendChild(link);
+    const ensureLibs = () => {
+      const linkExists = !!document.querySelector("link[href*='mapbox-gl.css']");
+      if (!linkExists) {
+        const link = document.createElement('link');
+        link.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
+        link.rel = 'stylesheet';
+        document.head.appendChild(link);
+      }
 
-      const style = document.createElement('style');
-      style.textContent = `
-        .mapboxgl-ctrl-logo,
-        .mapboxgl-ctrl-attrib,
-        .mapboxgl-ctrl-attrib-button,
-        .mapboxgl-ctrl-attrib-inner,
-        .mapboxgl-ctrl-bottom-right,
-        .mapboxgl-ctrl-bottom-left {
-          display: none !important;
-          visibility: hidden !important;
-          opacity: 0 !important;
-          pointer-events: none !important;
-        }
-        .mapboxgl-map {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-      `;
-      document.head.appendChild(style);
-
-      initializeMap();
+      if (window.mapboxgl) {
+        initializeMap();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
+      script.onload = () => {
+        initializeMap();
+      };
+      document.head.appendChild(script);
     };
-    document.head.appendChild(script);
+
+    ensureLibs();
 
     return () => {
       try {
+        // Do not remove the global map to retain tiles and avoid white flash
         markersRef.current.forEach((m) => m.remove?.());
         markersRef.current = [];
-        if (mapRef.current) {
-          mapRef.current.remove();
-          mapRef.current = null;
-        }
       } catch (e) {
         console.log('Map cleanup error', e);
       }
@@ -232,9 +232,11 @@ export const MapView = (props: any) => {
   }, [initializeMap]);
 
   useEffect(() => {
-    if (!mapRef.current || !mapLoaded) return;
+    if (!globalMap || !mapLoaded) return;
 
-    markersRef.current.forEach((marker) => marker.remove());
+    globalMarkers.forEach((marker) => marker.remove?.());
+    globalMarkers = [];
+    markersRef.current.forEach((m) => m.remove?.());
     markersRef.current = [];
 
     React.Children.forEach(children, (child: any) => {
@@ -246,7 +248,7 @@ export const MapView = (props: any) => {
 
         const marker = new window.mapboxgl.Marker(markerElement)
           .setLngLat([child.props.coordinate.longitude, child.props.coordinate.latitude])
-          .addTo(mapRef.current);
+          .addTo(globalMap);
 
         if (child.props.onPress) {
           markerElement.addEventListener('click', (ev) => {
@@ -261,14 +263,35 @@ export const MapView = (props: any) => {
           });
         }
 
+        globalMarkers.push(marker);
         markersRef.current.push(marker);
       }
     });
   }, [children, mapLoaded]);
 
+  useEffect(() => {
+    if (!globalMap) return;
+    // expose imperative API
+    if (props.ref) {
+      props.ref.current = {
+        animateToRegion: (region: any, duration = 1000) => {
+          globalMap.flyTo({ center: [region.longitude, region.latitude], zoom: 15, duration });
+        },
+        zoomIn: () => globalMap.zoomIn(),
+        zoomOut: () => globalMap.zoomOut(),
+        resetNorth: () => globalMap.resetNorth(),
+        getCenter: () => {
+          const center = globalMap.getCenter();
+          return { latitude: center.lat, longitude: center.lng };
+        },
+        getZoom: () => globalMap.getZoom(),
+      };
+    }
+  }, [props.ref, mapLoaded]);
+
   return (
     <View style={[styles.webMapContainer, style]} {...otherProps}>
-      <div ref={mapContainerRef} style={styles.webMapContainerWithTouch as any} />
+      <div ref={hostContainerRef} style={styles.webMapContainerWithTouch as any} />
     </View>
   );
 };
@@ -282,7 +305,7 @@ export default MapView;
 const styles = StyleSheet.create({
   webMapContainer: {
     position: 'relative',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#e5e7eb',
     borderRadius: 8,
     overflow: 'hidden',
     width: '100%',
@@ -290,7 +313,7 @@ const styles = StyleSheet.create({
   },
   webMapContainerWithTouch: {
     position: 'relative',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#e5e7eb',
     borderRadius: 8,
     overflow: 'hidden',
     width: '100%',
