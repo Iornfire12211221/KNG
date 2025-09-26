@@ -126,7 +126,7 @@ export default function MapScreen() {
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
   const [selectedPost, setSelectedPost] = useState<string | null>(null);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-  const [isMapReady, setIsMapReady] = useState(true);
+  const [isMapReady, setIsMapReady] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickAddLocation, setQuickAddLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [tempPinLocation, setTempPinLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -925,6 +925,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               onLongPress={handleMapLongPress}
               onMapReady={() => {
                 console.log('Map ready (web)');
+                setIsMapReady(true);
               }}
               loadingEnabled={true}
               loadingIndicatorColor="#007AFF"
@@ -1001,6 +1002,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               onLongPress={handleMapLongPress}
               onMapReady={() => {
                 console.log('Map ready (native)');
+                setIsMapReady(true);
               }}
               loadingEnabled={true}
               loadingIndicatorColor="#007AFF"

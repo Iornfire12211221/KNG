@@ -13,10 +13,12 @@ export const MapView = (props: any) => {
   const [isLoading, setIsLoading] = useState(true);
   const markersRef = useRef<any[]>([]);
   const [mapboxLoaded, setMapboxLoaded] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [mapInitialized, setMapInitialized] = useState(false);
 
   const initializeMap = React.useCallback(() => {
-    if (!mapContainerRef.current || !window.mapboxgl) {
-      console.log('Map container or Mapbox GL not available');
+    if (!mapContainerRef.current || !window.mapboxgl || mapInitialized) {
+      console.log('Map container not available, Mapbox not loaded, or already initialized');
       return;
     }
 
@@ -37,6 +39,13 @@ export const MapView = (props: any) => {
       console.log('Map loaded successfully');
       setMapLoaded(true);
       setIsLoading(false);
+      setMapInitialized(true);
+      
+      // Clear any existing timeout
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout);
+        setLoadingTimeout(null);
+      }
       
       // Set map language to Russian - check if layers exist first
       try {
@@ -105,31 +114,23 @@ export const MapView = (props: any) => {
       setTimeout(hideMapboxElements, 1000);
     });
     
-    // Handle loading state with better caching
+    // Handle loading state with timeout fallback
     map.on('idle', () => {
       setIsLoading(false);
-    });
-    
-    map.on('dataloading', (e: any) => {
-      // Only show loading for initial data load, not for cached tiles
-      if (e.dataType === 'source' && e.isSourceLoaded === false) {
-        setIsLoading(true);
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout);
+        setLoadingTimeout(null);
       }
     });
     
-    map.on('data', (e: any) => {
-      // Hide loading when source data is loaded
-      if (e.dataType === 'source' && e.isSourceLoaded) {
-        setIsLoading(false);
-      }
-    });
-    
-    // Cache tiles for better performance
-    map.on('sourcedata', (e: any) => {
-      if (e.sourceId && e.isSourceLoaded) {
-        setIsLoading(false);
-      }
-    });
+    // Set a maximum loading time of 8 seconds
+    const timeout = setTimeout(() => {
+      console.log('Map loading timeout - forcing load complete');
+      setIsLoading(false);
+      setMapLoaded(true);
+      setMapInitialized(true);
+    }, 8000);
+    setLoadingTimeout(timeout);
 
     if (onPress) {
       map.on('click', (e: any) => {
@@ -251,15 +252,17 @@ export const MapView = (props: any) => {
         }
       };
     }
-  }, [initialRegion, onPress, onLongPress, props.ref]);
+  }, [initialRegion, onPress, onLongPress, props.ref, mapInitialized]);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
 
     // Check if Mapbox is already loaded
-    if (window.mapboxgl && !mapboxLoaded) {
+    if (window.mapboxgl && !mapboxLoaded && !mapInitialized) {
       setMapboxLoaded(true);
-      initializeMap();
+      setTimeout(() => {
+        initializeMap();
+      }, 50);
       return;
     }
 
@@ -299,9 +302,17 @@ export const MapView = (props: any) => {
           }
           
           setMapboxLoaded(true);
-          initializeMap();
+          
+          // Add a small delay to ensure everything is ready
+          setTimeout(() => {
+            if (!mapInitialized) {
+              initializeMap();
+            }
+          }, 200);
         } catch (error) {
           console.log('Error loading Mapbox resources:', error);
+          // Fallback - hide loading after error
+          setIsLoading(false);
         }
       };
       
@@ -309,6 +320,9 @@ export const MapView = (props: any) => {
         if (error && typeof error === 'object') {
           console.log('Error loading Mapbox script:', error);
         }
+        // Hide loading on script error
+        setIsLoading(false);
+        setMapboxLoaded(false);
       };
       
       if (document.head) {
@@ -318,15 +332,36 @@ export const MapView = (props: any) => {
 
     return () => {
       try {
+        // Clear loading timeout
+        if (loadingTimeout) {
+          clearTimeout(loadingTimeout);
+          setLoadingTimeout(null);
+        }
+        
         if (mapRef.current && typeof mapRef.current.remove === 'function') {
           mapRef.current.remove();
         }
         mapRef.current = null;
+        setMapInitialized(false);
       } catch (error) {
         console.log('Error cleaning up map:', error);
       }
     };
-  }, [initializeMap, mapboxLoaded]);
+  }, [initializeMap, mapboxLoaded, mapInitialized]);
+
+  // Emergency timeout to prevent infinite loading
+  useEffect(() => {
+    const emergencyTimeout = setTimeout(() => {
+      if (isLoading && !mapInitialized) {
+        console.log('Emergency timeout - stopping infinite loading');
+        setIsLoading(false);
+        setMapLoaded(true);
+        setMapInitialized(true);
+      }
+    }, 12000); // 12 seconds max
+
+    return () => clearTimeout(emergencyTimeout);
+  }, [isLoading, mapInitialized]);
 
 
 
