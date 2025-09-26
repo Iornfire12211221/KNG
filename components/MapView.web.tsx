@@ -12,9 +12,13 @@ export const MapView = (props: any) => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const markersRef = useRef<any[]>([]);
+  const [mapboxLoaded, setMapboxLoaded] = useState(false);
 
   const initializeMap = React.useCallback(() => {
-    if (!mapContainerRef.current || !window.mapboxgl) return;
+    if (!mapContainerRef.current || !window.mapboxgl) {
+      console.log('Map container or Mapbox GL not available');
+      return;
+    }
 
     window.mapboxgl.accessToken = MAPBOX_TOKEN;
     
@@ -30,21 +34,37 @@ export const MapView = (props: any) => {
     // Убираем стандартные элементы управления - они будут кастомными
 
     map.on('load', () => {
+      console.log('Map loaded successfully');
       setMapLoaded(true);
       setIsLoading(false);
       
-      // Set map language to Russian
+      // Set map language to Russian - check if layers exist first
       try {
-        map.setLayoutProperty('country-label', 'text-field', ['get', 'name_ru']);
-        map.setLayoutProperty('state-label', 'text-field', ['get', 'name_ru']);
-        map.setLayoutProperty('settlement-label', 'text-field', ['get', 'name_ru']);
-        map.setLayoutProperty('poi-label', 'text-field', ['get', 'name_ru']);
+        const style = map.getStyle();
+        if (style && style.layers) {
+          const layerIds = style.layers.map((layer: any) => layer.id);
+          
+          if (layerIds.includes('country-label')) {
+            map.setLayoutProperty('country-label', 'text-field', ['get', 'name_ru']);
+          }
+          if (layerIds.includes('state-label')) {
+            map.setLayoutProperty('state-label', 'text-field', ['get', 'name_ru']);
+          }
+          if (layerIds.includes('settlement-label')) {
+            map.setLayoutProperty('settlement-label', 'text-field', ['get', 'name_ru']);
+          }
+          if (layerIds.includes('poi-label')) {
+            map.setLayoutProperty('poi-label', 'text-field', ['get', 'name_ru']);
+          }
+        }
       } catch (e) {
         console.log('Language setting failed:', e);
       }
       
       // Скрываем логотип Mapbox и информационную иконку
       const hideMapboxElements = () => {
+        if (!mapContainerRef.current) return;
+        
         const elementsToHide = [
           '.mapboxgl-ctrl-logo',
           '.mapboxgl-ctrl-attrib',
@@ -55,17 +75,27 @@ export const MapView = (props: any) => {
         ];
         
         elementsToHide.forEach(selector => {
-          if (!selector?.trim() || selector.length > 100) return;
-          const sanitizedSelector = selector.trim();
-          const elements = mapContainerRef.current?.querySelectorAll(sanitizedSelector);
-          elements?.forEach((element) => {
-            const htmlElement = element as HTMLElement;
-            htmlElement.style.display = 'none';
-            htmlElement.style.visibility = 'hidden';
-            htmlElement.style.opacity = '0';
-            htmlElement.style.pointerEvents = 'none';
-            htmlElement.remove(); // Полностью удаляем элемент
-          });
+          try {
+            if (!selector?.trim() || selector.length > 100) return;
+            const sanitizedSelector = selector.trim();
+            const elements = mapContainerRef.current?.querySelectorAll(sanitizedSelector);
+            elements?.forEach((element) => {
+              if (element && element instanceof HTMLElement) {
+                const htmlElement = element as HTMLElement;
+                htmlElement.style.display = 'none';
+                htmlElement.style.visibility = 'hidden';
+                htmlElement.style.opacity = '0';
+                htmlElement.style.pointerEvents = 'none';
+                try {
+                  htmlElement.remove(); // Полностью удаляем элемент
+                } catch (removeError) {
+                  console.log('Could not remove element:', removeError);
+                }
+              }
+            });
+          } catch (error) {
+            console.log('Error hiding element:', selector, error);
+          }
         });
       };
       
@@ -75,17 +105,30 @@ export const MapView = (props: any) => {
       setTimeout(hideMapboxElements, 1000);
     });
     
-    // Handle loading state
+    // Handle loading state with better caching
     map.on('idle', () => {
       setIsLoading(false);
     });
     
-    map.on('dataloading', () => {
-      setIsLoading(true);
+    map.on('dataloading', (e: any) => {
+      // Only show loading for initial data load, not for cached tiles
+      if (e.dataType === 'source' && e.isSourceLoaded === false) {
+        setIsLoading(true);
+      }
     });
     
-    map.on('data', () => {
-      setIsLoading(false);
+    map.on('data', (e: any) => {
+      // Hide loading when source data is loaded
+      if (e.dataType === 'source' && e.isSourceLoaded) {
+        setIsLoading(false);
+      }
+    });
+    
+    // Cache tiles for better performance
+    map.on('sourcedata', (e: any) => {
+      if (e.sourceId && e.isSourceLoaded) {
+        setIsLoading(false);
+      }
     });
 
     if (onPress) {
@@ -213,45 +256,77 @@ export const MapView = (props: any) => {
   useEffect(() => {
     if (Platform.OS !== 'web') return;
 
-    // Load Mapbox GL JS
-    const script = document.createElement('script');
-    script.src = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
-    script.onload = () => {
-      const link = document.createElement('link');
-      link.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
-      link.rel = 'stylesheet';
-      document.head.appendChild(link);
-      
-      // Добавляем CSS для скрытия элементов Mapbox
-      const style = document.createElement('style');
-      style.textContent = `
-        .mapboxgl-ctrl-logo,
-        .mapboxgl-ctrl-attrib,
-        .mapboxgl-ctrl-attrib-button,
-        .mapboxgl-ctrl-attrib-inner,
-        .mapboxgl-ctrl-bottom-right,
-        .mapboxgl-ctrl-bottom-left {
-          display: none !important;
-          visibility: hidden !important;
-          opacity: 0 !important;
-          pointer-events: none !important;
-        }
-        .mapboxgl-map {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-      `;
-      document.head.appendChild(style);
-      
+    // Check if Mapbox is already loaded
+    if (window.mapboxgl && !mapboxLoaded) {
+      setMapboxLoaded(true);
       initializeMap();
-    };
-    document.head.appendChild(script);
+      return;
+    }
+
+    // Load Mapbox GL JS only if not already loaded
+    if (!window.mapboxgl) {
+      const script = document.createElement('script');
+      script.src = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
+      script.onload = () => {
+        try {
+          const link = document.createElement('link');
+          link.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
+          link.rel = 'stylesheet';
+          if (document.head) {
+            document.head.appendChild(link);
+          }
+          
+          // Добавляем CSS для скрытия элементов Mapbox
+          const style = document.createElement('style');
+          style.textContent = `
+            .mapboxgl-ctrl-logo,
+            .mapboxgl-ctrl-attrib,
+            .mapboxgl-ctrl-attrib-button,
+            .mapboxgl-ctrl-attrib-inner,
+            .mapboxgl-ctrl-bottom-right,
+            .mapboxgl-ctrl-bottom-left {
+              display: none !important;
+              visibility: hidden !important;
+              opacity: 0 !important;
+              pointer-events: none !important;
+            }
+            .mapboxgl-map {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            }
+          `;
+          if (document.head) {
+            document.head.appendChild(style);
+          }
+          
+          setMapboxLoaded(true);
+          initializeMap();
+        } catch (error) {
+          console.log('Error loading Mapbox resources:', error);
+        }
+      };
+      
+      script.onerror = (error: any) => {
+        if (error && typeof error === 'object') {
+          console.log('Error loading Mapbox script:', error);
+        }
+      };
+      
+      if (document.head) {
+        document.head.appendChild(script);
+      }
+    }
 
     return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
+      try {
+        if (mapRef.current && typeof mapRef.current.remove === 'function') {
+          mapRef.current.remove();
+        }
+        mapRef.current = null;
+      } catch (error) {
+        console.log('Error cleaning up map:', error);
       }
     };
-  }, [initializeMap]);
+  }, [initializeMap, mapboxLoaded]);
 
 
 
@@ -260,26 +335,40 @@ export const MapView = (props: any) => {
     if (!mapRef.current || !mapLoaded) return;
 
     // Clear existing markers
-    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current.forEach(marker => {
+      try {
+        if (marker && typeof marker.remove === 'function') {
+          marker.remove();
+        }
+      } catch (error) {
+        console.log('Error removing marker:', error);
+      }
+    });
     markersRef.current = [];
 
     // Add new markers
     React.Children.forEach(children, (child: any) => {
       if (child && child.props && child.props.coordinate) {
-        const markerElement = document.createElement('div');
-        markerElement.innerHTML = child.props.children ? 
-          ReactDOMServer.renderToString(child.props.children) : 
-          '<div style="width: 20px; height: 20px; background: #FF3B30; border-radius: 50%; border: 2px solid white;"></div>';
-        
-        const marker = new window.mapboxgl.Marker(markerElement)
-          .setLngLat([child.props.coordinate.longitude, child.props.coordinate.latitude])
-          .addTo(mapRef.current);
+        try {
+          const markerElement = document.createElement('div');
+          markerElement.innerHTML = child.props.children ? 
+            ReactDOMServer.renderToString(child.props.children) : 
+            '<div style="width: 20px; height: 20px; background: #FF3B30; border-radius: 50%; border: 2px solid white;"></div>';
           
-        if (child.props.onPress) {
-          markerElement.addEventListener('click', child.props.onPress);
+          if (window.mapboxgl && mapRef.current) {
+            const marker = new window.mapboxgl.Marker(markerElement)
+              .setLngLat([child.props.coordinate.longitude, child.props.coordinate.latitude])
+              .addTo(mapRef.current);
+              
+            if (child.props.onPress) {
+              markerElement.addEventListener('click', child.props.onPress);
+            }
+            
+            markersRef.current.push(marker);
+          }
+        } catch (error) {
+          console.log('Error creating marker:', error);
         }
-        
-        markersRef.current.push(marker);
       }
     });
   }, [children, mapLoaded]);
@@ -290,7 +379,7 @@ export const MapView = (props: any) => {
         ref={mapContainerRef} 
         style={styles.webMapContainer as any} 
       />
-      {isLoading && (
+      {(isLoading || !mapboxLoaded) && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#007AFF" />
         </View>
