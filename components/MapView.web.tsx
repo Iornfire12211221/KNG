@@ -8,6 +8,11 @@ const MAPBOX_TOKEN = 'pk.eyJ1IjoicnJheG85NiIsImEiOiJjbWZ0Zzg5bjEwNTJ2MmlwaHNlNnh
 let mapboxResourcesLoaded = false;
 let mapboxLoadPromise: Promise<void> | null = null;
 
+// Global map instance cache
+let globalMapInstance: any = null;
+let globalMapContainer: HTMLDivElement | null = null;
+let isMapInitializing = false;
+
 // Web-specific MapView implementation with Mapbox
 export const MapView = (props: any) => {
   const { style, children, initialRegion, onPress, onLongPress, ...otherProps } = props;
@@ -19,18 +24,35 @@ export const MapView = (props: any) => {
   const spinValue = useRef(new Animated.Value(0)).current;
 
   const initializeMap = React.useCallback(() => {
-    if (!mapContainerRef.current || !window.mapboxgl) return;
+    if (!mapContainerRef.current || !window.mapboxgl || isMapInitializing) return;
     
-    // Clean up existing map first
-    if (mapRef.current) {
+    // Reuse existing map if available and container is different
+    if (globalMapInstance && globalMapContainer !== mapContainerRef.current) {
       try {
-        mapRef.current.remove();
+        // Move existing map to new container
+        const mapCanvas = globalMapContainer?.querySelector('.mapboxgl-canvas');
+        if (mapCanvas && mapContainerRef.current) {
+          mapContainerRef.current.appendChild(mapCanvas.parentElement!);
+          globalMapContainer = mapContainerRef.current;
+          mapRef.current = globalMapInstance;
+          setMapLoaded(true);
+          setIsLoading(false);
+          return;
+        }
       } catch (error) {
-        console.log('Error removing existing map:', error);
+        console.log('Error reusing map:', error);
       }
-      mapRef.current = null;
     }
-
+    
+    // Create new map only if needed
+    if (globalMapInstance) {
+      mapRef.current = globalMapInstance;
+      setMapLoaded(true);
+      setIsLoading(false);
+      return;
+    }
+    
+    isMapInitializing = true;
     window.mapboxgl.accessToken = MAPBOX_TOKEN;
     
     const map = new window.mapboxgl.Map({
@@ -39,12 +61,16 @@ export const MapView = (props: any) => {
       center: initialRegion ? [initialRegion.longitude, initialRegion.latitude] : [28.6134, 59.3733],
       zoom: initialRegion ? 14 : 13,
       language: 'ru',
-      attributionControl: false // Убираем стандартную атрибуцию
+      attributionControl: false,
+      preserveDrawingBuffer: true // Помогает с производительностью
     });
 
     // Убираем стандартные элементы управления - они будут кастомными
 
     map.on('load', () => {
+      globalMapInstance = map;
+      globalMapContainer = mapContainerRef.current;
+      isMapInitializing = false;
       setMapLoaded(true);
       setIsLoading(false);
       
@@ -108,6 +134,8 @@ export const MapView = (props: any) => {
     if (onLongPress) {
       let pressTimer: number | null = null;
       let startCoords: { lat: number; lng: number } | null = null;
+      let startTime: number = 0;
+      let hasMoved = false;
       
       const clearTimer = () => {
         if (pressTimer !== null) {
@@ -115,31 +143,50 @@ export const MapView = (props: any) => {
           pressTimer = null;
         }
         startCoords = null;
+        startTime = 0;
+        hasMoved = false;
+      };
+      
+      const triggerLongPress = (coords: { lat: number; lng: number }) => {
+        console.log('Long press triggered at:', coords);
+        onLongPress({
+          nativeEvent: {
+            coordinate: {
+              latitude: coords.lat,
+              longitude: coords.lng
+            }
+          }
+        });
       };
       
       // Mouse events for desktop
       const handleMouseDown = (e: any) => {
         try {
+          e.preventDefault();
           startCoords = { lat: e.lngLat.lat, lng: e.lngLat.lng };
+          startTime = Date.now();
+          hasMoved = false;
+          
           pressTimer = window.setTimeout(() => {
-            if (startCoords) {
-              console.log('Mouse long press triggered at:', startCoords);
-              onLongPress({
-                nativeEvent: {
-                  coordinate: {
-                    latitude: startCoords.lat,
-                    longitude: startCoords.lng
-                  }
-                }
-              });
+            if (startCoords && !hasMoved) {
+              triggerLongPress(startCoords);
+              clearTimer();
             }
-          }, 500);
+          }, 600); // Slightly longer for better UX
         } catch (error) {
           console.log('Error in mousedown handler:', error);
         }
       };
       
-      const handleMouseUp = () => {
+      const handleMouseUp = (e: any) => {
+        try {
+          const duration = Date.now() - startTime;
+          if (duration >= 600 && startCoords && !hasMoved) {
+            triggerLongPress(startCoords);
+          }
+        } catch (error) {
+          console.log('Error in mouseup handler:', error);
+        }
         clearTimer();
       };
       
@@ -151,7 +198,8 @@ export const MapView = (props: any) => {
               Math.pow(e.lngLat.lat - startCoords.lat, 2) + 
               Math.pow(e.lngLat.lng - startCoords.lng, 2)
             );
-            if (distance > 0.001) { // Small threshold for movement
+            if (distance > 0.0005) { // Smaller threshold for more sensitivity
+              hasMoved = true;
               clearTimer();
             }
           }
@@ -160,49 +208,63 @@ export const MapView = (props: any) => {
         }
       };
       
-      // Touch events for mobile/tablet
+      // Touch events for mobile/tablet (including Telegram WebApp)
       const handleTouchStart = (e: any) => {
         try {
-          if (e.originalEvent.touches.length === 1) {
+          if (e.originalEvent && e.originalEvent.touches && e.originalEvent.touches.length === 1) {
+            e.preventDefault();
             const touch = e.originalEvent.touches[0];
-            const point = map.unproject([touch.clientX, touch.clientY]);
+            const rect = map.getContainer().getBoundingClientRect();
+            const point = map.unproject([touch.clientX - rect.left, touch.clientY - rect.top]);
             startCoords = { lat: point.lat, lng: point.lng };
+            startTime = Date.now();
+            hasMoved = false;
             
             pressTimer = window.setTimeout(() => {
-              if (startCoords) {
-                console.log('Touch long press triggered at:', startCoords);
-                onLongPress({
-                  nativeEvent: {
-                    coordinate: {
-                      latitude: startCoords.lat,
-                      longitude: startCoords.lng
-                    }
-                  }
-                });
+              if (startCoords && !hasMoved) {
+                // Add haptic feedback for mobile
+                if (navigator.vibrate) {
+                  navigator.vibrate(50);
+                }
+                triggerLongPress(startCoords);
+                clearTimer();
               }
-            }, 500);
+            }, 600);
           }
         } catch (error) {
           console.log('Error in touchstart handler:', error);
         }
       };
       
-      const handleTouchEnd = () => {
+      const handleTouchEnd = (e: any) => {
+        try {
+          const duration = Date.now() - startTime;
+          if (duration >= 600 && startCoords && !hasMoved) {
+            if (navigator.vibrate) {
+              navigator.vibrate(50);
+            }
+            triggerLongPress(startCoords);
+          }
+        } catch (error) {
+          console.log('Error in touchend handler:', error);
+        }
         clearTimer();
       };
       
       const handleTouchMove = (e: any) => {
         try {
-          if (startCoords && e.originalEvent.touches.length === 1) {
+          if (startCoords && e.originalEvent && e.originalEvent.touches && e.originalEvent.touches.length === 1) {
             const touch = e.originalEvent.touches[0];
-            const point = map.unproject([touch.clientX, touch.clientY]);
+            const rect = map.getContainer().getBoundingClientRect();
+            const point = map.unproject([touch.clientX - rect.left, touch.clientY - rect.top]);
             
             // Check if touch moved too far from start position
             const distance = Math.sqrt(
               Math.pow(point.lat - startCoords.lat, 2) + 
               Math.pow(point.lng - startCoords.lng, 2)
             );
-            if (distance > 0.001) { // Small threshold for movement
+            if (distance > 0.0005) { // Smaller threshold for more sensitivity
+              hasMoved = true;
               clearTimer();
             }
           }
@@ -211,12 +273,26 @@ export const MapView = (props: any) => {
         }
       };
       
+      // Context menu prevention for better long press detection
+      const handleContextMenu = (e: any) => {
+        e.preventDefault();
+        return false;
+      };
+      
       map.on('mousedown', handleMouseDown);
       map.on('mouseup', handleMouseUp);
       map.on('mousemove', handleMouseMove);
       map.on('touchstart', handleTouchStart);
       map.on('touchend', handleTouchEnd);
       map.on('touchmove', handleTouchMove);
+      map.on('contextmenu', handleContextMenu);
+      
+      // Also add direct DOM event listeners for better mobile support
+      const mapContainer = map.getContainer();
+      if (mapContainer) {
+        mapContainer.addEventListener('contextmenu', handleContextMenu, { passive: false });
+        mapContainer.style.touchAction = 'pan-x pan-y'; // Allow panning but prevent other gestures
+      }
     }
 
     mapRef.current = map;
@@ -271,9 +347,23 @@ export const MapView = (props: any) => {
         return;
       }
       
+      // Preload resources with higher priority
+      const preloadScript = document.createElement('link');
+      preloadScript.rel = 'preload';
+      preloadScript.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
+      preloadScript.as = 'script';
+      document.head.appendChild(preloadScript);
+      
+      const preloadCSS = document.createElement('link');
+      preloadCSS.rel = 'preload';
+      preloadCSS.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
+      preloadCSS.as = 'style';
+      document.head.appendChild(preloadCSS);
+      
       // Load Mapbox GL JS
       const script = document.createElement('script');
       script.src = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
+      script.async = true;
       script.onload = () => {
         const link = document.createElement('link');
         link.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
@@ -295,6 +385,9 @@ export const MapView = (props: any) => {
             }
             .mapboxgl-map {
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            }
+            .mapboxgl-canvas {
+              outline: none;
             }
           `;
           document.head.appendChild(style);
@@ -335,12 +428,19 @@ export const MapView = (props: any) => {
 
     const initMap = async () => {
       try {
-        setIsLoading(true);
+        // Show loading only if resources aren't loaded yet
+        if (!mapboxResourcesLoaded) {
+          setIsLoading(true);
+        }
+        
         await loadMapboxResources();
-        initializeMap();
+        
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+          initializeMap();
+        }, 50);
       } catch (error) {
         console.error('Error loading Mapbox resources:', error);
-      } finally {
         setIsLoading(false);
       }
     };
@@ -349,7 +449,7 @@ export const MapView = (props: any) => {
 
     return () => {
       try {
-        // Clear existing markers
+        // Clear existing markers but keep map instance
         if (markersRef.current) {
           markersRef.current.forEach(marker => {
             if (marker && typeof marker.remove === 'function') {
@@ -359,11 +459,8 @@ export const MapView = (props: any) => {
           markersRef.current = [];
         }
         
-        // Remove map instance
-        if (mapRef.current && typeof mapRef.current.remove === 'function') {
-          mapRef.current.remove();
-          mapRef.current = null;
-        }
+        // Don't remove map instance - keep it cached
+        mapRef.current = null;
       } catch (error) {
         console.log('Error cleaning up map:', error);
       }
@@ -433,11 +530,18 @@ export const MapView = (props: any) => {
             ]} 
           />
           <Text style={styles.loadingText}>Загрузка карты...</Text>
+          <Text style={styles.loadingSubtext}>Подготовка интерактивной карты</Text>
         </View>
       )}
       <div 
         ref={mapContainerRef} 
-        style={StyleSheet.flatten([styles.webMapContainer as any, isLoading && { opacity: 0 }])} 
+        style={StyleSheet.flatten([
+          styles.webMapContainer as any, 
+          {
+            opacity: isLoading ? 0 : 1,
+            transition: 'opacity 0.3s ease-in-out'
+          }
+        ])} 
       />
     </View>
   );
@@ -483,6 +587,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#8E8E93',
     fontWeight: '500' as const,
+  },
+  loadingSubtext: {
+    fontSize: 12,
+    color: '#C7C7CC',
+    marginTop: 4,
+    textAlign: 'center' as const,
   },
   webMarker: {
     position: 'absolute',
