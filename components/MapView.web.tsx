@@ -91,20 +91,24 @@ export const MapView = (props: any) => {
     if (onLongPress) {
       let pressTimer: number | null = null;
       let startCoordinate: any = null;
+      let hasMoved = false;
 
       const schedule = () => {
         if (!startCoordinate) return;
         pressTimer = window.setTimeout(() => {
           try {
-            onLongPress({
-              nativeEvent: {
-                coordinate: {
-                  latitude: startCoordinate.lat,
-                  longitude: startCoordinate.lng,
+            if (!hasMoved && startCoordinate) {
+              console.log('Web long press triggered', startCoordinate);
+              onLongPress({
+                nativeEvent: {
+                  coordinate: {
+                    latitude: startCoordinate.lat,
+                    longitude: startCoordinate.lng,
+                  },
                 },
-              },
-              stopPropagation: () => {},
-            });
+                stopPropagation: () => {},
+              });
+            }
           } catch (err) {
             console.log('onLongPress handler error', err);
           }
@@ -117,23 +121,42 @@ export const MapView = (props: any) => {
           pressTimer = null;
         }
         startCoordinate = null;
+        hasMoved = false;
       };
 
+      const handleMove = () => {
+        hasMoved = true;
+        clear();
+      };
+
+      // Mouse events
       map.on('mousedown', (e: any) => {
-        startCoordinate = e.lngLat;
-        schedule();
+        try {
+          startCoordinate = e.lngLat;
+          hasMoved = false;
+          schedule();
+        } catch (err) {
+          console.log('mousedown error', err);
+        }
       });
       map.on('mouseup', clear);
-      map.on('mousemove', clear);
+      map.on('mousemove', handleMove);
+      map.on('drag', clear);
 
+      // Touch events
       map.on('touchstart', (e: any) => {
-        if (e.originalEvent && e.originalEvent.touches && e.originalEvent.touches.length === 1) {
-          startCoordinate = e.lngLat;
-          schedule();
+        try {
+          if (e.originalEvent && e.originalEvent.touches && e.originalEvent.touches.length === 1) {
+            startCoordinate = e.lngLat;
+            hasMoved = false;
+            schedule();
+          }
+        } catch (err) {
+          console.log('touchstart error', err);
         }
       });
       map.on('touchend', clear);
-      map.on('touchmove', clear);
+      map.on('touchmove', handleMove);
       map.on('touchcancel', clear);
     }
 

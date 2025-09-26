@@ -544,16 +544,22 @@ export default function MapScreen() {
         latitude = coord.latitude;
         longitude = coord.longitude;
       } else if (mapRef.current?.getCenter) {
-        const center = mapRef.current.getCenter();
-        if (center && typeof center.latitude === 'number' && typeof center.longitude === 'number') {
-          latitude = center.latitude;
-          longitude = center.longitude;
+        try {
+          const center = mapRef.current.getCenter();
+          if (center && typeof center.latitude === 'number' && typeof center.longitude === 'number') {
+            latitude = center.latitude;
+            longitude = center.longitude;
+          }
+        } catch (centerError) {
+          console.log('Error getting map center:', centerError);
         }
       }
 
       if (latitude === null || longitude === null) {
-        console.log('No coordinate available on long press, ignoring');
-        return;
+        console.log('No coordinate available on long press, using default location');
+        // Используем центр Кингисеппа как fallback
+        latitude = KINGISEPP_CENTER.latitude;
+        longitude = KINGISEPP_CENTER.longitude;
       }
 
       console.log('Setting quick add location:', { latitude, longitude });
@@ -571,6 +577,18 @@ export default function MapScreen() {
       setShowQuickAdd(true);
     } catch (e) {
       console.log('handleMapLongPress error', e);
+      // В случае ошибки все равно открываем модал с центром Кингисеппа
+      try {
+        setTempPinLocation({ latitude: KINGISEPP_CENTER.latitude, longitude: KINGISEPP_CENTER.longitude });
+        setQuickAddLocation({ latitude: KINGISEPP_CENTER.latitude, longitude: KINGISEPP_CENTER.longitude });
+        setQuickAddDescription('');
+        setQuickAddType('dps');
+        setQuickAddSeverity('medium');
+        setQuickAddPhotos([]);
+        setShowQuickAdd(true);
+      } catch (fallbackError) {
+        console.log('Fallback error:', fallbackError);
+      }
     }
   };
 
