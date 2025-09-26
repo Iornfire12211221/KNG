@@ -34,6 +34,10 @@ export const MapView = (props: any) => {
         showsTraffic={false}
         showsIndoors={false}
         showsPointsOfInterest={true}
+        cacheEnabled={true}
+        loadingEnabled={true}
+        loadingIndicatorColor="#007AFF"
+        loadingBackgroundColor="#FFFFFF"
         {...otherProps}
       >
         {children}

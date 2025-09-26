@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet, Platform, ActivityIndicator } from 'react-native';
 
 // Mapbox token
 const MAPBOX_TOKEN = 'pk.eyJ1IjoicnJheG85NiIsImEiOiJjbWZ0Zzg5bjEwNTJ2MmlwaHNlNnh4ajd2In0.kPa-PYwEP58w8-QJKGHz5A';
@@ -10,6 +10,7 @@ export const MapView = (props: any) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const markersRef = useRef<any[]>([]);
 
   const initializeMap = React.useCallback(() => {
@@ -30,12 +31,17 @@ export const MapView = (props: any) => {
 
     map.on('load', () => {
       setMapLoaded(true);
+      setIsLoading(false);
       
       // Set map language to Russian
-      map.setLayoutProperty('country-label', 'text-field', ['get', 'name_ru']);
-      map.setLayoutProperty('state-label', 'text-field', ['get', 'name_ru']);
-      map.setLayoutProperty('settlement-label', 'text-field', ['get', 'name_ru']);
-      map.setLayoutProperty('poi-label', 'text-field', ['get', 'name_ru']);
+      try {
+        map.setLayoutProperty('country-label', 'text-field', ['get', 'name_ru']);
+        map.setLayoutProperty('state-label', 'text-field', ['get', 'name_ru']);
+        map.setLayoutProperty('settlement-label', 'text-field', ['get', 'name_ru']);
+        map.setLayoutProperty('poi-label', 'text-field', ['get', 'name_ru']);
+      } catch (e) {
+        console.log('Language setting failed:', e);
+      }
       
       // Скрываем логотип Mapbox и информационную иконку
       const hideMapboxElements = () => {
@@ -68,6 +74,19 @@ export const MapView = (props: any) => {
       setTimeout(hideMapboxElements, 500);
       setTimeout(hideMapboxElements, 1000);
     });
+    
+    // Handle loading state
+    map.on('idle', () => {
+      setIsLoading(false);
+    });
+    
+    map.on('dataloading', () => {
+      setIsLoading(true);
+    });
+    
+    map.on('data', () => {
+      setIsLoading(false);
+    });
 
     if (onPress) {
       map.on('click', (e: any) => {
@@ -84,8 +103,12 @@ export const MapView = (props: any) => {
 
     if (onLongPress) {
       let pressTimer: number;
+      let startPos: { x: number; y: number } | null = null;
+      
       map.on('mousedown', (e: any) => {
+        startPos = { x: e.point.x, y: e.point.y };
         pressTimer = window.setTimeout(() => {
+          console.log('Web long press triggered at:', e.lngLat);
           onLongPress({
             nativeEvent: {
               coordinate: {
@@ -99,10 +122,56 @@ export const MapView = (props: any) => {
       
       map.on('mouseup', () => {
         window.clearTimeout(pressTimer);
+        startPos = null;
       });
       
-      map.on('mousemove', () => {
+      map.on('mousemove', (e: any) => {
+        if (startPos) {
+          const distance = Math.sqrt(
+            Math.pow(e.point.x - startPos.x, 2) + Math.pow(e.point.y - startPos.y, 2)
+          );
+          // Cancel long press if mouse moved more than 10 pixels
+          if (distance > 10) {
+            window.clearTimeout(pressTimer);
+          }
+        }
+      });
+      
+      // Also handle touch events for mobile web
+      map.on('touchstart', (e: any) => {
+        if (e.originalEvent.touches.length === 1) {
+          const touch = e.originalEvent.touches[0];
+          startPos = { x: touch.clientX, y: touch.clientY };
+          pressTimer = window.setTimeout(() => {
+            console.log('Web touch long press triggered at:', e.lngLat);
+            onLongPress({
+              nativeEvent: {
+                coordinate: {
+                  latitude: e.lngLat.lat,
+                  longitude: e.lngLat.lng
+                }
+              }
+            });
+          }, 500);
+        }
+      });
+      
+      map.on('touchend', () => {
         window.clearTimeout(pressTimer);
+        startPos = null;
+      });
+      
+      map.on('touchmove', (e: any) => {
+        if (startPos && e.originalEvent.touches.length === 1) {
+          const touch = e.originalEvent.touches[0];
+          const distance = Math.sqrt(
+            Math.pow(touch.clientX - startPos.x, 2) + Math.pow(touch.clientY - startPos.y, 2)
+          );
+          // Cancel long press if finger moved more than 10 pixels
+          if (distance > 10) {
+            window.clearTimeout(pressTimer);
+          }
+        }
       });
     }
 
@@ -221,7 +290,11 @@ export const MapView = (props: any) => {
         ref={mapContainerRef} 
         style={styles.webMapContainer as any} 
       />
-
+      {isLoading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#007AFF" />
+        </View>
+      )}
     </View>
   );
 };
@@ -242,7 +315,17 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(248, 249, 250, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
   webMarker: {
     position: 'absolute',
   },
