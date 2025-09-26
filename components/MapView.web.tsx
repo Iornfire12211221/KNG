@@ -31,11 +31,17 @@ export const MapView = (props: any) => {
     map.on('load', () => {
       setMapLoaded(true);
       
-      // Set map language to Russian
-      map.setLayoutProperty('country-label', 'text-field', ['get', 'name_ru']);
-      map.setLayoutProperty('state-label', 'text-field', ['get', 'name_ru']);
-      map.setLayoutProperty('settlement-label', 'text-field', ['get', 'name_ru']);
-      map.setLayoutProperty('poi-label', 'text-field', ['get', 'name_ru']);
+      // Set map language to Russian (with error handling)
+      try {
+        const layers = ['country-label', 'state-label', 'settlement-label', 'poi-label'];
+        layers.forEach(layerId => {
+          if (map.getLayer(layerId)) {
+            map.setLayoutProperty(layerId, 'text-field', ['get', 'name_ru']);
+          }
+        });
+      } catch (error) {
+        console.log('Error setting map language:', error);
+      }
       
       // Скрываем логотип Mapbox и информационную иконку
       const hideMapboxElements = () => {
@@ -84,25 +90,88 @@ export const MapView = (props: any) => {
 
     if (onLongPress) {
       let pressTimer: number;
+      let startCoords: { lat: number; lng: number } | null = null;
+      
+      // Mouse events for desktop
       map.on('mousedown', (e: any) => {
+        startCoords = { lat: e.lngLat.lat, lng: e.lngLat.lng };
         pressTimer = window.setTimeout(() => {
-          onLongPress({
-            nativeEvent: {
-              coordinate: {
-                latitude: e.lngLat.lat,
-                longitude: e.lngLat.lng
+          if (startCoords) {
+            console.log('Mouse long press triggered at:', startCoords);
+            onLongPress({
+              nativeEvent: {
+                coordinate: {
+                  latitude: startCoords.lat,
+                  longitude: startCoords.lng
+                }
               }
-            }
-          });
+            });
+          }
         }, 500);
       });
       
       map.on('mouseup', () => {
         window.clearTimeout(pressTimer);
+        startCoords = null;
       });
       
-      map.on('mousemove', () => {
+      map.on('mousemove', (e: any) => {
+        if (startCoords) {
+          // Check if mouse moved too far from start position
+          const distance = Math.sqrt(
+            Math.pow(e.lngLat.lat - startCoords.lat, 2) + 
+            Math.pow(e.lngLat.lng - startCoords.lng, 2)
+          );
+          if (distance > 0.001) { // Small threshold for movement
+            window.clearTimeout(pressTimer);
+            startCoords = null;
+          }
+        }
+      });
+      
+      // Touch events for mobile/tablet
+      map.on('touchstart', (e: any) => {
+        if (e.originalEvent.touches.length === 1) {
+          const touch = e.originalEvent.touches[0];
+          const point = map.unproject([touch.clientX, touch.clientY]);
+          startCoords = { lat: point.lat, lng: point.lng };
+          
+          pressTimer = window.setTimeout(() => {
+            if (startCoords) {
+              console.log('Touch long press triggered at:', startCoords);
+              onLongPress({
+                nativeEvent: {
+                  coordinate: {
+                    latitude: startCoords.lat,
+                    longitude: startCoords.lng
+                  }
+                }
+              });
+            }
+          }, 500);
+        }
+      });
+      
+      map.on('touchend', () => {
         window.clearTimeout(pressTimer);
+        startCoords = null;
+      });
+      
+      map.on('touchmove', (e: any) => {
+        if (startCoords && e.originalEvent.touches.length === 1) {
+          const touch = e.originalEvent.touches[0];
+          const point = map.unproject([touch.clientX, touch.clientY]);
+          
+          // Check if touch moved too far from start position
+          const distance = Math.sqrt(
+            Math.pow(point.lat - startCoords.lat, 2) + 
+            Math.pow(point.lng - startCoords.lng, 2)
+          );
+          if (distance > 0.001) { // Small threshold for movement
+            window.clearTimeout(pressTimer);
+            startCoords = null;
+          }
+        }
       });
     }
 
