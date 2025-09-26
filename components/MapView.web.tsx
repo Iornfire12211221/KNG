@@ -207,7 +207,7 @@ export const MapView = (props: any) => {
               triggerLongPress(startCoords);
               clearTimer();
             }
-          }, 800); // Longer delay to avoid conflicts with zoom
+          }, 400); // 400ms delay for long press
         } catch (error) {
           console.log('Error in mousedown handler:', error);
         }
@@ -216,7 +216,7 @@ export const MapView = (props: any) => {
       const handleMouseUp = (e: any) => {
         try {
           const duration = Date.now() - startTime;
-          if (duration >= 800 && startCoords && !hasMoved && !isMapMoving) {
+          if (duration >= 400 && startCoords && !hasMoved && !isMapMoving) {
             triggerLongPress(startCoords);
           }
         } catch (error) {
@@ -268,7 +268,7 @@ export const MapView = (props: any) => {
                 triggerLongPress(startCoords);
                 clearTimer();
               }
-            }, 800); // Longer delay for mobile
+            }, 400); // 400ms delay for mobile
           }
         } catch (error) {
           console.log('Error in touchstart handler:', error);
@@ -278,7 +278,7 @@ export const MapView = (props: any) => {
       const handleTouchEnd = (e: any) => {
         try {
           const duration = Date.now() - startTime;
-          if (duration >= 800 && startCoords && !hasMoved && !isMapMoving) {
+          if (duration >= 400 && startCoords && !hasMoved && !isMapMoving) {
             if (navigator.vibrate) {
               navigator.vibrate(50);
             }
