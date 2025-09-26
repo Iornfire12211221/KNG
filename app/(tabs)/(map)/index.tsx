@@ -520,38 +520,58 @@ export default function MapScreen() {
   };
 
   const handleMapLongPress = (event: any) => {
-    console.log('Map long press detected', { 
-      platform: Platform.OS, 
-      event: event?.nativeEvent?.coordinate,
-      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
-    });
-    
-    // Проверяем кулдаун
-    if (cooldownSeconds > 0) {
-      Alert.alert(
-        'Подождите',
-        `Можно создать новый пост через ${cooldownSeconds} секунд`,
-        [{ text: 'OK' }]
-      );
-      return;
+    try {
+      console.log('Map long press detected', {
+        platform: Platform.OS,
+        event: event?.nativeEvent?.coordinate,
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
+      });
+
+      if (cooldownSeconds > 0) {
+        Alert.alert(
+          'Подождите',
+          `Можно создать новый пост через ${cooldownSeconds} секунд`,
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      const coord = event?.nativeEvent?.coordinate;
+      let latitude: number | null = null;
+      let longitude: number | null = null;
+
+      if (coord && typeof coord.latitude === 'number' && typeof coord.longitude === 'number') {
+        latitude = coord.latitude;
+        longitude = coord.longitude;
+      } else if (mapRef.current?.getCenter) {
+        const center = mapRef.current.getCenter();
+        if (center && typeof center.latitude === 'number' && typeof center.longitude === 'number') {
+          latitude = center.latitude;
+          longitude = center.longitude;
+        }
+      }
+
+      if (latitude === null || longitude === null) {
+        console.log('No coordinate available on long press, ignoring');
+        return;
+      }
+
+      console.log('Setting quick add location:', { latitude, longitude });
+
+      if (Platform.OS === 'web') {
+        console.log('Long press successful - opening add post modal');
+      }
+
+      setTempPinLocation({ latitude, longitude });
+      setQuickAddLocation({ latitude, longitude });
+      setQuickAddDescription('');
+      setQuickAddType('dps');
+      setQuickAddSeverity('medium');
+      setQuickAddPhotos([]);
+      setShowQuickAdd(true);
+    } catch (e) {
+      console.log('handleMapLongPress error', e);
     }
-    
-    const { latitude, longitude } = event.nativeEvent.coordinate;
-    console.log('Setting quick add location:', { latitude, longitude });
-    
-    // Показываем уведомление о том, что долгое нажатие сработало
-    if (Platform.OS === 'web') {
-      // Для веба показываем небольшое уведомление
-      console.log('Long press successful - opening add post modal');
-    }
-    
-    setTempPinLocation({ latitude, longitude });
-    setQuickAddLocation({ latitude, longitude });
-    setQuickAddDescription('');
-    setQuickAddType('dps');
-    setQuickAddSeverity('medium');
-    setQuickAddPhotos([]);
-    setShowQuickAdd(true);
   };
 
   const getAddressFromCoords = async (lat: number, lng: number) => {
@@ -932,7 +952,13 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               style={styles.map}
               initialRegion={initialRegion}
               onPress={handleMapPress}
-              onLongPress={handleMapLongPress}
+              onLongPress={(e: any) => {
+                try {
+                  handleMapLongPress(e);
+                } catch (err) {
+                  console.log('onLongPress prop error', err);
+                }
+              }}
               onMapReady={() => {
                 console.log('Map ready (web)');
               }}
@@ -1008,7 +1034,13 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               style={styles.map}
               initialRegion={initialRegion}
               onPress={handleMapPress}
-              onLongPress={handleMapLongPress}
+              onLongPress={(e: any) => {
+                try {
+                  handleMapLongPress(e);
+                } catch (err) {
+                  console.log('onLongPress prop error', err);
+                }
+              }}
               onMapReady={() => {
                 console.log('Map ready (native)');
               }}
