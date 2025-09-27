@@ -73,7 +73,10 @@ export const MapView = (props: any) => {
       zoom: initialRegion ? 14 : 13,
       language: 'ru',
       attributionControl: false,
-      preserveDrawingBuffer: true // Помогает с производительностью
+      preserveDrawingBuffer: true, // Помогает с производительностью
+      projection: 'mercator',
+      pitchWithRotate: false,
+      dragRotate: false,
     });
 
     // Убираем стандартные элементы управления - они будут кастомными
@@ -86,6 +89,17 @@ export const MapView = (props: any) => {
       setIsLoading(false);
       
       console.log('Map loaded and cached successfully');
+      try {
+        if (map.getProjection && typeof map.getProjection === 'function') {
+          map.setProjection('mercator');
+        } else if (typeof (map as any).setProjection === 'function') {
+          (map as any).setProjection('mercator');
+        }
+        map.setPitch(0);
+        map.setBearing(0);
+      } catch (e) {
+        console.log('Projection setup error:', e);
+      }
       
       // Set map language to Russian (with error handling)
       try {
@@ -326,6 +340,7 @@ export const MapView = (props: any) => {
       map.on('rotateend', handleMapMoveEnd);
       map.on('pitchstart', handleMapMoveStart);
       map.on('pitchend', handleMapMoveEnd);
+      map.touchZoomRotate.disableRotation();
       
       map.on('mousedown', handleMouseDown);
       map.on('mouseup', handleMouseUp);

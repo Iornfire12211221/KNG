@@ -1186,9 +1186,47 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
           ]}
           onPress={async () => {
             if (Platform.OS === 'web') {
-              // Для веба - сброс направления на север
-              if (mapRef.current && mapRef.current.resetNorth) {
-                mapRef.current.resetNorth();
+              try {
+                setIsLoadingLocation(true);
+                if (navigator.geolocation) {
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                      const { latitude, longitude } = pos.coords;
+                      if (mapRef.current && mapRef.current.animateToRegion) {
+                        mapRef.current.animateToRegion({
+                          latitude,
+                          longitude,
+                          latitudeDelta: 0.01,
+                          longitudeDelta: 0.01,
+                        }, 700);
+                      }
+                      const webLoc: Location.LocationObject = {
+                        coords: {
+                          latitude,
+                          longitude,
+                          altitude: null as unknown as number, // expo-location allows null internally
+                          accuracy: pos.coords.accuracy ?? 0,
+                          altitudeAccuracy: null as unknown as number,
+                          heading: pos.coords.heading ?? 0,
+                          speed: pos.coords.speed ?? 0,
+                        },
+                        timestamp: pos.timestamp,
+                      } as unknown as Location.LocationObject;
+                      setUserLocation(webLoc);
+                    },
+                    (error) => {
+                      console.log('Web geolocation error', error);
+                      if (mapRef.current && mapRef.current.resetNorth) {
+                        mapRef.current.resetNorth();
+                      }
+                    },
+                    { enableHighAccuracy: true, maximumAge: 60000, timeout: 8000 }
+                  );
+                } else if (mapRef.current && mapRef.current.resetNorth) {
+                  mapRef.current.resetNorth();
+                }
+              } finally {
+                setTimeout(() => setIsLoadingLocation(false), 300);
               }
             } else {
               // Для мобильных - быстрое центрирование на пользователе
