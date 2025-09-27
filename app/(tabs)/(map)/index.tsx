@@ -1133,7 +1133,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
             styles.mapControlButtonBlue,
             isLoadingLocation && styles.mapControlButtonLoading
           ]}
-          onPress={() => {
+          onPress={async () => {
             if (Platform.OS === 'web') {
               // Для веба - сброс направления на север
               if (mapRef.current && mapRef.current.resetNorth) {
@@ -1142,9 +1142,50 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
             } else {
               // Для мобильных - центрирование на пользователе
               if (userLocation) {
+                console.log('Centering on existing user location:', userLocation.coords);
                 centerOnUser();
-              } else if (!userLocation) {
-                requestLocationPermission();
+              } else {
+                console.log('No user location, requesting permission...');
+                setIsLoadingLocation(true);
+                try {
+                  const { status } = await Location.requestForegroundPermissionsAsync();
+                  console.log('Location permission status:', status);
+                  
+                  if (status === 'granted') {
+                    console.log('Getting current position...');
+                    const location = await Location.getCurrentPositionAsync({
+                      accuracy: Location.Accuracy.High,
+                    });
+                    console.log('Current location obtained:', location.coords);
+                    setUserLocation(location);
+                    
+                    // Центрируем карту на полученном местоположении
+                    if (mapRef.current) {
+                      mapRef.current.animateToRegion({
+                        latitude: location.coords.latitude,
+                        longitude: location.coords.longitude,
+                        latitudeDelta: 0.01,
+                        longitudeDelta: 0.01,
+                      }, 1000);
+                    }
+                  } else {
+                    console.log('Location permission denied');
+                    Alert.alert(
+                      'Доступ к местоположению',
+                      'Для центрирования карты на вашем местоположении необходимо разрешить доступ к геолокации в настройках приложения.',
+                      [{ text: 'OK' }]
+                    );
+                  }
+                } catch (error) {
+                  console.error('Error getting location:', error);
+                  Alert.alert(
+                    'Ошибка',
+                    'Не удалось определить ваше местоположение. Проверьте, включена ли геолокация на устройстве.',
+                    [{ text: 'OK' }]
+                  );
+                } finally {
+                  setIsLoadingLocation(false);
+                }
               }
             }
           }}
@@ -1154,7 +1195,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
           testID="center-on-user"
         >
           {isLoadingLocation ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
+            <ActivityIndicator size="small" color="#007AFF" />
           ) : (
             <Navigation size={20} color="#007AFF" />
           )}
