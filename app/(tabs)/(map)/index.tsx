@@ -332,23 +332,12 @@ export default function MapScreen() {
     try {
       setIsLoadingLocation(true);
       console.log('Requesting location permission...');
-      
+
       const { status } = await Location.requestForegroundPermissionsAsync();
       console.log('Location permission status:', status);
-      
-      if (status === 'granted') {
-        console.log('Getting current position...');
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.High,
-        });
-        console.log('Current location obtained:', location.coords);
-        setUserLocation(location);
-        
-        // Запускаем отслеживание местоположения для обновлений
-        startLocationTracking();
-      } else {
+
+      if (status !== 'granted') {
         console.log('Location permission denied');
-        // Показываем пользователю центр Кингисеппа как fallback
         setTimeout(() => {
           if (mapRef.current) {
             mapRef.current.animateToRegion({
@@ -358,11 +347,75 @@ export default function MapScreen() {
               longitudeDelta: 0.05,
             }, 1000);
           }
-        }, 500);
+        }, 300);
+        return;
+      }
+
+      // 1) Try last known location for instant result
+      try {
+        const last = await Location.getLastKnownPositionAsync();
+        if (last) {
+          console.log('Using last known location instantly:', last.coords);
+          setUserLocation(last);
+          if (mapRef.current) {
+            mapRef.current.animateToRegion({
+              latitude: last.coords.latitude,
+              longitude: last.coords.longitude,
+              latitudeDelta: 0.02,
+              longitudeDelta: 0.02,
+            }, 600);
+          }
+        }
+      } catch (e) {
+        console.log('No last known location available', e);
+      }
+
+      // 2) Quickly fetch a fresh but fast reading
+      let quickGot = false;
+      try {
+        const quick = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        quickGot = true;
+        console.log('Quick location obtained:', quick.coords);
+        setUserLocation(quick);
+        if (mapRef.current) {
+          mapRef.current.animateToRegion({
+            latitude: quick.coords.latitude,
+            longitude: quick.coords.longitude,
+            latitudeDelta: 0.02,
+            longitudeDelta: 0.02,
+          }, 700);
+        }
+      } catch (e) {
+        console.log('Quick location timeout, will refine in background', e);
+      }
+
+      // 3) Start high accuracy watch to refine
+      startLocationTracking();
+
+      // 4) If quick didn't return, do one more background try with higher accuracy (short timeout)
+      if (!quickGot) {
+        try {
+          const precise = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.High,
+          });
+          console.log('Precise location obtained (background):', precise.coords);
+          setUserLocation(precise);
+          if (mapRef.current) {
+            mapRef.current.animateToRegion({
+              latitude: precise.coords.latitude,
+              longitude: precise.coords.longitude,
+              latitudeDelta: 0.02,
+              longitudeDelta: 0.02,
+            }, 700);
+          }
+        } catch (e) {
+          console.log('Precise background fetch failed', e);
+        }
       }
     } catch (error) {
       console.error('Error getting location:', error);
-      // В случае ошибки также показываем центр Кингисеппа
       setTimeout(() => {
         if (mapRef.current) {
           mapRef.current.animateToRegion({
@@ -372,7 +425,7 @@ export default function MapScreen() {
             longitudeDelta: 0.05,
           }, 1000);
         }
-      }, 500);
+      }, 300);
     } finally {
       setIsLoadingLocation(false);
     }
@@ -381,20 +434,18 @@ export default function MapScreen() {
   const startLocationTracking = async () => {
     try {
       console.log('Starting location tracking...');
-      // Обновляем местоположение каждые 30 секунд
       const locationSubscription = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.Balanced,
-          timeInterval: 30000, // 30 секунд
-          distanceInterval: 50, // 50 метров
+          accuracy: Location.Accuracy.High,
+          timeInterval: 15000,
+          distanceInterval: 20,
+          mayShowUserSettingsDialog: false,
         },
         (location) => {
           console.log('Location updated:', location.coords);
           setUserLocation(location);
         }
       );
-      
-      // Сохраняем подписку для очистки при размонтировании
       return () => {
         locationSubscription.remove();
       };
@@ -1140,7 +1191,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                 mapRef.current.resetNorth();
               }
             } else {
-              // Для мобильных - центрирование на пользователе
+              // Для мобильных - быстрое центрирование на пользователе
               if (userLocation) {
                 console.log('Centering on existing user location:', userLocation.coords);
                 centerOnUser();
@@ -1150,32 +1201,54 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                 try {
                   const { status } = await Location.requestForegroundPermissionsAsync();
                   console.log('Location permission status:', status);
-                  
-                  if (status === 'granted') {
-                    console.log('Getting current position...');
-                    const location = await Location.getCurrentPositionAsync({
-                      accuracy: Location.Accuracy.High,
-                    });
-                    console.log('Current location obtained:', location.coords);
-                    setUserLocation(location);
-                    
-                    // Центрируем карту на полученном местоположении
-                    if (mapRef.current) {
-                      mapRef.current.animateToRegion({
-                        latitude: location.coords.latitude,
-                        longitude: location.coords.longitude,
-                        latitudeDelta: 0.01,
-                        longitudeDelta: 0.01,
-                      }, 1000);
-                    }
-                  } else {
+
+                  if (status !== 'granted') {
                     console.log('Location permission denied');
                     Alert.alert(
                       'Доступ к местоположению',
                       'Для центрирования карты на вашем местоположении необходимо разрешить доступ к геолокации в настройках приложения.',
                       [{ text: 'OK' }]
                     );
+                    return;
                   }
+
+                  // Мгновенно пробуем last known
+                  const last = await Location.getLastKnownPositionAsync();
+                  if (last) {
+                    console.log('Button: using last known location:', last.coords);
+                    setUserLocation(last);
+                    if (mapRef.current) {
+                      mapRef.current.animateToRegion({
+                        latitude: last.coords.latitude,
+                        longitude: last.coords.longitude,
+                        latitudeDelta: 0.01,
+                        longitudeDelta: 0.01,
+                      }, 600);
+                    }
+                  }
+
+                  // Быстрый запрос
+                  let quick: Location.LocationObject | null = null;
+                  try {
+                    quick = await Location.getCurrentPositionAsync({
+                      accuracy: Location.Accuracy.Balanced,
+                    });
+                    console.log('Button: quick current position:', quick.coords);
+                    setUserLocation(quick);
+                    if (mapRef.current) {
+                      mapRef.current.animateToRegion({
+                        latitude: quick.coords.latitude,
+                        longitude: quick.coords.longitude,
+                        latitudeDelta: 0.01,
+                        longitudeDelta: 0.01,
+                      }, 700);
+                    }
+                  } catch (e) {
+                    console.log('Button: quick location timeout', e);
+                  }
+
+                  // Запускаем трекинг для уточнения
+                  startLocationTracking();
                 } catch (error) {
                   console.error('Error getting location:', error);
                   Alert.alert(
