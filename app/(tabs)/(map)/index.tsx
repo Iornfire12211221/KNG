@@ -1020,6 +1020,8 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
   };
 
   const pickPhoto = async () => {
+    console.log('pickPhoto called, Platform.OS:', Platform.OS, 'isTelegramWebApp:', isTelegramWebApp);
+    
     if (Platform.OS === 'web' && !isTelegramWebApp) {
       Alert.alert('Недоступно', 'Загрузка изображений недоступна в веб-версии');
       return;
@@ -1028,20 +1030,25 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
     // Для Telegram WebApp используем встроенный API
     if (Platform.OS === 'web' && isTelegramWebApp) {
       try {
+        console.log('Setting isUploadingImage to true');
         setIsUploadingImage(true);
         // Используем Telegram WebApp API для выбора файлов
         if (typeof document !== 'undefined') {
+          console.log('Creating file input element');
           const input = document.createElement('input');
           input.type = 'file';
           input.accept = 'image/*';
           input.multiple = true;
           
           input.onchange = async (e: any) => {
+            console.log('File input changed, files:', e.target.files);
             const files = Array.from(e.target.files);
             if (files.length > 0) {
+              console.log('Processing', files.length, 'files');
               for (const file of files.slice(0, 5 - quickAddPhotos.length)) {
                 const reader = new FileReader();
                 reader.onload = (event: any) => {
+                  console.log('File read successfully, adding to photos');
                   setQuickAddPhotos(prev => [...prev, event.target.result]);
                 };
                 reader.readAsDataURL(file);
@@ -1050,6 +1057,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
             setIsUploadingImage(false);
           };
           
+          console.log('Clicking file input');
           input.click();
           return;
         } else {
@@ -1172,8 +1180,19 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
   };
 
   const showImagePicker = () => {
+    console.log('showImagePicker called, Platform.OS:', Platform.OS, 'isTelegramWebApp:', isTelegramWebApp);
+    console.log('window.Telegram:', typeof window !== 'undefined' ? window.Telegram : 'undefined');
+    
     // Для Telegram WebApp сразу открываем галерею
     if (Platform.OS === 'web' && isTelegramWebApp) {
+      console.log('Opening photo picker for Telegram WebApp');
+      pickPhoto();
+      return;
+    }
+    
+    // Для веб-версии (даже если не Telegram WebApp) пробуем открыть файловый диалог
+    if (Platform.OS === 'web') {
+      console.log('Opening photo picker for web platform');
       pickPhoto();
       return;
     }
@@ -2098,8 +2117,12 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                   {quickAddPhotos.length < 5 && (
                     <TouchableOpacity
                       style={styles.addMoreImageButton}
-                      onPress={showImagePicker}
+                      onPress={() => {
+                        console.log('Add more photo button pressed');
+                        showImagePicker();
+                      }}
                       disabled={isUploadingImage}
+                      activeOpacity={0.7}
                     >
                       {isUploadingImage ? (
                         <ActivityIndicator size="small" color="#0066FF" />
@@ -2112,8 +2135,12 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               ) : (
                 <TouchableOpacity
                   style={styles.singlePhotoButton}
-                  onPress={showImagePicker}
+                  onPress={() => {
+                    console.log('Photo button pressed');
+                    showImagePicker();
+                  }}
                   disabled={isUploadingImage}
+                  activeOpacity={0.7}
                 >
                   {isUploadingImage ? (
                     <ActivityIndicator size="small" color="#0066FF" />
