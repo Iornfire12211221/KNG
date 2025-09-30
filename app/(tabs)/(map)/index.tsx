@@ -1296,7 +1296,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                       longitude: post.longitude,
                     }}
                     title={`${post.severity === 'high' ? '⚠️ ' : post.severity === 'medium' ? '⚠ ' : ''}${post.description}`}
-                    description={`${getTimeAgo(post.timestamp)}`}
+                    description=""
                     postType={post.type}
                     severity={post.severity}
                     onPress={(e: any) => {
@@ -1393,7 +1393,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                       longitude: post.longitude,
                     }}
                     title={`${post.severity === 'high' ? '⚠️ ' : post.severity === 'medium' ? '⚠ ' : ''}${post.description}`}
-                    description={`${getTimeAgo(post.timestamp)}`}
+                    description=""
                     postType={post.type}
                     severity={post.severity}
                     onPress={(e: any) => {
@@ -1841,8 +1841,6 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                       )}
                     </View>
                     <View style={styles.compactPostTime}>
-                      <Clock size={10} color="#8E8E93" />
-                      <Text style={styles.compactPostTimeText}>{getTimeAgo(post.timestamp)}</Text>
                       {post.severity === 'high' && (
                         <View style={styles.compactSeverityIndicatorInline} />
                       )}
@@ -2230,10 +2228,6 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                       )}
                     </View>
                     
-                    <View style={styles.eventTimeInfo}>
-                      <Clock size={16} color="#8E8E93" />
-                      <Text style={styles.eventTimeText}>{getTimeAgo(post.timestamp)}</Text>
-                    </View>
                   </View>
                 </View>
                 
@@ -2428,7 +2422,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                                 {post.description}
                               </Text>
                               <Text style={styles.summaryEventTime}>
-                                {getTimeAgo(post.timestamp)} • {post.userName}
+                                {post.userName}
                               </Text>
                             </View>
                           </View>
