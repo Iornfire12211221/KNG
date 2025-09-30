@@ -35,7 +35,6 @@ const MarkerComponent = Platform.select({
 import { DPSPost, POST_LIFETIMES } from '@/types';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import GlassView from '@/components/GlassView';
-import LocationStatus from '@/components/LocationStatus';
 import * as ImagePicker from 'expo-image-picker';
 
 const { width, height } = Dimensions.get('window');
@@ -172,7 +171,7 @@ export default function MapScreen() {
   }, [clearExpiredPosts]);
 
   useEffect(() => {
-    requestLocationPermission();
+      requestLocationPermission();
   }, []);
 
   const lastMyPostTs = React.useMemo(() => {
@@ -504,7 +503,7 @@ export default function MapScreen() {
           } catch (error) {
             console.log('Telegram location tracking error:', error);
           }
-        }, 15000);
+        }, 1000);
         
         return () => {
           clearInterval(intervalId);
@@ -512,20 +511,20 @@ export default function MapScreen() {
       } else {
         // Для мобильных устройств используем стандартный API
         const locationSubscription = await Location.watchPositionAsync(
-          {
+        {
             accuracy: Location.Accuracy.High,
-            timeInterval: 15000,
-            distanceInterval: 20,
-            mayShowUserSettingsDialog: false,
-          },
-          (location) => {
-            console.log('Location updated:', location.coords);
-            setUserLocation(location);
-          }
-        );
-        return () => {
-          locationSubscription.remove();
-        };
+            timeInterval: 1000,
+            distanceInterval: 1,
+          mayShowUserSettingsDialog: false,
+        },
+        (location) => {
+          console.log('Location updated:', location.coords);
+          setUserLocation(location);
+        }
+      );
+      return () => {
+        locationSubscription.remove();
+      };
       }
     } catch (error) {
       console.error('Error starting location tracking:', error);
@@ -1039,46 +1038,21 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
     );
   };
 
+  // Анимация пульса для маркера пользователя
+  const userPulse = React.useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(userPulse, { toValue: 1.35, duration: 900, useNativeDriver: true }),
+        Animated.timing(userPulse, { toValue: 1.0, duration: 900, useNativeDriver: true }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [userPulse]);
+
   return (
     <View style={styles.container}>
-      {/* Location Status */}
-      <LocationStatus
-        isLocationEnabled={!!userLocation}
-        isLocationLoading={isLoadingLocation}
-        locationError={locationError}
-        onRetry={() => {
-          setLocationError(null);
-          // Повторный запрос геолокации
-          if (Platform.OS === 'web' && isTelegramWebApp) {
-            requestLocation().then(result => {
-              if (result.granted && result.location) {
-                const webLoc: Location.LocationObject = {
-                  coords: {
-                    latitude: result.location.latitude,
-                    longitude: result.location.longitude,
-                    altitude: null as unknown as number,
-                    accuracy: 10,
-                    altitudeAccuracy: null as unknown as number,
-                    heading: 0,
-                    speed: 0,
-                  },
-                  timestamp: Date.now(),
-                } as unknown as Location.LocationObject;
-                setUserLocation(webLoc);
-                if (mapRef.current && mapRef.current.animateToRegion) {
-                  mapRef.current.animateToRegion({
-                    latitude: result.location.latitude,
-                    longitude: result.location.longitude,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                  }, 700);
-                }
-              }
-            });
-          }
-        }}
-      />
-      
       {/* Map */}
       <View style={styles.mapContainer}>
         {Platform.OS === 'web' ? (
@@ -1152,6 +1126,24 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                 >
                   <View style={styles.tempPinMarker}>
                     <MapPinIcon size={24} color="#FFFFFF" />
+                  </View>
+                </MarkerComponent>
+              )}
+
+              {/* User location marker with pulse */}
+              {userLocation && (
+                <MarkerComponent
+                  coordinate={{
+                    latitude: userLocation.coords.latitude,
+                    longitude: userLocation.coords.longitude,
+                  }}
+                  title="Вы здесь"
+                >
+                  <View style={styles.userMarkerContainer}>
+                    <Animated.View
+                      style={[styles.userPulse, { transform: [{ scale: userPulse }] }]}
+                    />
+                    <View style={styles.userDot} />
                   </View>
                 </MarkerComponent>
               )}
@@ -1306,30 +1298,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                 setIsLoadingLocation(true);
                 setLocationError(null);
                 hapticFeedback('light');
-                console.log('Location button pressed (web). TelegramWebApp:', isTelegramWebApp);
-                // Проверяем HTTPS (без него геолокация может не работать)
-                if (typeof window !== 'undefined' && window.location && window.location.protocol !== 'https:') {
-                  console.log('Geolocation blocked: page is not HTTPS');
-                  setLocationError('Нужно открыть приложение по HTTPS — геолокация блокируется.');
-                  setTimeout(() => setIsLoadingLocation(false), 300);
-                  return;
-                }
-
-                // Проверяем статус разрешения через Permissions API (если доступен)
-                try {
-                  const permissionsApi: any = (navigator as any).permissions;
-                  if (permissionsApi && permissionsApi.query) {
-                    const status = await permissionsApi.query({ name: 'geolocation' as any });
-                    console.log('Geolocation permission state:', status?.state);
-                    if (status && status.state === 'denied') {
-                      setLocationError('Доступ к геолокации запрещён. Разрешите доступ в настройках Telegram/браузера.');
-                      setTimeout(() => setIsLoadingLocation(false), 300);
-                      return;
-                    }
-                  }
-                } catch (e) {
-                  console.log('Permissions API check failed', e);
-                }
+                // Упрощённый обработчик — без лишней диагностики
                 
                 // Используем Telegram API если доступен
                 if (isTelegramWebApp) {
@@ -1391,7 +1360,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                       setUserLocation(webLoc);
                     },
                     (error) => {
-                      console.log('Web geolocation error', error);
+                    console.log('Web geolocation error', error);
                       hapticFeedback('error');
                       setLocationError('Ошибка определения местоположения');
                       if (mapRef.current && mapRef.current.resetNorth) {
@@ -2373,12 +2342,28 @@ const styles = StyleSheet.create({
     borderColor: '#FF9500',
   },
 
-
-
-
-
-
-
+  // User location marker
+  userMarkerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userPulse: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0, 122, 255, 0.18)',
+    borderWidth: 2,
+    borderColor: 'rgba(0, 122, 255, 0.35)',
+  },
+  userDot: {
+    position: 'absolute',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#007AFF',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
 
   // Старые стили для совместимости
   urgentIndicator: {
