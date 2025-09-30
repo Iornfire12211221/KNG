@@ -2080,8 +2080,8 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
           </ScrollView>
           </Animated.View>
           </TouchableOpacity>
+          <PermissionDialog />
         </View>
-        <PermissionDialog />
       )}
 
       {/* Event Details Modal */}
