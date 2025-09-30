@@ -159,7 +159,7 @@ export default function MapScreen() {
   const rippleOpacity = useRef(new Animated.Value(0)).current;
   
   // Animation values for modal
-  const modalScale = useRef(new Animated.Value(0.8)).current;
+  const modalTranslateY = useRef(new Animated.Value(height)).current;
   const modalOpacity = useRef(new Animated.Value(0)).current;
   const modalBackdropOpacity = useRef(new Animated.Value(0)).current;
   const spinValue = useRef(new Animated.Value(0)).current;
@@ -715,7 +715,7 @@ export default function MapScreen() {
     setQuickAddSeverity('medium');
     setQuickAddPhotos([]);
     
-    // Анимация открытия модального окна
+    // Анимация открытия модального окна (снизу вверх как в Telegram)
     setShowQuickAdd(true);
     Animated.parallel([
       Animated.timing(modalBackdropOpacity, {
@@ -728,8 +728,8 @@ export default function MapScreen() {
         duration: 300,
         useNativeDriver: true,
       }),
-      Animated.spring(modalScale, {
-        toValue: 1,
+      Animated.spring(modalTranslateY, {
+        toValue: 0,
         tension: 100,
         friction: 8,
         useNativeDriver: true,
@@ -981,7 +981,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
   };
 
   const handleQuickAddCancel = () => {
-    // Анимация закрытия модального окна
+    // Анимация закрытия модального окна (вниз как в Telegram)
     Animated.parallel([
       Animated.timing(modalBackdropOpacity, {
         toValue: 0,
@@ -993,20 +993,20 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
         duration: 250,
         useNativeDriver: true,
       }),
-      Animated.timing(modalScale, {
-        toValue: 0.8,
+      Animated.timing(modalTranslateY, {
+        toValue: height,
         duration: 250,
         useNativeDriver: true,
       }),
     ]).start(() => {
-    setShowQuickAdd(false);
-    setQuickAddLocation(null);
-    setTempPinLocation(null);
-    setQuickAddDescription('');
-    setQuickAddPhotos([]);
+      setShowQuickAdd(false);
+      setQuickAddLocation(null);
+      setTempPinLocation(null);
+      setQuickAddDescription('');
+      setQuickAddPhotos([]);
       
       // Сброс анимационных значений
-      modalScale.setValue(0.8);
+      modalTranslateY.setValue(height);
       modalOpacity.setValue(0);
       modalBackdropOpacity.setValue(0);
     });
@@ -1245,7 +1245,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                     longitude: userLocation.coords.longitude,
                   }}
                   title="Вы здесь"
-                  html={`<div data-role=\"user-marker\" style=\"position:relative;width:var(--size,32px);height:var(--size,32px);pointer-events:none;overflow:visible;\">\n  <div style=\"position:absolute;left:50%;top:50%;width:calc(var(--size,32px) * 2);height:calc(var(--size,32px) * 2);border-radius:50%;background:rgba(0,122,255,0.15);transform:translate(-50%,-50%);animation:userPulse 2s ease-out infinite;will-change:transform,opacity;\"></div>\n  <div style=\"position:absolute;left:50%;top:50%;width:calc(var(--size,32px) * 0.375);height:calc(var(--size,32px) * 0.375);border-radius:50%;background:#007AFF;border:2px solid #FFFFFF;transform:translate(-50%,-50%);box-shadow:0 2px 8px rgba(0,122,255,0.3);\"></div>\n  <style>@keyframes userPulse{0%{opacity:0.8;transform:translate(-50%,-50%) scale(0.8)}50%{opacity:0.3;transform:translate(-50%,-50%) scale(1.2)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.6)}}</style>\n</div>`}
+                  html={`<div data-role=\"user-marker\" style=\"position:relative;width:var(--size,32px);height:var(--size,32px);pointer-events:none;display:flex;align-items:center;justify-content:center;\">\n  <div style=\"position:absolute;width:calc(var(--size,32px) * 2.5);height:calc(var(--size,32px) * 2.5);border-radius:50%;background:rgba(0,122,255,0.12);animation:userPulse 2s ease-out infinite;will-change:transform,opacity;\"></div>\n  <div style=\"position:absolute;width:calc(var(--size,32px) * 0.4);height:calc(var(--size,32px) * 0.4);border-radius:50%;background:#007AFF;border:2px solid #FFFFFF;box-shadow:0 2px 8px rgba(0,122,255,0.4);\"></div>\n  <style>@keyframes userPulse{0%{opacity:0.8;transform:scale(0.8)}50%{opacity:0.2;transform:scale(1.3)}100%{opacity:0;transform:scale(1.8)}}</style>\n</div>`}
                   webMarkerOptions={{ sizeWithZoom: true, baseSizePx: 32 }}
                 />
               )}
@@ -1605,7 +1605,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
             setQuickAddSeverity('medium');
             setQuickAddPhotos([]);
             
-            // Анимация открытия модального окна
+            // Анимация открытия модального окна (снизу вверх как в Telegram)
             setShowQuickAdd(true);
             Animated.parallel([
               Animated.timing(modalBackdropOpacity, {
@@ -1618,8 +1618,8 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                 duration: 300,
                 useNativeDriver: true,
               }),
-              Animated.spring(modalScale, {
-                toValue: 1,
+              Animated.spring(modalTranslateY, {
+                toValue: 0,
                 tension: 100,
                 friction: 8,
                 useNativeDriver: true,
@@ -1886,7 +1886,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                 styles.modalContainer,
                 {
                   opacity: modalOpacity,
-                  transform: [{ scale: modalScale }]
+                  transform: [{ translateY: modalTranslateY }]
                 }
               ]}
             >
@@ -3312,14 +3312,15 @@ const styles = StyleSheet.create({
   },
 
   modalContainer: {
-    width: '90%',
-    maxHeight: '80%',
+    width: '100%',
+    height: '100%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
+    shadowOffset: { width: 0, height: -5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
     elevation: 10,
   },
   modalHeader: {
@@ -3328,7 +3329,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
+    paddingTop: 20,
     backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     borderBottomWidth: 0.5,
     borderBottomColor: '#F0F0F0',
   },
@@ -4031,7 +4035,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 1000,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
   },
   modalBackdropTouchable: {
