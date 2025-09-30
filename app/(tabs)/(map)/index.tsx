@@ -161,7 +161,6 @@ export default function MapScreen() {
   const [isMapReady, setIsMapReady] = useState(true);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickAddLocation, setQuickAddLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [tempPinLocation, setTempPinLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [quickAddType, setQuickAddType] = useState<DPSPost['type']>('dps');
   const [quickAddSeverity, setQuickAddSeverity] = useState<DPSPost['severity']>('medium');
   const [quickAddDescription, setQuickAddDescription] = useState('');
@@ -988,7 +987,6 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
       if (result.success) {
         setShowQuickAdd(false);
         setQuickAddLocation(null);
-        setTempPinLocation(null);
         setQuickAddDescription('');
         setQuickAddPhotos([]);
         // НЕ сбрасываем userHasMovedMap - пользователь должен остаться на том же месте
@@ -1010,7 +1008,6 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
       // Не показываем ошибку, просто закрываем модал
       setShowQuickAdd(false);
       setQuickAddLocation(null);
-      setTempPinLocation(null);
       setQuickAddDescription('');
       setQuickAddPhotos([]);
       // НЕ сбрасываем userHasMovedMap - пользователь должен остаться на том же месте
@@ -1040,7 +1037,6 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
     ]).start(() => {
     setShowQuickAdd(false);
     setQuickAddLocation(null);
-    setTempPinLocation(null);
     setQuickAddDescription('');
     setQuickAddPhotos([]);
       
@@ -1245,19 +1241,6 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
     <View style={styles.container}>
       {/* Map */}
       <View style={styles.mapContainer}>
-        {/* Ripple effect overlay */}
-        {tempPinLocation && (
-          <Animated.View 
-            style={[
-              styles.rippleOverlay,
-              {
-                transform: [{ scale: rippleScale }],
-                opacity: rippleOpacity,
-              }
-            ]}
-            pointerEvents="none"
-          />
-        )}
         
         {Platform.OS === 'web' ? (
           MapViewComponent && (
@@ -1324,19 +1307,6 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                 );
               })}
               
-              {/* Temporary Pin Location Marker */}
-              {tempPinLocation && (
-                <MarkerComponent
-                  coordinate={tempPinLocation}
-                  title="Новое место происшествия"
-                  description="Выберите тип события"
-                  isTempMarker={true}
-                >
-                  <View style={styles.tempPinMarker}>
-                    <MapPinIcon size={18} color="#FFFFFF" />
-                  </View>
-                </MarkerComponent>
-              )}
 
               {/* User location marker with dynamic scaling */}
               {userLocation && (
@@ -1442,19 +1412,6 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                 );
               })}
               
-              {/* Temporary Pin Location Marker */}
-              {tempPinLocation && (
-                <MarkerComponent
-                  coordinate={tempPinLocation}
-                  title="Новое место происшествия"
-                  description="Выберите тип события"
-                  isTempMarker={true}
-                >
-                  <View style={styles.tempPinMarker}>
-                    <MapPinIcon size={18} color="#FFFFFF" />
-                  </View>
-                </MarkerComponent>
-              )}
             </MapViewComponent>
           )
         )}
@@ -1690,7 +1647,6 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
             });
             
             // Открываем модальное окно вместо перехода на другую страницу
-            setTempPinLocation(null);
             setQuickAddLocation(null);
             setQuickAddDescription('');
             setQuickAddType('dps');
@@ -3706,21 +3662,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#4B5563',
   },
-  tempPinMarker: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#FF3B30',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    shadowColor: '#FF3B30',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 4,
-  },
 
 
   postCardRecent: {
@@ -4082,17 +4023,6 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   
-  // Animation styles
-  rippleOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-    borderRadius: 8,
-    zIndex: 1,
-  },
   
   // Modal animation styles
   modalOverlay: {

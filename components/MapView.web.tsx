@@ -586,54 +586,7 @@ export const MapView = (props: any) => {
             if (customHtml) {
               markerElement.innerHTML = customHtml;
              } else if (child.props.children) {
-               // Проверяем, это временный маркер или обычный маркер события
-               const isTempMarker = (child.props as any).isTempMarker || false;
-               
-               if (isTempMarker) {
-                 // Специальная обработка для временного маркера - меньший размер
-                markerElement.innerHTML = `
-                  <div style="
-                    position: relative;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    cursor: pointer;
-                    transition: all 0.2s ease-out;
-                  ">
-                    <div style="
-                      width: 28px;
-                      height: 28px;
-                      border-radius: 50%;
-                      background: linear-gradient(135deg, #FF3B30 0%, #FF6B6B 100%);
-                      border: 2px solid #FFFFFF;
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
-                      box-shadow: 0 2px 6px rgba(255, 59, 48, 0.3);
-                      transition: all 0.2s ease-out;
-                    ">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                        <circle cx="12" cy="10" r="3"/>
-                      </svg>
-                    </div>
-                    <div style="
-                      margin-top: 1px;
-                      background: #FF3B30;
-                      color: white;
-                      padding: 1px 4px;
-                      border-radius: 6px;
-                      font-size: 9px;
-                      font-weight: 600;
-                      white-space: nowrap;
-                      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-                      border: 1px solid rgba(255, 255, 255, 0.2);
-                    ">
-                      Новое место
-                    </div>
-                  </div>
-                `;
-               } else {
+               // Создаем маркер события
                  // Создаем маркер точно как в событиях
                  const postType = (child.props as any).postType || 'other';
                  const severity = (child.props as any).severity || 'medium';
@@ -776,7 +729,7 @@ export const MapView = (props: any) => {
             }
             
             // Масштабирование маркеров с зумом карты
-            if (mapRef.current && !isTempMarker) {
+            if (mapRef.current) {
               const applyScale = () => {
                 try {
                   const z = mapRef.current.getZoom ? mapRef.current.getZoom() : 14;
