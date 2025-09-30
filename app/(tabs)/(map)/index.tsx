@@ -109,11 +109,11 @@ const getSeverityColor = (severity: string) => {
 const POST_TYPES = [
   { id: 'dps' as const, label: 'Пост ДПС', icon: Shield, color: '#FF3B30' },
   { id: 'patrol' as const, label: 'Патруль', icon: Car, color: '#007AFF' },
-  { id: 'accident' as const, label: 'ДТП', icon: AlertTriangle, color: '#DC2626' },
-  { id: 'camera' as const, label: 'Камера', icon: Camera, color: '#0066FF' },
-  { id: 'roadwork' as const, label: 'Ремонт дороги', icon: Construction, color: '#F59E0B' },
-  { id: 'animals' as const, label: 'Замечены животные', icon: Rabbit, color: '#059669' },
-  { id: 'other' as const, label: 'Остальное', icon: MoreHorizontal, color: '#6B7280' },
+  { id: 'accident' as const, label: 'ДТП', icon: AlertTriangle, color: '#FF9500' },
+  { id: 'camera' as const, label: 'Камера', icon: Camera, color: '#34C759' },
+  { id: 'roadwork' as const, label: 'Ремонт дороги', icon: Construction, color: '#FF9500' },
+  { id: 'animals' as const, label: 'Замечены животные', icon: Rabbit, color: '#8E44AD' },
+  { id: 'other' as const, label: 'Остальное', icon: MoreHorizontal, color: '#6C757D' },
 ];
 
 const SEVERITY_LEVELS = [
