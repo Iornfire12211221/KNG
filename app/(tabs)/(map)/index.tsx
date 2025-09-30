@@ -1785,17 +1785,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                     isRecent && styles.postCardRecent
                   ]}
                   onPress={() => {
-                    // Сначала центрируем карту на маркере
-                    if (mapRef.current) {
-                      mapRef.current.animateToRegion({
-                        latitude: post.latitude,
-                        longitude: post.longitude,
-                        latitudeDelta: 0.01,
-                        longitudeDelta: 0.01,
-                      }, 800);
-                    }
-                    
-                    // Устанавливаем выбранный пост
+                    // Устанавливаем выбранный пост без центрирования карты
                     setSelectedPost(post.id);
                   }}
                   onLongPress={() => {
@@ -1813,17 +1803,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                       })
                     ]).start();
                     
-                    // Центрируем карту на маркере
-                    if (mapRef.current) {
-                      mapRef.current.animateToRegion({
-                        latitude: post.latitude,
-                        longitude: post.longitude,
-                        latitudeDelta: 0.01,
-                        longitudeDelta: 0.01,
-                      }, 800);
-                    }
-                    
-                    // Устанавливаем выбранный пост
+                    // Устанавливаем выбранный пост без центрирования карты
                     setSelectedPost(post.id);
                     
                     // Показываем детали с задержкой после анимации

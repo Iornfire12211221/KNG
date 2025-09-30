@@ -567,53 +567,15 @@ export const MapView = (props: any) => {
             if (customHtml) {
               markerElement.innerHTML = customHtml;
             } else if (child.props.children) {
-              // Для React компонентов создаем простой HTML маркер
-              const postType = (child.props as any).postType || 'other';
-              const severity = (child.props as any).severity || 'medium';
-              const colors = {
-                dps: '#FF3B30',
-                patrol: '#007AFF', 
-                accident: '#FF9500',
-                camera: '#34C759',
-                roadwork: '#FF9500',
-                animals: '#8E44AD',
-                other: '#6C757D'
-              };
-              const color = colors[postType as keyof typeof colors] || '#6C757D';
-              const size = severity === 'high' ? '36px' : severity === 'medium' ? '32px' : '28px';
-              
-              // Создаем красивые иконки для каждого типа
-              const getIcon = (type: string) => {
-                switch (type) {
-                  case 'dps': return '🛡️';
-                  case 'patrol': return '🚔';
-                  case 'accident': return '⚠️';
-                  case 'camera': return '📷';
-                  case 'roadwork': return '🚧';
-                  case 'animals': return '🐾';
-                  default: return '📍';
-                }
-              };
-              
-              markerElement.innerHTML = `
-                <div style="
-                  width: ${size}; 
-                  height: ${size}; 
-                  background: ${color}; 
-                  border-radius: 50%; 
-                  border: 3px solid white; 
-                  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  font-size: ${severity === 'high' ? '16px' : severity === 'medium' ? '14px' : '12px'};
-                  color: white;
-                  font-weight: bold;
-                  position: relative;
-                ">
-                  ${getIcon(postType)}
-                </div>
-              `;
+              // Для React компонентов используем ReactDOMServer для рендеринга
+              try {
+                const htmlString = ReactDOMServer.renderToString(child.props.children);
+                markerElement.innerHTML = htmlString;
+              } catch (error) {
+                console.log('Error rendering React component to HTML:', error);
+                // Fallback к простому маркеру
+                markerElement.innerHTML = '<div style="width: 20px; height: 20px; background: #FF3B30; border-radius: 50%; border: 2px solid white;"></div>';
+              }
             } else {
               markerElement.innerHTML = '<div style="width: 20px; height: 20px; background: #FF3B30; border-radius: 50%; border: 2px solid white;"></div>';
             }
@@ -761,13 +723,55 @@ const ReactDOMServer = {
   renderToString: (element: any): string => {
     if (!element) return '';
     if (typeof element === 'string') return element;
-    if (element.type === 'div') {
+    
+    // Обработка View компонентов
+    if (element.type === 'div' || element.type?.displayName === 'View') {
       const style = element.props?.style || {};
       const styleStr = Object.entries(style)
         .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
         .join('; ');
-      return `<div style="${styleStr}">${element.props?.children || ''}</div>`;
+      
+      // Рекурсивно обрабатываем дочерние элементы
+      const children = element.props?.children;
+      let childrenHtml = '';
+      if (Array.isArray(children)) {
+        childrenHtml = children.map(child => ReactDOMServer.renderToString(child)).join('');
+      } else if (children) {
+        childrenHtml = ReactDOMServer.renderToString(children);
+      }
+      
+      return `<div style="${styleStr}">${childrenHtml}</div>`;
     }
+    
+    // Обработка иконок (Lucide React)
+    if (element.type?.displayName?.includes('Icon') || element.props?.size) {
+      const size = element.props?.size || 24;
+      const color = element.props?.color || '#000000';
+      const iconName = element.type?.displayName || 'Icon';
+      
+      // Создаем SVG иконку
+      return `
+        <svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          ${getIconPath(iconName)}
+        </svg>
+      `;
+    }
+    
     return '';
   }
+};
+
+// Функция для получения SVG путей для иконок
+const getIconPath = (iconName: string): string => {
+  const iconPaths: { [key: string]: string } = {
+    'Shield': '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+    'Car': '<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L18.4 9.6c-.3-.8-1-1.3-1.9-1.3H7.5c-.9 0-1.6.5-1.9 1.3L4.5 11.1C3.7 11.3 3 12.1 3 13v3c0 .6.4 1 1 1h2"/>',
+    'AlertTriangle': '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+    'Camera': '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+    'Construction': '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+    'Rabbit': '<path d="M13 16a3 3 0 0 1 2.24 5"/><path d="M18 12h.01"/><path d="M18 21h-8a4 4 0 0 1-4-4 7 7 0 0 1 7-7h.2L9.6 6.4a1 1 0 1 1 2.8-2.8L15.8 7h.2c3.3 0 6 2.7 6 6v1a2 2 0 0 1-2 2h-1a3 3 0 0 0-3 3"/>',
+    'MoreHorizontal': '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>'
+  };
+  
+  return iconPaths[iconName] || '<circle cx="12" cy="12" r="3"/>';
 };
