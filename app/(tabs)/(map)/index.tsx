@@ -1289,8 +1289,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
         {/* Синяя кнопка - навигация/центрирование */}
         <TouchableOpacity
           style={[
-            styles.mapControlButtonBlue,
-            isLoadingLocation && styles.mapControlButtonLoading
+            styles.mapControlButtonBlue
           ]}
           onPress={async () => {
             if (Platform.OS === 'web') {
@@ -1452,11 +1451,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
           accessibilityRole="button"
           testID="center-on-user"
         >
-          {isLoadingLocation ? (
-            <ActivityIndicator size="small" color="#007AFF" />
-          ) : (
-            <Navigation size={20} color="#007AFF" />
-          )}
+          <Navigation size={20} color="#007AFF" />
         </TouchableOpacity>
         
         {/* Синяя кнопка - добавить пост */}
@@ -2877,8 +2872,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0, 0, 0, 0.05)',
   },
   mapControlButtonLoading: {
-    backgroundColor: '#5A9FFF',
-    shadowOpacity: 0.15,
+    // отключено подсвечивание при загрузке
   },
   mapControlButtonDisabled: {
     backgroundColor: '#F3F4F6',
