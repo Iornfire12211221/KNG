@@ -318,10 +318,10 @@ export default function MapScreen() {
 
   // Автоматически центрируем карту на пользователе только при первом запуске
   useEffect(() => {
-    if (userLocation && mapRef.current && !mapInitialized.current) {
+    if (userLocation && mapRef.current && !mapInitialized.current && !userHasMovedMap) {
       console.log('Auto-centering map on user location (first time only):', userLocation.coords);
       setTimeout(() => {
-        if (mapRef.current) {
+        if (mapRef.current && !userHasMovedMap) {
           mapRef.current.animateToRegion({
             latitude: userLocation.coords.latitude,
             longitude: userLocation.coords.longitude,
@@ -332,7 +332,7 @@ export default function MapScreen() {
       }, 500);
       mapInitialized.current = true;
     }
-  }, [userLocation]);
+  }, [userLocation, userHasMovedMap]);
 
   const requestLocationPermission = async () => {
     try {
@@ -1006,11 +1006,11 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
         useNativeDriver: true,
       }),
     ]).start(() => {
-      setShowQuickAdd(false);
-      setQuickAddLocation(null);
-      setTempPinLocation(null);
-      setQuickAddDescription('');
-      setQuickAddPhotos([]);
+    setShowQuickAdd(false);
+    setQuickAddLocation(null);
+    setTempPinLocation(null);
+    setQuickAddDescription('');
+    setQuickAddPhotos([]);
       
       // Сброс анимационных значений
       modalTranslateY.setValue(height);
@@ -1048,7 +1048,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
           return;
         } else {
           setIsUploadingImage(false);
-          return;
+      return;
         }
       } catch (error) {
         console.error('Error picking photo:', error);
@@ -1310,6 +1310,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                   coordinate={tempPinLocation}
                   title="Новое место происшествия"
                   description="Выберите тип события"
+                  isTempMarker={true}
                 >
                   <View style={styles.tempPinMarker}>
                     <MapPinIcon size={18} color="#FFFFFF" />
@@ -1428,6 +1429,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                   coordinate={tempPinLocation}
                   title="Новое место происшествия"
                   description="Выберите тип события"
+                  isTempMarker={true}
                 >
                   <View style={styles.tempPinMarker}>
                     <MapPinIcon size={18} color="#FFFFFF" />
@@ -2134,7 +2136,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
           </ScrollView>
             </TouchableOpacity>
           </Animated.View>
-          <PermissionDialog />
+        <PermissionDialog />
         </View>
       )}
 
