@@ -147,6 +147,7 @@ export default function MapScreen() {
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const longPressScale = useRef(new Animated.Value(1)).current;
   const [showWeeklySummary, setShowWeeklySummary] = useState<boolean>(false);
+  const [userHasMovedMap, setUserHasMovedMap] = useState<boolean>(false);
   const panY = useRef(new Animated.Value(0)).current;
   const scrollX = useRef(new Animated.Value(0)).current;
   
@@ -315,9 +316,9 @@ export default function MapScreen() {
     };
   }, [userLocation]);
 
-  // Автоматически центрируем карту на пользователе при получении местоположения
+  // Автоматически центрируем карту на пользователе при получении местоположения (только при первом запуске)
   useEffect(() => {
-    if (userLocation && mapRef.current && !mapInitialized.current) {
+    if (userLocation && mapRef.current && !mapInitialized.current && !userHasMovedMap) {
       console.log('Auto-centering map on user location:', userLocation.coords);
       setTimeout(() => {
         if (mapRef.current) {
@@ -331,7 +332,7 @@ export default function MapScreen() {
       }, 500);
       mapInitialized.current = true;
     }
-  }, [userLocation]);
+  }, [userLocation, userHasMovedMap]);
 
   const requestLocationPermission = async () => {
     try {
@@ -649,6 +650,13 @@ export default function MapScreen() {
 
   const handleMapPress = (event: any) => {
     // Обычное нажатие - ничего не делаем
+  };
+
+  const handleRegionChange = () => {
+    // Отмечаем, что пользователь переместил карту
+    if (!userHasMovedMap) {
+      setUserHasMovedMap(true);
+    }
   };
 
   const handleMapLongPress = (event: any) => {
@@ -1013,9 +1021,42 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
   };
 
   const pickPhoto = async () => {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === 'web' && !isTelegramWebApp) {
       Alert.alert('Недоступно', 'Загрузка изображений недоступна в веб-версии');
       return;
+    }
+
+    // Для Telegram WebApp используем встроенный API
+    if (Platform.OS === 'web' && isTelegramWebApp) {
+      try {
+        setIsUploadingImage(true);
+        // Используем Telegram WebApp API для выбора файлов
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.multiple = true;
+        
+        input.onchange = async (e: any) => {
+          const files = Array.from(e.target.files);
+          if (files.length > 0) {
+            for (const file of files.slice(0, 5 - quickAddPhotos.length)) {
+              const reader = new FileReader();
+              reader.onload = (event: any) => {
+                setQuickAddPhotos(prev => [...prev, event.target.result]);
+              };
+              reader.readAsDataURL(file);
+            }
+          }
+          setIsUploadingImage(false);
+        };
+        
+        input.click();
+        return;
+      } catch (error) {
+        console.error('Error picking photo in Telegram WebApp:', error);
+        setIsUploadingImage(false);
+        return;
+      }
     }
 
     try {
@@ -1056,9 +1097,40 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
   };
 
   const takePhoto = async () => {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === 'web' && !isTelegramWebApp) {
       Alert.alert('Недоступно', 'Камера недоступна в веб-версии');
       return;
+    }
+
+    // Для Telegram WebApp используем встроенный API
+    if (Platform.OS === 'web' && isTelegramWebApp) {
+      try {
+        setIsUploadingImage(true);
+        // Используем Telegram WebApp API для камеры
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.capture = 'environment'; // Используем заднюю камеру
+        
+        input.onchange = async (e: any) => {
+          const file = e.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (event: any) => {
+              setQuickAddPhotos(prev => [...prev, event.target.result]);
+            };
+            reader.readAsDataURL(file);
+          }
+          setIsUploadingImage(false);
+        };
+        
+        input.click();
+        return;
+      } catch (error) {
+        console.error('Error taking photo in Telegram WebApp:', error);
+        setIsUploadingImage(false);
+        return;
+      }
     }
 
     try {
@@ -1170,6 +1242,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               initialRegion={initialRegion}
               onPress={handleMapPress}
               onLongPress={handleMapLongPress}
+              onRegionChange={handleRegionChange}
               onMapReady={() => {
                 console.log('Map ready (web)');
               }}
@@ -1259,6 +1332,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               initialRegion={initialRegion}
               onPress={handleMapPress}
               onLongPress={handleMapLongPress}
+              onRegionChange={handleRegionChange}
               onMapReady={() => {
                 console.log('Map ready (native)');
               }}
@@ -3316,13 +3390,13 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -5 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 10,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 8,
     marginLeft: 0,
     marginRight: 0,
     paddingLeft: 0,
