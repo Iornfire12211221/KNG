@@ -149,6 +149,14 @@ export default function MapScreen() {
   const [showWeeklySummary, setShowWeeklySummary] = useState<boolean>(false);
   const panY = useRef(new Animated.Value(0)).current;
   const scrollX = useRef(new Animated.Value(0)).current;
+  
+  // Animation values for map press and plus button
+  const mapPressScale = useRef(new Animated.Value(1)).current;
+  const mapPressOpacity = useRef(new Animated.Value(0)).current;
+  const plusButtonScale = useRef(new Animated.Value(1)).current;
+  const plusButtonRotation = useRef(new Animated.Value(0)).current;
+  const rippleScale = useRef(new Animated.Value(0)).current;
+  const rippleOpacity = useRef(new Animated.Value(0)).current;
   const spinValue = useRef(new Animated.Value(0)).current;
   const pulseValue = useRef(new Animated.Value(1)).current;
   const savePulseValue = useRef(new Animated.Value(1)).current;
@@ -202,16 +210,7 @@ export default function MapScreen() {
     return () => clearInterval(id);
   }, [cooldownSeconds]);
 
-  // Auto-analyze severity when type or description changes in quick add
-  useEffect(() => {
-    if (showQuickAdd) {
-      const timeoutId = setTimeout(() => {
-        analyzeSeverityWithAI(quickAddType, quickAddDescription);
-      }, 1000); // Debounce for 1 second
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [quickAddType, quickAddDescription, showQuickAdd]);
+  // Убираем автоматический ИИ анализ - теперь только при сохранении
 
   // Pulsing animation for AI indicator
   useEffect(() => {
@@ -662,6 +661,48 @@ export default function MapScreen() {
     
     const { latitude, longitude } = event.nativeEvent.coordinate;
     console.log('Setting temp pin location:', { latitude, longitude });
+    
+    // Анимация нажатия на карту
+    hapticFeedback('medium');
+    
+    // Анимация масштабирования
+    Animated.sequence([
+      Animated.timing(mapPressScale, {
+        toValue: 0.95,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(mapPressScale, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
+    // Анимация ripple эффекта
+    Animated.parallel([
+      Animated.timing(rippleScale, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.sequence([
+        Animated.timing(rippleOpacity, {
+          toValue: 0.6,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(rippleOpacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start(() => {
+      rippleScale.setValue(0);
+      rippleOpacity.setValue(0);
+    });
+    
     setTempPinLocation({ latitude, longitude });
     setQuickAddLocation({ latitude, longitude });
     setQuickAddDescription('');
@@ -844,6 +885,9 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
 
     try {
       setIsSavingPost(true);
+      
+      // Запускаем ИИ анализ только при сохранении
+      await analyzeSeverityWithAI(quickAddType, quickAddDescription);
       
       const address = await getAddressFromCoords(quickAddLocation.latitude, quickAddLocation.longitude);
 
@@ -1055,6 +1099,20 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
     <View style={styles.container}>
       {/* Map */}
       <View style={styles.mapContainer}>
+        {/* Ripple effect overlay */}
+        {tempPinLocation && (
+          <Animated.View 
+            style={[
+              styles.rippleOverlay,
+              {
+                transform: [{ scale: rippleScale }],
+                opacity: rippleOpacity,
+              }
+            ]}
+            pointerEvents="none"
+          />
+        )}
+        
         {Platform.OS === 'web' ? (
           MapViewComponent && (
             <MapViewComponent
@@ -1464,6 +1522,32 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               );
               return;
             }
+            
+            // Анимация кнопки плюс
+            hapticFeedback('light');
+            
+            Animated.parallel([
+              Animated.sequence([
+                Animated.timing(plusButtonScale, {
+                  toValue: 0.9,
+                  duration: 100,
+                  useNativeDriver: true,
+                }),
+                Animated.timing(plusButtonScale, {
+                  toValue: 1,
+                  duration: 100,
+                  useNativeDriver: true,
+                }),
+              ]),
+              Animated.timing(plusButtonRotation, {
+                toValue: 1,
+                duration: 200,
+                useNativeDriver: true,
+              }),
+            ]).start(() => {
+              plusButtonRotation.setValue(0);
+            });
+            
             router.push('/add-post');
           }}
           activeOpacity={0.8}
@@ -1471,7 +1555,17 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
           testID="add-post-button"
           disabled={cooldownSeconds > 0}
         >
-          <Plus size={20} color={cooldownSeconds > 0 ? "#9CA3AF" : "#007AFF"} />
+          <Animated.View style={{
+            transform: [
+              { scale: plusButtonScale },
+              { rotate: plusButtonRotation.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['0deg', '45deg']
+              })}
+            ]
+          }}>
+            <Plus size={20} color={cooldownSeconds > 0 ? "#9CA3AF" : "#007AFF"} />
+          </Animated.View>
         </TouchableOpacity>
       </View>
 
@@ -1760,10 +1854,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                       ]}
                       onPress={() => {
                         setQuickAddType(type.id);
-                        // Trigger AI analysis when type changes
-                        setTimeout(() => {
-                          analyzeSeverityWithAI(type.id, quickAddDescription);
-                        }, 100);
+                        // ИИ анализ теперь только при сохранении
                       }}
                     >
                       <IconComponent 
@@ -3813,6 +3904,18 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: '#FF3B30',
     marginLeft: 4,
+  },
+  
+  // Animation styles
+  rippleOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    borderRadius: 8,
+    zIndex: 1,
   },
 
 
