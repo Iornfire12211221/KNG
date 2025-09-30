@@ -47,14 +47,14 @@ const KINGISEPP_CENTER = {
 
 const getPostTypeIcon = (type: string) => {
   switch (type) {
-    case 'dps': return Shield;
-    case 'patrol': return Car;
-    case 'accident': return AlertTriangle;
-    case 'camera': return Camera;
-    case 'roadwork': return Construction;
-    case 'animals': return Rabbit;
-    case 'other': return MoreHorizontal;
-    default: return AlertCircle;
+    case 'dps': return DPSIcon;
+    case 'patrol': return PatrolIcon;
+    case 'accident': return AccidentIcon;
+    case 'camera': return CameraIcon;
+    case 'roadwork': return RoadworkIcon;
+    case 'animals': return AnimalsIcon;
+    case 'other': return OtherIcon;
+    default: return OtherIcon;
   }
 };
 
@@ -106,14 +106,43 @@ const getSeverityColor = (severity: string) => {
   }
 };
 
+// Создаем компоненты с эмодзи иконками
+const DPSIcon = ({ size, color }: { size: number; color: string }) => (
+  <Text style={{ fontSize: size, color }}>🚔</Text>
+);
+
+const PatrolIcon = ({ size, color }: { size: number; color: string }) => (
+  <Text style={{ fontSize: size, color }}>🚗</Text>
+);
+
+const AccidentIcon = ({ size, color }: { size: number; color: string }) => (
+  <Text style={{ fontSize: size, color }}>⚠️</Text>
+);
+
+const CameraIcon = ({ size, color }: { size: number; color: string }) => (
+  <Text style={{ fontSize: size, color }}>📷</Text>
+);
+
+const RoadworkIcon = ({ size, color }: { size: number; color: string }) => (
+  <Text style={{ fontSize: size, color }}>🚧</Text>
+);
+
+const AnimalsIcon = ({ size, color }: { size: number; color: string }) => (
+  <Text style={{ fontSize: size, color }}>🐾</Text>
+);
+
+const OtherIcon = ({ size, color }: { size: number; color: string }) => (
+  <Text style={{ fontSize: size, color }}>📍</Text>
+);
+
 const POST_TYPES = [
-  { id: 'dps' as const, label: 'Пост ДПС', icon: Shield, color: '#FF3B30' },
-  { id: 'patrol' as const, label: 'Патруль', icon: Car, color: '#007AFF' },
-  { id: 'accident' as const, label: 'ДТП', icon: AlertTriangle, color: '#FF9500' },
-  { id: 'camera' as const, label: 'Камера', icon: Camera, color: '#34C759' },
-  { id: 'roadwork' as const, label: 'Ремонт дороги', icon: Construction, color: '#FF9500' },
-  { id: 'animals' as const, label: 'Замечены животные', icon: Rabbit, color: '#8E44AD' },
-  { id: 'other' as const, label: 'Остальное', icon: MoreHorizontal, color: '#6C757D' },
+  { id: 'dps' as const, label: 'Пост ДПС', icon: DPSIcon, color: '#FF3B30' },
+  { id: 'patrol' as const, label: 'Патруль', icon: PatrolIcon, color: '#007AFF' },
+  { id: 'accident' as const, label: 'ДТП', icon: AccidentIcon, color: '#FF9500' },
+  { id: 'camera' as const, label: 'Камера', icon: CameraIcon, color: '#34C759' },
+  { id: 'roadwork' as const, label: 'Ремонт дороги', icon: RoadworkIcon, color: '#FF9500' },
+  { id: 'animals' as const, label: 'Замечены животные', icon: AnimalsIcon, color: '#8E44AD' },
+  { id: 'other' as const, label: 'Остальное', icon: OtherIcon, color: '#6C757D' },
 ];
 
 const SEVERITY_LEVELS = [
@@ -2348,13 +2377,13 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                     <Text style={styles.summarySectionTitle}>По типам событий</Text>
                     <View style={styles.summaryTypeGrid}>
                       {[
-                        { type: 'dps', count: summary.dps, label: 'Посты ДПС', color: '#FF3B30', icon: Shield },
-                        { type: 'patrol', count: summary.patrol, label: 'Патрули', color: '#007AFF', icon: Car },
-                        { type: 'accident', count: summary.accidents, label: 'ДТП', color: '#DC2626', icon: AlertTriangle },
-                        { type: 'camera', count: summary.cameras, label: 'Камеры', color: '#0066FF', icon: Camera },
-                        { type: 'roadwork', count: summary.roadwork, label: 'Ремонт', color: '#F59E0B', icon: Construction },
-                        { type: 'animals', count: summary.animals, label: 'Животные', color: '#059669', icon: Rabbit },
-                        { type: 'other', count: summary.other, label: 'Остальное', color: '#6B7280', icon: MoreHorizontal },
+                        { type: 'dps', count: summary.dps, label: 'Посты ДПС', color: '#FF3B30', icon: DPSIcon },
+                        { type: 'patrol', count: summary.patrol, label: 'Патрули', color: '#007AFF', icon: PatrolIcon },
+                        { type: 'accident', count: summary.accidents, label: 'ДТП', color: '#FF9500', icon: AccidentIcon },
+                        { type: 'camera', count: summary.cameras, label: 'Камеры', color: '#34C759', icon: CameraIcon },
+                        { type: 'roadwork', count: summary.roadwork, label: 'Ремонт', color: '#FF9500', icon: RoadworkIcon },
+                        { type: 'animals', count: summary.animals, label: 'Животные', color: '#8E44AD', icon: AnimalsIcon },
+                        { type: 'other', count: summary.other, label: 'Остальное', color: '#6C757D', icon: OtherIcon },
                       ].map(({ type, count, label, color, icon: IconComponent }) => (
                         <View key={type} style={styles.summaryTypeItem}>
                           <View style={[styles.summaryTypeIcon, { backgroundColor: color }]}>

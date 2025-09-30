@@ -606,23 +606,37 @@ export const MapView = (props: any) => {
               };
               const color = colors[postType as keyof typeof colors] || '#6C757D';
               
-               // Создаем новые минималистичные SVG иконки
-               const getIconSVG = (type: string, size: number) => {
+               // Создаем красивые минималистичные иконки
+               const getIconHTML = (type: string, size: number) => {
+                 // Создаем простые, но красивые иконки с помощью CSS
+                 const iconStyle = `
+                   width: ${size}px;
+                   height: ${size}px;
+                   display: flex;
+                   align-items: center;
+                   justify-content: center;
+                   color: white;
+                   font-weight: bold;
+                   font-size: ${Math.max(8, size * 0.6)}px;
+                   text-align: center;
+                   line-height: 1;
+                 `;
+                 
                  switch (type) {
                    case 'dps': 
-                     return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>`;
+                     return `<div style="${iconStyle}">🚔</div>`;
                    case 'patrol': 
-                     return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L18.4 9.6c-.3-.8-1-1.3-1.9-1.3H7.5c-.9 0-1.6.5-1.9 1.3L4.5 11.1C3.7 11.3 3 12.1 3 13v3c0 .6.4 1 1 1h2"/></svg>`;
+                     return `<div style="${iconStyle}">🚗</div>`;
                    case 'accident': 
-                     return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`;
+                     return `<div style="${iconStyle}">⚠️</div>`;
                    case 'camera': 
-                     return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>`;
+                     return `<div style="${iconStyle}">📷</div>`;
                    case 'roadwork': 
-                     return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`;
+                     return `<div style="${iconStyle}">🚧</div>`;
                    case 'animals': 
-                     return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 16a3 3 0 0 1 2.24 5"/><path d="M18 12h.01"/><path d="M18 21h-8a4 4 0 0 1-4-4 7 7 0 0 1 7-7h.2L9.6 6.4a1 1 0 1 1 2.8-2.8L15.8 7h.2c3.3 0 6 2.7 6 6v1a2 2 0 0 1-2 2h-1a3 3 0 0 0-3 3"/></svg>`;
+                     return `<div style="${iconStyle}">🐾</div>`;
                    default: 
-                     return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/></svg>`;
+                     return `<div style="${iconStyle}">📍</div>`;
                  }
                };
               
@@ -660,7 +674,7 @@ export const MapView = (props: any) => {
                      position: relative;
                      transition: all 0.2s ease;
                    ">
-                     ${getIconSVG(postType, iconSize)}
+                     ${getIconHTML(postType, iconSize)}
                    </div>
                  `;
                };
@@ -679,13 +693,13 @@ export const MapView = (props: any) => {
             if (child.props.onPress) {
               markerElement.addEventListener('click', child.props.onPress);
             }
-             // Масштабирование маркеров с зумом карты
+               // Масштабирование маркеров с зумом карты
              if (mapRef.current && !isTempMarker) {
                const applyScale = () => {
                  try {
                    const z = mapRef.current.getZoom ? mapRef.current.getZoom() : 14;
-                   // Масштаб зависит от зума (от 0.7 до 1.5)
-                   const scale = Math.max(0.7, Math.min(1.5, 0.7 + (z - 10) * 0.1));
+                   // Масштаб зависит от зума (от 0.4 до 1.2) - более агрессивное уменьшение
+                   const scale = Math.max(0.4, Math.min(1.2, 0.4 + (z - 8) * 0.08));
                    
                    if (markerElement && createMarkerHTML) {
                      markerElement.innerHTML = createMarkerHTML(scale);
