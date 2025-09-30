@@ -1877,18 +1877,19 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               ]}
             />
           </TouchableOpacity>
-          <TouchableOpacity 
-            activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
+          <Animated.View 
+            style={[
+              styles.modalContainer,
+              {
+                opacity: modalOpacity,
+                transform: [{ translateY: modalTranslateY }]
+              }
+            ]}
           >
-            <Animated.View 
-              style={[
-                styles.modalContainer,
-                {
-                  opacity: modalOpacity,
-                  transform: [{ translateY: modalTranslateY }]
-                }
-              ]}
+            <TouchableOpacity 
+              activeOpacity={1}
+              onPress={(e) => e.stopPropagation()}
+              style={{ flex: 1 }}
             >
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={handleQuickAddCancel}>
@@ -2078,8 +2079,8 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               </Text>
             </View>
           </ScrollView>
+            </TouchableOpacity>
           </Animated.View>
-          </TouchableOpacity>
           <PermissionDialog />
         </View>
       )}
@@ -3322,6 +3323,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 10,
+    marginLeft: 0,
+    marginRight: 0,
+    paddingLeft: 0,
+    paddingRight: 0,
+    alignSelf: 'stretch',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -4036,7 +4042,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 1000,
     justifyContent: 'flex-end',
-    alignItems: 'center',
   },
   modalBackdropTouchable: {
     position: 'absolute',
