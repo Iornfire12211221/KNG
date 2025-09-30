@@ -1306,6 +1306,30 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                 setIsLoadingLocation(true);
                 setLocationError(null);
                 hapticFeedback('light');
+                console.log('Location button pressed (web). TelegramWebApp:', isTelegramWebApp);
+                // Проверяем HTTPS (без него геолокация может не работать)
+                if (typeof window !== 'undefined' && window.location && window.location.protocol !== 'https:') {
+                  console.log('Geolocation blocked: page is not HTTPS');
+                  setLocationError('Нужно открыть приложение по HTTPS — геолокация блокируется.');
+                  setTimeout(() => setIsLoadingLocation(false), 300);
+                  return;
+                }
+
+                // Проверяем статус разрешения через Permissions API (если доступен)
+                try {
+                  const permissionsApi: any = (navigator as any).permissions;
+                  if (permissionsApi && permissionsApi.query) {
+                    const status = await permissionsApi.query({ name: 'geolocation' as any });
+                    console.log('Geolocation permission state:', status?.state);
+                    if (status && status.state === 'denied') {
+                      setLocationError('Доступ к геолокации запрещён. Разрешите доступ в настройках Telegram/браузера.');
+                      setTimeout(() => setIsLoadingLocation(false), 300);
+                      return;
+                    }
+                  }
+                } catch (e) {
+                  console.log('Permissions API check failed', e);
+                }
                 
                 // Используем Telegram API если доступен
                 if (isTelegramWebApp) {
