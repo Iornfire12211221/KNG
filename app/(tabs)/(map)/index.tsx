@@ -2183,11 +2183,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
           </ScrollView>
         </View>
       </Modal>
-      <LoadingOverlay
-        visible={isLoadingLocation || isUploadingImage || isSavingPost || isAnalyzingSeverity}
-        label={isSavingPost ? 'Сохранение...' : isUploadingImage ? 'Загрузка фото...' : isLoadingLocation ? 'Определение местоположения...' : isAnalyzingSeverity ? 'ИИ анализ...' : 'Загрузка...'}
-        testID="map-global-loading"
-      />
+      {/* Убрали глобальный лоадер, чтобы не перекрывал карту */}
     </View>
   );
 }
