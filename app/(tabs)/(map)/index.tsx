@@ -106,33 +106,33 @@ const getSeverityColor = (severity: string) => {
   }
 };
 
-// Создаем компоненты с эмодзи иконками
+// Создаем минималистичные SVG иконки
 const DPSIcon = ({ size, color }: { size: number; color: string }) => (
-  <Text style={{ fontSize: size, color }}>🚔</Text>
+  <Shield size={size} color={color} />
 );
 
 const PatrolIcon = ({ size, color }: { size: number; color: string }) => (
-  <Text style={{ fontSize: size, color }}>🚗</Text>
+  <Car size={size} color={color} />
 );
 
 const AccidentIcon = ({ size, color }: { size: number; color: string }) => (
-  <Text style={{ fontSize: size, color }}>⚠️</Text>
+  <AlertTriangle size={size} color={color} />
 );
 
 const CameraIcon = ({ size, color }: { size: number; color: string }) => (
-  <Text style={{ fontSize: size, color }}>📷</Text>
+  <Camera size={size} color={color} />
 );
 
 const RoadworkIcon = ({ size, color }: { size: number; color: string }) => (
-  <Text style={{ fontSize: size, color }}>🚧</Text>
+  <Construction size={size} color={color} />
 );
 
 const AnimalsIcon = ({ size, color }: { size: number; color: string }) => (
-  <Text style={{ fontSize: size, color }}>🐾</Text>
+  <Rabbit size={size} color={color} />
 );
 
 const OtherIcon = ({ size, color }: { size: number; color: string }) => (
-  <Text style={{ fontSize: size, color }}>📍</Text>
+  <MoreHorizontal size={size} color={color} />
 );
 
 const POST_TYPES = [

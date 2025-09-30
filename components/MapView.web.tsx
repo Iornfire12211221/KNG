@@ -606,37 +606,50 @@ export const MapView = (props: any) => {
               };
               const color = colors[postType as keyof typeof colors] || '#6C757D';
               
-               // Создаем красивые минималистичные иконки
+               // Создаем минималистичные геометрические иконки
                const getIconHTML = (type: string, size: number) => {
-                 // Создаем простые, но красивые иконки с помощью CSS
-                 const iconStyle = `
-                   width: ${size}px;
-                   height: ${size}px;
-                   display: flex;
-                   align-items: center;
-                   justify-content: center;
-                   color: white;
-                   font-weight: bold;
-                   font-size: ${Math.max(8, size * 0.6)}px;
-                   text-align: center;
-                   line-height: 1;
-                 `;
+                 const strokeWidth = Math.max(1.5, size * 0.1);
+                 const iconSize = size * 0.6;
                  
                  switch (type) {
                    case 'dps': 
-                     return `<div style="${iconStyle}">🚔</div>`;
+                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                       <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                       <path d="M2 17l10 5 10-5"/>
+                       <path d="M2 12l10 5 10-5"/>
+                     </svg>`;
                    case 'patrol': 
-                     return `<div style="${iconStyle}">🚗</div>`;
+                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                       <rect x="3" y="11" width="18" height="10" rx="2"/>
+                       <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                       <circle cx="8" cy="16" r="1"/>
+                       <circle cx="16" cy="16" r="1"/>
+                     </svg>`;
                    case 'accident': 
-                     return `<div style="${iconStyle}">⚠️</div>`;
+                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                       <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                       <path d="M12 9v4"/>
+                       <path d="M12 17h.01"/>
+                     </svg>`;
                    case 'camera': 
-                     return `<div style="${iconStyle}">📷</div>`;
+                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                       <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                       <circle cx="12" cy="13" r="3"/>
+                     </svg>`;
                    case 'roadwork': 
-                     return `<div style="${iconStyle}">🚧</div>`;
+                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                       <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                     </svg>`;
                    case 'animals': 
-                     return `<div style="${iconStyle}">🐾</div>`;
+                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                       <path d="M13 16a3 3 0 0 1 2.24 5"/>
+                       <path d="M18 12h.01"/>
+                       <path d="M18 21h-8a4 4 0 0 1-4-4 7 7 0 0 1 7-7h.2L9.6 6.4a1 1 0 1 1 2.8-2.8L15.8 7h.2c3.3 0 6 2.7 6 6v1a2 2 0 0 1-2 2h-1a3 3 0 0 0-3 3"/>
+                     </svg>`;
                    default: 
-                     return `<div style="${iconStyle}">📍</div>`;
+                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                       <circle cx="12" cy="12" r="3"/>
+                     </svg>`;
                  }
                };
               
@@ -654,11 +667,11 @@ export const MapView = (props: any) => {
               
                const borderColor = severity === 'high' ? '#FF3B30' : severity === 'medium' ? '#FF9500' : '#FFFFFF';
                
-               // Создаем маркер с масштабированием
+               // Создаем минималистичный маркер с масштабированием
                const createMarkerHTML = (scale: number) => {
-                 const size = Math.max(20, Math.min(40, 24 * scale));
-                 const iconSize = Math.max(12, Math.min(20, 14 * scale));
-                 const borderWidth = Math.max(1, 2 * scale);
+                 const size = Math.max(18, Math.min(32, 20 * scale));
+                 const iconSize = Math.max(10, Math.min(16, 12 * scale));
+                 const borderWidth = Math.max(1, 1.5 * scale);
                  
                  return `
                    <div style="
@@ -670,7 +683,7 @@ export const MapView = (props: any) => {
                      display: flex;
                      align-items: center;
                      justify-content: center;
-                     box-shadow: 0 ${2*scale}px ${6*scale}px rgba(0,0,0,0.25);
+                     box-shadow: 0 ${1*scale}px ${3*scale}px rgba(0,0,0,0.15);
                      position: relative;
                      transition: all 0.2s ease;
                    ">
@@ -696,8 +709,8 @@ export const MapView = (props: any) => {
                // Масштабирование маркеров с зумом карты
              if (mapRef.current && !isTempMarker) {
                const applyScale = () => {
-                 try {
-                   const z = mapRef.current.getZoom ? mapRef.current.getZoom() : 14;
+                try {
+                  const z = mapRef.current.getZoom ? mapRef.current.getZoom() : 14;
                    // Масштаб зависит от зума (от 0.4 до 1.2) - более агрессивное уменьшение
                    const scale = Math.max(0.4, Math.min(1.2, 0.4 + (z - 8) * 0.08));
                    
@@ -711,9 +724,9 @@ export const MapView = (props: any) => {
                
                applyScale();
                const onZoom = () => applyScale();
-               mapRef.current.on('zoom', onZoom);
-               (marker as any)._onZoom = onZoom;
-             }
+              mapRef.current.on('zoom', onZoom);
+              (marker as any)._onZoom = onZoom;
+            }
 
             markersRef.current.push(marker);
           } catch (error) {
