@@ -764,6 +764,17 @@ export const MapView = (props: any) => {
                         justify-content: center;
                         transition: all 0.2s ease-out;
                       ">
+                        <!-- Пульсирующий круг -->
+                        <div style="
+                          position: absolute;
+                          width: ${size * 1.5}px;
+                          height: ${size * 1.5}px;
+                          border-radius: 50%;
+                          background: rgba(0, 122, 255, 0.2);
+                          animation: pulse 2s infinite;
+                          z-index: 1;
+                        "></div>
+                        <!-- Основной маркер -->
                         <div style="
                           width: ${innerSize}px;
                           height: ${innerSize}px;
@@ -772,8 +783,26 @@ export const MapView = (props: any) => {
                           border: ${borderWidth}px solid #FFFFFF;
                           box-shadow: 0 2px ${shadowBlur}px rgba(0, 122, 255, 0.3);
                           transition: all 0.2s ease-out;
+                          z-index: 2;
+                          position: relative;
                         "></div>
                       </div>
+                      <style>
+                        @keyframes pulse {
+                          0% {
+                            transform: scale(0.8);
+                            opacity: 1;
+                          }
+                          50% {
+                            transform: scale(1.2);
+                            opacity: 0.3;
+                          }
+                          100% {
+                            transform: scale(1.4);
+                            opacity: 0;
+                          }
+                        }
+                      </style>
                     `;
                   } else if (createMarkerHTML) {
                     // Обычные маркеры событий - более агрессивное уменьшение
