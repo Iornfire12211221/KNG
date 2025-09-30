@@ -1346,7 +1346,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                     longitude: userLocation.coords.longitude,
                   }}
                   title="Вы здесь"
-                  html={`<div data-role=\"user-marker\" style=\"position:relative;width:24px;height:24px;pointer-events:none;display:flex;align-items:center;justify-content:center;\">\n  <div style=\"width:16px;height:16px;border-radius:50%;background:linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);border:2px solid #FFFFFF;box-shadow: 0 2px 6px rgba(0, 122, 255, 0.3);\"></div>\n</div>`}
+                  html={`<div data-role=\"user-marker\" style=\"position:relative;width:16px;height:16px;pointer-events:none;display:flex;align-items:center;justify-content:center;\">\n  <div style=\"width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);border:1px solid #FFFFFF;box-shadow: 0 1px 3px rgba(0, 122, 255, 0.3);\"></div>\n</div>`}
                 />
               )}
             </MapViewComponent>

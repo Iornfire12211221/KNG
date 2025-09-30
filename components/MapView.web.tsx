@@ -780,20 +780,22 @@ export const MapView = (props: any) => {
                   console.log('Applying scale for zoom level:', z); // Debug log
                   
                   if (isUserMarker) {
-                    // Специальная обработка для маркера пользователя - как на Яндекс картах
+                    // Специальная обработка для маркера пользователя - более агрессивное уменьшение
                     let userScale;
-                    if (z <= 8) {
-                      userScale = Math.max(0.2, 0.2 + (z - 4) * 0.05);
-                    } else if (z <= 12) {
-                      userScale = 0.4 + (z - 8) * 0.1;
+                    if (z <= 6) {
+                      userScale = Math.max(0.1, 0.1 + (z - 3) * 0.05);
+                    } else if (z <= 10) {
+                      userScale = 0.25 + (z - 6) * 0.1;
+                    } else if (z <= 14) {
+                      userScale = 0.65 + (z - 10) * 0.08;
                     } else {
-                      userScale = Math.min(1.2, 0.8 + (z - 12) * 0.1);
+                      userScale = Math.min(1.0, 0.97 + (z - 14) * 0.01);
                     }
                     
-                    const size = Math.max(12, Math.min(32, 24 * userScale));
-                    const innerSize = size * 0.7;
-                    const borderWidth = Math.max(1.5, 2 * userScale);
-                    const shadowBlur = Math.max(2, 6 * userScale);
+                    const size = Math.max(8, Math.min(20, 16 * userScale));
+                    const innerSize = size * 0.6;
+                    const borderWidth = Math.max(1, 1.5 * userScale);
+                    const shadowBlur = Math.max(1, 3 * userScale);
                     
                     markerElement.innerHTML = `
                       <div data-role="user-marker" style="
@@ -818,18 +820,20 @@ export const MapView = (props: any) => {
                       </div>
                     `;
                   } else if (createMarkerHTML) {
-                    // Обычные маркеры событий - поведение как на Яндекс картах
+                    // Обычные маркеры событий - более агрессивное уменьшение
                     let scale;
-                    if (z <= 6) {
-                      scale = Math.max(0.2, 0.2 + (z - 4) * 0.05);
-                    } else if (z <= 10) {
-                      scale = 0.3 + (z - 6) * 0.15;
-                    } else if (z <= 14) {
-                      scale = 0.9 + (z - 10) * 0.05;
+                    if (z <= 5) {
+                      scale = Math.max(0.1, 0.1 + (z - 3) * 0.05);
+                    } else if (z <= 8) {
+                      scale = 0.2 + (z - 5) * 0.1;
+                    } else if (z <= 12) {
+                      scale = 0.5 + (z - 8) * 0.1;
+                    } else if (z <= 16) {
+                      scale = 0.9 + (z - 12) * 0.025;
                     } else {
-                      scale = Math.min(1.1, 1.1 + (z - 14) * 0.02);
+                      scale = Math.min(1.0, 1.0 + (z - 16) * 0.01);
                     }
-                    console.log('Event marker scale:', scale); // Debug log
+                    console.log('Event marker scale:', scale, 'for zoom:', z); // Debug log
                     markerElement.innerHTML = createMarkerHTML(scale);
                   }
                 } catch (error) {
@@ -850,6 +854,17 @@ export const MapView = (props: any) => {
               mapRef.current.on('zoom', onZoom);
               mapRef.current.on('zoomend', onZoom);
               mapRef.current.on('moveend', onZoom);
+              mapRef.current.on('move', onZoom);
+              
+              // Принудительно обновляем каждые 500мс для тестирования
+              const intervalId = setInterval(() => {
+                if (mapRef.current) {
+                  applyScale();
+                }
+              }, 500);
+              
+              // Сохраняем interval для очистки
+              (marker as any)._intervalId = intervalId;
               
               // Сохраняем ссылку для очистки
               (marker as any)._onZoom = onZoom;
