@@ -18,6 +18,7 @@ import {
   Animated,
 } from 'react-native';
 import { useApp } from '@/hooks/app-store';
+import { useTelegram } from '@/hooks/telegram';
 import { router } from 'expo-router';
 import { Plus, Navigation, AlertCircle, Clock, Trash2, Heart, Shield, Car, AlertTriangle, Camera, Construction, CheckCircle2, X, Settings, Rabbit, TrendingUp, Filter, MapPin as MapPinIcon, Zap, Target, Users, CarFront, Wrench, MoreHorizontal, CheckCheck } from 'lucide-react-native';
 import { getLandmarkForAddress, getRandomLandmark } from '@/constants/kingisepp-landmarks';
@@ -34,6 +35,7 @@ const MarkerComponent = Platform.select({
 import { DPSPost, POST_LIFETIMES } from '@/types';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import GlassView from '@/components/GlassView';
+import LocationStatus from '@/components/LocationStatus';
 import * as ImagePicker from 'expo-image-picker';
 
 const { width, height } = Dimensions.get('window');
@@ -123,9 +125,11 @@ const SEVERITY_LEVELS = [
 
 export default function MapScreen() {
   const { posts, removePost, currentUser, clearExpiredPosts, likePost, verifyPost, addPost } = useApp();
+  const { requestLocation, isTelegramWebApp, hapticFeedback } = useTelegram();
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
   const [selectedPost, setSelectedPost] = useState<string | null>(null);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [isMapReady, setIsMapReady] = useState(true);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickAddLocation, setQuickAddLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -168,9 +172,7 @@ export default function MapScreen() {
   }, [clearExpiredPosts]);
 
   useEffect(() => {
-    if (Platform.OS !== 'web') {
-      requestLocationPermission();
-    }
+    requestLocationPermission();
   }, []);
 
   const lastMyPostTs = React.useMemo(() => {
@@ -331,13 +333,56 @@ export default function MapScreen() {
   const requestLocationPermission = async () => {
     try {
       setIsLoadingLocation(true);
+      setLocationError(null);
       console.log('Requesting location permission...');
+
+      if (Platform.OS === 'web' && isTelegramWebApp) {
+        // Для Telegram WebApp используем специальный API
+        const result = await requestLocation();
+        if (result.granted && result.location) {
+          const webLoc: Location.LocationObject = {
+            coords: {
+              latitude: result.location.latitude,
+              longitude: result.location.longitude,
+              altitude: null as unknown as number,
+              accuracy: 10,
+              altitudeAccuracy: null as unknown as number,
+              heading: 0,
+              speed: 0,
+            },
+            timestamp: Date.now(),
+          } as unknown as Location.LocationObject;
+          setUserLocation(webLoc);
+          if (mapRef.current) {
+            mapRef.current.animateToRegion({
+              latitude: result.location.latitude,
+              longitude: result.location.longitude,
+              latitudeDelta: 0.02,
+              longitudeDelta: 0.02,
+            }, 1000);
+          }
+        } else {
+          setLocationError('Доступ к геолокации запрещен');
+          setTimeout(() => {
+            if (mapRef.current) {
+              mapRef.current.animateToRegion({
+                latitude: KINGISEPP_CENTER.latitude,
+                longitude: KINGISEPP_CENTER.longitude,
+                latitudeDelta: 0.05,
+                longitudeDelta: 0.05,
+              }, 1000);
+            }
+          }, 300);
+        }
+        return;
+      }
 
       const { status } = await Location.requestForegroundPermissionsAsync();
       console.log('Location permission status:', status);
 
       if (status !== 'granted') {
         console.log('Location permission denied');
+        setLocationError('Доступ к геолокации запрещен');
         setTimeout(() => {
           if (mapRef.current) {
             mapRef.current.animateToRegion({
@@ -434,21 +479,54 @@ export default function MapScreen() {
   const startLocationTracking = async () => {
     try {
       console.log('Starting location tracking...');
-      const locationSubscription = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.High,
-          timeInterval: 15000,
-          distanceInterval: 20,
-          mayShowUserSettingsDialog: false,
-        },
-        (location) => {
-          console.log('Location updated:', location.coords);
-          setUserLocation(location);
-        }
-      );
-      return () => {
-        locationSubscription.remove();
-      };
+      
+      // Для Telegram WebApp используем периодический запрос через API
+      if (Platform.OS === 'web' && isTelegramWebApp) {
+        const intervalId = setInterval(async () => {
+          try {
+            const result = await requestLocation();
+            if (result.granted && result.location) {
+              const location: Location.LocationObject = {
+                coords: {
+                  latitude: result.location.latitude,
+                  longitude: result.location.longitude,
+                  altitude: null as unknown as number,
+                  accuracy: 10,
+                  altitudeAccuracy: null as unknown as number,
+                  heading: 0,
+                  speed: 0,
+                },
+                timestamp: Date.now(),
+              } as unknown as Location.LocationObject;
+              console.log('Telegram location updated:', location.coords);
+              setUserLocation(location);
+            }
+          } catch (error) {
+            console.log('Telegram location tracking error:', error);
+          }
+        }, 15000);
+        
+        return () => {
+          clearInterval(intervalId);
+        };
+      } else {
+        // Для мобильных устройств используем стандартный API
+        const locationSubscription = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.High,
+            timeInterval: 15000,
+            distanceInterval: 20,
+            mayShowUserSettingsDialog: false,
+          },
+          (location) => {
+            console.log('Location updated:', location.coords);
+            setUserLocation(location);
+          }
+        );
+        return () => {
+          locationSubscription.remove();
+        };
+      }
     } catch (error) {
       console.error('Error starting location tracking:', error);
     }
@@ -963,6 +1041,44 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
 
   return (
     <View style={styles.container}>
+      {/* Location Status */}
+      <LocationStatus
+        isLocationEnabled={!!userLocation}
+        isLocationLoading={isLoadingLocation}
+        locationError={locationError}
+        onRetry={() => {
+          setLocationError(null);
+          // Повторный запрос геолокации
+          if (Platform.OS === 'web' && isTelegramWebApp) {
+            requestLocation().then(result => {
+              if (result.granted && result.location) {
+                const webLoc: Location.LocationObject = {
+                  coords: {
+                    latitude: result.location.latitude,
+                    longitude: result.location.longitude,
+                    altitude: null as unknown as number,
+                    accuracy: 10,
+                    altitudeAccuracy: null as unknown as number,
+                    heading: 0,
+                    speed: 0,
+                  },
+                  timestamp: Date.now(),
+                } as unknown as Location.LocationObject;
+                setUserLocation(webLoc);
+                if (mapRef.current && mapRef.current.animateToRegion) {
+                  mapRef.current.animateToRegion({
+                    latitude: result.location.latitude,
+                    longitude: result.location.longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                  }, 700);
+                }
+              }
+            });
+          }
+        }}
+      />
+      
       {/* Map */}
       <View style={styles.mapContainer}>
         {Platform.OS === 'web' ? (
@@ -1188,7 +1304,43 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
             if (Platform.OS === 'web') {
               try {
                 setIsLoadingLocation(true);
-                if (navigator.geolocation) {
+                setLocationError(null);
+                hapticFeedback('light');
+                
+                // Используем Telegram API если доступен
+                if (isTelegramWebApp) {
+                  const result = await requestLocation();
+                  if (result.granted && result.location) {
+                    const { latitude, longitude } = result.location;
+                    if (mapRef.current && mapRef.current.animateToRegion) {
+                      mapRef.current.animateToRegion({
+                        latitude,
+                        longitude,
+                        latitudeDelta: 0.01,
+                        longitudeDelta: 0.01,
+                      }, 700);
+                    }
+                    const webLoc: Location.LocationObject = {
+                      coords: {
+                        latitude,
+                        longitude,
+                        altitude: null as unknown as number,
+                        accuracy: 10, // Telegram обычно дает точность ~10м
+                        altitudeAccuracy: null as unknown as number,
+                        heading: 0,
+                        speed: 0,
+                      },
+                      timestamp: Date.now(),
+                    } as unknown as Location.LocationObject;
+                    setUserLocation(webLoc);
+                    hapticFeedback('success');
+                  } else {
+                    console.log('Telegram location permission denied');
+                    hapticFeedback('error');
+                    setLocationError('Доступ к геолокации запрещен');
+                  }
+                } else if (navigator.geolocation) {
+                  // Fallback для обычного браузера
                   navigator.geolocation.getCurrentPosition(
                     (pos) => {
                       const { latitude, longitude } = pos.coords;
@@ -1204,7 +1356,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                         coords: {
                           latitude,
                           longitude,
-                          altitude: null as unknown as number, // expo-location allows null internally
+                          altitude: null as unknown as number,
                           accuracy: pos.coords.accuracy ?? 0,
                           altitudeAccuracy: null as unknown as number,
                           heading: pos.coords.heading ?? 0,
@@ -1216,6 +1368,8 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                     },
                     (error) => {
                       console.log('Web geolocation error', error);
+                      hapticFeedback('error');
+                      setLocationError('Ошибка определения местоположения');
                       if (mapRef.current && mapRef.current.resetNorth) {
                         mapRef.current.resetNorth();
                       }

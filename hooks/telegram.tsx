@@ -106,6 +106,10 @@ interface TelegramWebApp {
       user_id?: number;
     };
   }) => void) => void;
+  requestLocation: (callback?: (granted: boolean, location?: {
+    latitude: number;
+    longitude: number;
+  }) => void) => void;
   invokeCustomMethod: (method: string, params?: any, callback?: (error: string, result: any) => void) => void;
 }
 
@@ -235,6 +239,37 @@ export const useTelegram = () => {
     }
   }, [webApp]);
 
+  const requestLocation = useCallback(() => {
+    return new Promise<{ granted: boolean; location?: { latitude: number; longitude: number } }>((resolve) => {
+      if (webApp?.requestLocation) {
+        webApp.requestLocation((granted, location) => {
+          resolve({ granted, location });
+        });
+      } else {
+        // Fallback для обычного браузера
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              resolve({
+                granted: true,
+                location: {
+                  latitude: position.coords.latitude,
+                  longitude: position.coords.longitude,
+                }
+              });
+            },
+            () => {
+              resolve({ granted: false });
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+          );
+        } else {
+          resolve({ granted: false });
+        }
+      }
+    });
+  }, [webApp]);
+
   return {
     webApp,
     user,
@@ -255,6 +290,7 @@ export const useTelegram = () => {
     sendData,
     openLink,
     openTelegramLink,
+    requestLocation,
   };
 };
 
