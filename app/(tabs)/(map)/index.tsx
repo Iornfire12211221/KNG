@@ -537,12 +537,6 @@ export default function MapScreen() {
     }
   };
 
-  const getTimeAgo = (timestamp: number) => {
-    const minutes = Math.floor((Date.now() - timestamp) / 60000);
-    if (minutes < 1) return 'Только что';
-    if (minutes < 60) return `${minutes} мин назад`;
-    return `${Math.floor(minutes / 60)} ч назад`;
-  };
 
   const getDistanceFromUser = (postLat: number, postLng: number) => {
     if (!userLocation) return null;
@@ -1237,18 +1231,6 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
     );
   };
 
-  // Анимация пульса для маркера пользователя
-  const userPulse = React.useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(userPulse, { toValue: 1.35, duration: 900, useNativeDriver: true }),
-        Animated.timing(userPulse, { toValue: 1.0, duration: 900, useNativeDriver: true }),
-      ])
-    );
-    anim.start();
-    return () => anim.stop();
-  }, [userPulse]);
 
   return (
     <View style={styles.container}>
@@ -1355,8 +1337,8 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                     longitude: userLocation.coords.longitude,
                   }}
                   title="Вы здесь"
-                  html={`<div data-role=\"user-marker\" style=\"position:relative;width:var(--size,32px);height:var(--size,32px);pointer-events:none;display:flex;align-items:center;justify-content:center;\">\n  <div style=\"position:absolute;width:calc(var(--size,32px) * 2.5);height:calc(var(--size,32px) * 2.5);border-radius:50%;background:rgba(0,122,255,0.12);animation:userPulse 2s ease-out infinite;will-change:transform,opacity;\"></div>\n  <div style=\"position:absolute;width:calc(var(--size,32px) * 0.4);height:calc(var(--size,32px) * 0.4);border-radius:50%;background:#007AFF;border:2px solid #FFFFFF;box-shadow:0 2px 8px rgba(0,122,255,0.4);\"></div>\n  <style>@keyframes userPulse{0%{opacity:0.8;transform:scale(0.8)}50%{opacity:0.2;transform:scale(1.3)}100%{opacity:0;transform:scale(1.8)}}</style>\n</div>`}
-                  webMarkerOptions={{ sizeWithZoom: true, baseSizePx: 32 }}
+                  html={`<div data-role=\"user-marker\" style=\"position:relative;width:var(--size,40px);height:var(--size,40px);pointer-events:none;display:flex;align-items:center;justify-content:center;\">\n  <div style=\"width:calc(var(--size,40px) * 0.7);height:calc(var(--size,40px) * 0.7);border-radius:50%;background:linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);border:3px solid #FFFFFF;\"></div>\n</div>`}
+                  webMarkerOptions={{ sizeWithZoom: true, baseSizePx: 40 }}
                 />
               )}
             </MapViewComponent>
@@ -2600,14 +2582,6 @@ const styles = StyleSheet.create({
   userMarkerContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  userPulse: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0, 122, 255, 0.18)',
-    borderWidth: 2,
-    borderColor: 'rgba(0, 122, 255, 0.35)',
   },
   userDot: {
     position: 'absolute',

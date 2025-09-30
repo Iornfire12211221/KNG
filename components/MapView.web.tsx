@@ -572,25 +572,26 @@ export const MapView = (props: any) => {
                
                if (isTempMarker) {
                  // Специальная обработка для временного маркера
-                 markerElement.innerHTML = `
-                   <div style="
-                     width: 32px;
-                     height: 32px;
-                     border-radius: 16px;
-                     background: #FF3B30;
-                     border: 2px solid #FFFFFF;
-                     display: flex;
-                     align-items: center;
-                     justify-content: center;
-                     box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-                     position: relative;
-                   ">
-                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                       <circle cx="12" cy="10" r="3"/>
-                     </svg>
-                   </div>
-                 `;
+                markerElement.innerHTML = `
+                  <div style="
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 20px;
+                    background: linear-gradient(135deg, #FF3B30 0%, #FF6B6B 100%);
+                    border: 3px solid #FFFFFF;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    position: relative;
+                    cursor: pointer;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                  ">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                  </div>
+                `;
                } else {
                  // Создаем маркер точно как в событиях
                  const postType = (child.props as any).postType || 'other';
@@ -606,43 +607,46 @@ export const MapView = (props: any) => {
               };
               const color = colors[postType as keyof typeof colors] || '#6C757D';
               
-               // Создаем иконки в стиле кнопок типа событий
+               // Создаем минималистичные белые иконки
                const getIconHTML = (type: string, size: number) => {
-                 const strokeWidth = Math.max(2, size * 0.08);
+                 const strokeWidth = Math.max(1.5, size * 0.12);
                  const iconSize = size;
                  
                  switch (type) {
                    case 'dps': 
-                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="#FF3B30" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                      </svg>`;
                    case 'patrol': 
-                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
-                       <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L18.4 9.6c-.3-.8-1-1.3-1.9-1.3H7.5c-.9 0-1.6.5-1.9 1.3L4.5 11.1C3.7 11.3 3 12.1 3 13v3c0 .6.4 1 1 1h2"/>
+                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                       <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
+                       <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
+                       <path d="M5 17h-2v-6l2.5 -6h7.5l4 6v6h-2"/>
+                       <path d="M9 7h4"/>
                      </svg>`;
                    case 'accident': 
-                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="#FF9500" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
                        <path d="M12 9v4"/>
                        <path d="M12 17h.01"/>
                      </svg>`;
                    case 'camera': 
-                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
                        <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
                        <circle cx="12" cy="13" r="3"/>
                      </svg>`;
                    case 'roadwork': 
-                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="#FF9500" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
                      </svg>`;
                    case 'animals': 
-                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="#8E44AD" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
                        <path d="M13 16a3 3 0 0 1 2.24 5"/>
                        <path d="M18 12h.01"/>
                        <path d="M18 21h-8a4 4 0 0 1-4-4 7 7 0 0 1 7-7h.2L9.6 6.4a1 1 0 1 1 2.8-2.8L15.8 7h.2c3.3 0 6 2.7 6 6v1a2 2 0 0 1-2 2h-1a3 3 0 0 0-3 3"/>
                      </svg>`;
                    default: 
-                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="#6C757D" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
                        <circle cx="12" cy="12" r="1"/>
                        <circle cx="19" cy="12" r="1"/>
                        <circle cx="5" cy="12" r="1"/>
@@ -664,27 +668,37 @@ export const MapView = (props: any) => {
               
                const borderColor = severity === 'high' ? '#FF3B30' : severity === 'medium' ? '#FF9500' : '#FFFFFF';
                
-               // Создаем маркеры в стиле кнопок типа событий
+               // Создаем красивые минималистичные маркеры
                const createMarkerHTML = (scale: number) => {
-                 const size = Math.max(40, Math.min(60, 50 * scale));
-                 const iconSize = Math.max(18, Math.min(24, 20 * scale));
-                 const borderWidth = Math.max(1, 1.5 * scale);
+                 const size = Math.max(36, Math.min(48, 42 * scale));
+                 const iconSize = Math.max(16, Math.min(20, 18 * scale));
+                 const borderWidth = Math.max(1.5, 2 * scale);
                  
                  return `
                    <div style="
                      width: ${size}px;
                      height: ${size}px;
                      border-radius: ${size/2}px;
-                     background: white;
-                     border: ${borderWidth}px solid #E5E5EA;
+                     background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+                     border: ${borderWidth}px solid ${color};
                      display: flex;
                      align-items: center;
                      justify-content: center;
-                     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
                      position: relative;
-                     transition: all 0.2s ease;
+                     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                     cursor: pointer;
                    ">
-                     ${getIconHTML(postType, iconSize)}
+                     <div style="
+                       width: ${size * 0.6}px;
+                       height: ${size * 0.6}px;
+                       border-radius: 50%;
+                       background: ${color};
+                       display: flex;
+                       align-items: center;
+                       justify-content: center;
+                     ">
+                       ${getIconHTML(postType, iconSize)}
+                     </div>
                    </div>
                  `;
                };
