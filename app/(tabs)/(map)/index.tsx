@@ -557,7 +557,14 @@ export default function MapScreen() {
 
   // Мемоизируем отфильтрованные посты
   const filteredPosts = useMemo(() => {
-    return posts.filter(post => !post.needsModeration || post.userId === currentUser?.id);
+    // Временно показываем все посты для отладки
+    const filtered = posts; // posts.filter(post => !post.needsModeration || post.userId === currentUser?.id);
+    console.log('Total posts:', posts.length);
+    console.log('Filtered posts:', filtered.length);
+    console.log('Posts needing moderation:', posts.filter(post => post.needsModeration).length);
+    console.log('Current user ID:', currentUser?.id);
+    console.log('All posts:', posts.map(p => ({ id: p.id, needsModeration: p.needsModeration, userId: p.userId })));
+    return filtered;
   }, [posts, currentUser?.id]);
 
   const getWeeklyEvents = () => {
@@ -1252,6 +1259,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
             >
               {/* DPS Posts Markers */}
               {filteredPosts.map((post) => {
+                console.log('Rendering marker for post:', post.id, 'at', post.latitude, post.longitude);
                 const PostIcon = getPostTypeIcon(post.type);
                 const typeLabel = getPostTypeLabel(post.type);
                 return (
