@@ -569,7 +569,8 @@ export const MapView = (props: any) => {
               '<div style="width: 20px; height: 20px; background: #FF3B30; border-radius: 50%; border: 2px solid white;"></div>'
             );
             
-            const marker = new window.mapboxgl.Marker(markerElement)
+            // Ensure pointer alignment is centered
+            const marker = new window.mapboxgl.Marker({ element: markerElement, anchor: 'center' })
               .setLngLat([child.props.coordinate.longitude, child.props.coordinate.latitude])
               .addTo(mapRef.current);
               
@@ -578,17 +579,25 @@ export const MapView = (props: any) => {
             }
             // Scale marker with zoom if requested
             const opts = (child.props as any).webMarkerOptions || {};
-            if (opts.scaleWithZoom && mapRef.current) {
-              const applyScale = () => {
+            if ((opts.scaleWithZoom || opts.sizeWithZoom) && mapRef.current) {
+              const applySize = () => {
                 try {
                   const z = mapRef.current.getZoom ? mapRef.current.getZoom() : 14;
-                  const scale = Math.max(0.6, Math.min(2.4, (opts.baseScale || 1) * (0.75 + (z - 14) * 0.12)));
-                  (markerElement as HTMLElement).style.transform = `scale(${scale})`;
-                  (markerElement as HTMLElement).style.transformOrigin = 'center';
+                  // Размер зависит от зума (плавная кривая)
+                  const base = opts.baseSizePx || 34; // базовый размер при z≈14
+                  const size = Math.max(16, Math.min(64, base * (0.85 + (z - 14) * 0.15)));
+                  (markerElement as HTMLElement).style.setProperty('--size', `${size}px`);
+                  // На случай, если используется transform-основанный маркер
+                  if (opts.scaleWithZoom) {
+                    const scale = Math.max(0.6, Math.min(2.4, (opts.baseScale || 1) * (0.8 + (z - 14) * 0.12)));
+                    (markerElement as HTMLElement).style.transform = `translateZ(0) scale(${scale})`;
+                    (markerElement as HTMLElement).style.transformOrigin = 'center';
+                    (markerElement as HTMLElement).style.willChange = 'transform';
+                  }
                 } catch {}
               };
-              applyScale();
-              const onZoom = () => applyScale();
+              applySize();
+              const onZoom = () => applySize();
               mapRef.current.on('zoom', onZoom);
               (marker as any)._onZoom = onZoom;
             }
