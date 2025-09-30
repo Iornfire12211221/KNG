@@ -559,9 +559,12 @@ export const MapView = (props: any) => {
         if (child && child.props && child.props.coordinate) {
           try {
             const markerElement = document.createElement('div');
-            markerElement.innerHTML = child.props.children ? 
+            const customHtml = (child.props as any).html as string | undefined;
+            markerElement.innerHTML = customHtml ? customHtml : (
+              child.props.children ? 
               ReactDOMServer.renderToString(child.props.children) : 
-              '<div style="width: 20px; height: 20px; background: #FF3B30; border-radius: 50%; border: 2px solid white;"></div>';
+              '<div style="width: 20px; height: 20px; background: #FF3B30; border-radius: 50%; border: 2px solid white;"></div>'
+            );
             
             const marker = new window.mapboxgl.Marker(markerElement)
               .setLngLat([child.props.coordinate.longitude, child.props.coordinate.latitude])
