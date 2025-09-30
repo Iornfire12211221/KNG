@@ -542,6 +542,25 @@ export const MapView = (props: any) => {
 
 
 
+  // Функция для принудительного обновления масштабирования всех маркеров
+  const forceUpdateMarkers = React.useCallback(() => {
+    if (!mapRef.current || !mapLoaded) return;
+    
+    try {
+      const z = mapRef.current.getZoom ? mapRef.current.getZoom() : 14;
+      console.log('Force updating markers for zoom level:', z);
+      
+      // Обновляем все существующие маркеры
+      markersRef.current.forEach((marker) => {
+        if (marker && marker._onZoom) {
+          marker._onZoom();
+        }
+      });
+    } catch (error) {
+      console.log('Error force updating markers:', error);
+    }
+  }, [mapLoaded]);
+
   // Handle markers
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return;
@@ -571,7 +590,7 @@ export const MapView = (props: any) => {
                const isTempMarker = (child.props as any).isTempMarker || false;
                
                if (isTempMarker) {
-                 // Специальная обработка для временного маркера
+                 // Специальная обработка для временного маркера - меньший размер
                 markerElement.innerHTML = `
                   <div style="
                     position: relative;
@@ -582,32 +601,32 @@ export const MapView = (props: any) => {
                     transition: all 0.2s ease-out;
                   ">
                     <div style="
-                      width: 40px;
-                      height: 40px;
-                      border-radius: 20px;
+                      width: 28px;
+                      height: 28px;
+                      border-radius: 50%;
                       background: linear-gradient(135deg, #FF3B30 0%, #FF6B6B 100%);
-                      border: 3px solid #FFFFFF;
+                      border: 2px solid #FFFFFF;
                       display: flex;
                       align-items: center;
                       justify-content: center;
-                      box-shadow: 0 2px 8px rgba(255, 59, 48, 0.3);
+                      box-shadow: 0 2px 6px rgba(255, 59, 48, 0.3);
                       transition: all 0.2s ease-out;
                     ">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
                         <circle cx="12" cy="10" r="3"/>
                       </svg>
                     </div>
                     <div style="
-                      margin-top: 2px;
+                      margin-top: 1px;
                       background: #FF3B30;
                       color: white;
-                      padding: 2px 6px;
-                      border-radius: 8px;
-                      font-size: 11px;
+                      padding: 1px 4px;
+                      border-radius: 6px;
+                      font-size: 9px;
                       font-weight: 600;
                       white-space: nowrap;
-                      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+                      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
                       border: 1px solid rgba(255, 255, 255, 0.2);
                     ">
                       Новое место
@@ -687,12 +706,12 @@ export const MapView = (props: any) => {
               
                const borderColor = severity === 'high' ? '#FF3B30' : severity === 'medium' ? '#FF9500' : '#FFFFFF';
                
-               // Создаем аккуратные маркеры как на втором скрине
+               // Создаем аккуратные круглые маркеры меньшего размера
                const createMarkerHTML = (scale: number) => {
-                 const size = Math.max(32, Math.min(44, 38 * scale));
-                 const iconSize = Math.max(14, Math.min(18, 16 * scale));
-                 const borderWidth = Math.max(2, 3 * scale);
-                 const labelSize = Math.max(10, Math.min(12, 11 * scale));
+                 const size = Math.max(24, Math.min(32, 28 * scale));
+                 const iconSize = Math.max(10, Math.min(14, 12 * scale));
+                 const borderWidth = Math.max(1.5, 2 * scale);
+                 const labelSize = Math.max(8, Math.min(10, 9 * scale));
                  
                  return `
                    <div style="
@@ -706,27 +725,27 @@ export const MapView = (props: any) => {
                      <div style="
                        width: ${size}px;
                        height: ${size}px;
-                       border-radius: ${size/2}px;
+                       border-radius: 50%;
                        background: ${color};
                        border: ${borderWidth}px solid #FFFFFF;
                        display: flex;
                        align-items: center;
                        justify-content: center;
-                       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+                       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
                        transition: all 0.2s ease-out;
                      ">
                        ${getIconHTML(postType, iconSize)}
                      </div>
                      <div style="
-                       margin-top: 2px;
+                       margin-top: 1px;
                        background: ${color};
                        color: white;
-                       padding: 2px 6px;
-                       border-radius: 8px;
+                       padding: 1px 4px;
+                       border-radius: 6px;
                        font-size: ${labelSize}px;
                        font-weight: 600;
                        white-space: nowrap;
-                       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+                       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
                        border: 1px solid rgba(255, 255, 255, 0.2);
                      ">
                        ${getTypeLabel(postType)}
@@ -758,27 +777,23 @@ export const MapView = (props: any) => {
               const applyScale = () => {
                 try {
                   const z = mapRef.current.getZoom ? mapRef.current.getZoom() : 14;
+                  console.log('Applying scale for zoom level:', z); // Debug log
                   
                   if (isUserMarker) {
                     // Специальная обработка для маркера пользователя - как на Яндекс картах
-                    // При отдалении маркер становится меньше, при приближении - больше
-                    // Более агрессивное уменьшение при отдалении для лучшего UX
                     let userScale;
                     if (z <= 8) {
-                      // При сильном отдалении - очень маленький маркер
                       userScale = Math.max(0.2, 0.2 + (z - 4) * 0.05);
                     } else if (z <= 12) {
-                      // Средний зум - плавное увеличение
                       userScale = 0.4 + (z - 8) * 0.1;
                     } else {
-                      // При приближении - нормальный размер
                       userScale = Math.min(1.2, 0.8 + (z - 12) * 0.1);
                     }
                     
-                    const size = Math.max(16, Math.min(48, 32 * userScale));
+                    const size = Math.max(12, Math.min(32, 24 * userScale));
                     const innerSize = size * 0.7;
-                    const borderWidth = Math.max(2, 3 * userScale);
-                    const shadowBlur = Math.max(2, 8 * userScale);
+                    const borderWidth = Math.max(1.5, 2 * userScale);
+                    const shadowBlur = Math.max(2, 6 * userScale);
                     
                     markerElement.innerHTML = `
                       <div data-role="user-marker" style="
@@ -806,18 +821,15 @@ export const MapView = (props: any) => {
                     // Обычные маркеры событий - поведение как на Яндекс картах
                     let scale;
                     if (z <= 6) {
-                      // При сильном отдалении - очень маленькие маркеры
                       scale = Math.max(0.2, 0.2 + (z - 4) * 0.05);
                     } else if (z <= 10) {
-                      // Средний зум - плавное увеличение
                       scale = 0.3 + (z - 6) * 0.15;
                     } else if (z <= 14) {
-                      // Нормальный зум
                       scale = 0.9 + (z - 10) * 0.05;
                     } else {
-                      // При сильном приближении - нормальный размер
                       scale = Math.min(1.1, 1.1 + (z - 14) * 0.02);
                     }
+                    console.log('Event marker scale:', scale); // Debug log
                     markerElement.innerHTML = createMarkerHTML(scale);
                   }
                 } catch (error) {
@@ -825,9 +837,21 @@ export const MapView = (props: any) => {
                 }
               };
               
+              // Применяем масштаб сразу
               applyScale();
-              const onZoom = () => applyScale();
+              
+              // Добавляем обработчики событий зума
+              const onZoom = () => {
+                console.log('Zoom event triggered'); // Debug log
+                applyScale();
+              };
+              
+              // Добавляем несколько обработчиков для надежности
               mapRef.current.on('zoom', onZoom);
+              mapRef.current.on('zoomend', onZoom);
+              mapRef.current.on('moveend', onZoom);
+              
+              // Сохраняем ссылку для очистки
               (marker as any)._onZoom = onZoom;
             }
 
