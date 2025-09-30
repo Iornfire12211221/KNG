@@ -574,22 +574,44 @@ export const MapView = (props: any) => {
                  // Специальная обработка для временного маркера
                 markerElement.innerHTML = `
                   <div style="
-                    width: 40px;
-                    height: 40px;
-                    border-radius: 20px;
-                    background: linear-gradient(135deg, #FF3B30 0%, #FF6B6B 100%);
-                    border: 3px solid #FFFFFF;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
                     position: relative;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
                     cursor: pointer;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    transition: all 0.2s ease-out;
                   ">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                      <circle cx="12" cy="10" r="3"/>
-                    </svg>
+                    <div style="
+                      width: 40px;
+                      height: 40px;
+                      border-radius: 20px;
+                      background: linear-gradient(135deg, #FF3B30 0%, #FF6B6B 100%);
+                      border: 3px solid #FFFFFF;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      box-shadow: 0 2px 8px rgba(255, 59, 48, 0.3);
+                      transition: all 0.2s ease-out;
+                    ">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                      </svg>
+                    </div>
+                    <div style="
+                      margin-top: 2px;
+                      background: #FF3B30;
+                      color: white;
+                      padding: 2px 6px;
+                      border-radius: 8px;
+                      font-size: 11px;
+                      font-weight: 600;
+                      white-space: nowrap;
+                      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+                      border: 1px solid rgba(255, 255, 255, 0.2);
+                    ">
+                      Новое место
+                    </div>
                   </div>
                 `;
                } else {
@@ -607,22 +629,21 @@ export const MapView = (props: any) => {
               };
               const color = colors[postType as keyof typeof colors] || '#6C757D';
               
-               // Создаем минималистичные белые иконки
+               // Создаем аккуратные иконки как на втором скрине
                const getIconHTML = (type: string, size: number) => {
-                 const strokeWidth = Math.max(1.5, size * 0.12);
+                 const strokeWidth = Math.max(2, size * 0.15);
                  const iconSize = size;
                  
                  switch (type) {
                    case 'dps': 
                      return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                       <path d="M12 8v4"/>
+                       <path d="M12 16h.01"/>
                      </svg>`;
                    case 'patrol': 
                      return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
-                       <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
-                       <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
-                       <path d="M5 17h-2v-6l2.5 -6h7.5l4 6v6h-2"/>
-                       <path d="M9 7h4"/>
+                       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                      </svg>`;
                    case 'accident': 
                      return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
@@ -647,9 +668,7 @@ export const MapView = (props: any) => {
                      </svg>`;
                    default: 
                      return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
-                       <circle cx="12" cy="12" r="1"/>
-                       <circle cx="19" cy="12" r="1"/>
-                       <circle cx="5" cy="12" r="1"/>
+                       <circle cx="12" cy="12" r="3"/>
                      </svg>`;
                  }
                };
@@ -668,36 +687,49 @@ export const MapView = (props: any) => {
               
                const borderColor = severity === 'high' ? '#FF3B30' : severity === 'medium' ? '#FF9500' : '#FFFFFF';
                
-               // Создаем красивые минималистичные маркеры
+               // Создаем аккуратные маркеры как на втором скрине
                const createMarkerHTML = (scale: number) => {
-                 const size = Math.max(36, Math.min(48, 42 * scale));
-                 const iconSize = Math.max(16, Math.min(20, 18 * scale));
-                 const borderWidth = Math.max(1.5, 2 * scale);
+                 const size = Math.max(32, Math.min(44, 38 * scale));
+                 const iconSize = Math.max(14, Math.min(18, 16 * scale));
+                 const borderWidth = Math.max(2, 3 * scale);
+                 const labelSize = Math.max(10, Math.min(12, 11 * scale));
                  
                  return `
                    <div style="
-                     width: ${size}px;
-                     height: ${size}px;
-                     border-radius: ${size/2}px;
-                     background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-                     border: ${borderWidth}px solid ${color};
-                     display: flex;
-                     align-items: center;
-                     justify-content: center;
                      position: relative;
-                     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                     display: flex;
+                     flex-direction: column;
+                     align-items: center;
                      cursor: pointer;
+                     transition: all 0.2s ease-out;
                    ">
                      <div style="
-                       width: ${size * 0.6}px;
-                       height: ${size * 0.6}px;
-                       border-radius: 50%;
+                       width: ${size}px;
+                       height: ${size}px;
+                       border-radius: ${size/2}px;
                        background: ${color};
+                       border: ${borderWidth}px solid #FFFFFF;
                        display: flex;
                        align-items: center;
                        justify-content: center;
+                       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+                       transition: all 0.2s ease-out;
                      ">
                        ${getIconHTML(postType, iconSize)}
+                     </div>
+                     <div style="
+                       margin-top: 2px;
+                       background: ${color};
+                       color: white;
+                       padding: 2px 6px;
+                       border-radius: 8px;
+                       font-size: ${labelSize}px;
+                       font-weight: 600;
+                       white-space: nowrap;
+                       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+                       border: 1px solid rgba(255, 255, 255, 0.2);
+                     ">
+                       ${getTypeLabel(postType)}
                      </div>
                    </div>
                  `;
@@ -709,6 +741,9 @@ export const MapView = (props: any) => {
                markerElement.innerHTML = '<div style="width: 20px; height: 20px; background: #FF3B30; border-radius: 50%; border: 2px solid white;"></div>';
              }
             
+            // Check if this is a user location marker
+            const isUserMarker = markerElement.querySelector('[data-role="user-marker"]') !== null;
+            
             // Ensure pointer alignment is centered
             const marker = new window.mapboxgl.Marker({ element: markerElement, anchor: 'center' })
               .setLngLat([child.props.coordinate.longitude, child.props.coordinate.latitude])
@@ -717,24 +752,81 @@ export const MapView = (props: any) => {
             if (child.props.onPress) {
               markerElement.addEventListener('click', child.props.onPress);
             }
-               // Масштабирование маркеров с зумом карты
-             if (mapRef.current && !isTempMarker) {
-               const applyScale = () => {
+            
+            // Масштабирование маркеров с зумом карты
+            if (mapRef.current && !isTempMarker) {
+              const applyScale = () => {
                 try {
                   const z = mapRef.current.getZoom ? mapRef.current.getZoom() : 14;
-                   // Масштаб зависит от зума (от 0.4 до 1.2) - более агрессивное уменьшение
-                   const scale = Math.max(0.4, Math.min(1.2, 0.4 + (z - 8) * 0.08));
-                   
-                   if (markerElement && createMarkerHTML) {
-                     markerElement.innerHTML = createMarkerHTML(scale);
-                   }
-                 } catch (error) {
-                   console.log('Error applying marker scale:', error);
-                 }
-               };
-               
-               applyScale();
-               const onZoom = () => applyScale();
+                  
+                  if (isUserMarker) {
+                    // Специальная обработка для маркера пользователя - как на Яндекс картах
+                    // При отдалении маркер становится меньше, при приближении - больше
+                    // Более агрессивное уменьшение при отдалении для лучшего UX
+                    let userScale;
+                    if (z <= 8) {
+                      // При сильном отдалении - очень маленький маркер
+                      userScale = Math.max(0.2, 0.2 + (z - 4) * 0.05);
+                    } else if (z <= 12) {
+                      // Средний зум - плавное увеличение
+                      userScale = 0.4 + (z - 8) * 0.1;
+                    } else {
+                      // При приближении - нормальный размер
+                      userScale = Math.min(1.2, 0.8 + (z - 12) * 0.1);
+                    }
+                    
+                    const size = Math.max(16, Math.min(48, 32 * userScale));
+                    const innerSize = size * 0.7;
+                    const borderWidth = Math.max(2, 3 * userScale);
+                    const shadowBlur = Math.max(2, 8 * userScale);
+                    
+                    markerElement.innerHTML = `
+                      <div data-role="user-marker" style="
+                        position: relative;
+                        width: ${size}px;
+                        height: ${size}px;
+                        pointer-events: none;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        transition: all 0.2s ease-out;
+                      ">
+                        <div style="
+                          width: ${innerSize}px;
+                          height: ${innerSize}px;
+                          border-radius: 50%;
+                          background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
+                          border: ${borderWidth}px solid #FFFFFF;
+                          box-shadow: 0 2px ${shadowBlur}px rgba(0, 122, 255, 0.3);
+                          transition: all 0.2s ease-out;
+                        "></div>
+                      </div>
+                    `;
+                  } else if (createMarkerHTML) {
+                    // Обычные маркеры событий - поведение как на Яндекс картах
+                    let scale;
+                    if (z <= 6) {
+                      // При сильном отдалении - очень маленькие маркеры
+                      scale = Math.max(0.2, 0.2 + (z - 4) * 0.05);
+                    } else if (z <= 10) {
+                      // Средний зум - плавное увеличение
+                      scale = 0.3 + (z - 6) * 0.15;
+                    } else if (z <= 14) {
+                      // Нормальный зум
+                      scale = 0.9 + (z - 10) * 0.05;
+                    } else {
+                      // При сильном приближении - нормальный размер
+                      scale = Math.min(1.1, 1.1 + (z - 14) * 0.02);
+                    }
+                    markerElement.innerHTML = createMarkerHTML(scale);
+                  }
+                } catch (error) {
+                  console.log('Error applying marker scale:', error);
+                }
+              };
+              
+              applyScale();
+              const onZoom = () => applyScale();
               mapRef.current.on('zoom', onZoom);
               (marker as any)._onZoom = onZoom;
             }

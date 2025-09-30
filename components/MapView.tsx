@@ -34,6 +34,7 @@ export const MapView = (props: any) => {
         showsTraffic={false}
         showsIndoors={false}
         showsPointsOfInterest={true}
+        userLocationAnnotationTitle="Вы здесь"
         {...otherProps}
       >
         {children}

@@ -1329,7 +1329,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                 </MarkerComponent>
               )}
 
-              {/* User location marker with pulse */}
+              {/* User location marker with dynamic scaling */}
               {userLocation && (
                 <MarkerComponent
                   coordinate={{
@@ -1337,8 +1337,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                     longitude: userLocation.coords.longitude,
                   }}
                   title="Вы здесь"
-                  html={`<div data-role=\"user-marker\" style=\"position:relative;width:var(--size,40px);height:var(--size,40px);pointer-events:none;display:flex;align-items:center;justify-content:center;\">\n  <div style=\"width:calc(var(--size,40px) * 0.7);height:calc(var(--size,40px) * 0.7);border-radius:50%;background:linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);border:3px solid #FFFFFF;\"></div>\n</div>`}
-                  webMarkerOptions={{ sizeWithZoom: true, baseSizePx: 40 }}
+                  html={`<div data-role=\"user-marker\" style=\"position:relative;width:40px;height:40px;pointer-events:none;display:flex;align-items:center;justify-content:center;\">\n  <div style=\"width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);border:3px solid #FFFFFF;box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);\"></div>\n</div>`}
                 />
               )}
             </MapViewComponent>
