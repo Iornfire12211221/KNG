@@ -157,6 +157,11 @@ export default function MapScreen() {
   const plusButtonRotation = useRef(new Animated.Value(0)).current;
   const rippleScale = useRef(new Animated.Value(0)).current;
   const rippleOpacity = useRef(new Animated.Value(0)).current;
+  
+  // Animation values for modal
+  const modalScale = useRef(new Animated.Value(0.8)).current;
+  const modalOpacity = useRef(new Animated.Value(0)).current;
+  const modalBackdropOpacity = useRef(new Animated.Value(0)).current;
   const spinValue = useRef(new Animated.Value(0)).current;
   const pulseValue = useRef(new Animated.Value(1)).current;
   const savePulseValue = useRef(new Animated.Value(1)).current;
@@ -709,7 +714,27 @@ export default function MapScreen() {
     setQuickAddType('dps');
     setQuickAddSeverity('medium');
     setQuickAddPhotos([]);
+    
+    // Анимация открытия модального окна
     setShowQuickAdd(true);
+    Animated.parallel([
+      Animated.timing(modalBackdropOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(modalOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(modalScale, {
+        toValue: 1,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const getAddressFromCoords = async (lat: number, lng: number) => {
@@ -956,11 +981,35 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
   };
 
   const handleQuickAddCancel = () => {
+    // Анимация закрытия модального окна
+    Animated.parallel([
+      Animated.timing(modalBackdropOpacity, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(modalOpacity, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(modalScale, {
+        toValue: 0.8,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
     setShowQuickAdd(false);
     setQuickAddLocation(null);
     setTempPinLocation(null);
     setQuickAddDescription('');
     setQuickAddPhotos([]);
+      
+      // Сброс анимационных значений
+      modalScale.setValue(0.8);
+      modalOpacity.setValue(0);
+      modalBackdropOpacity.setValue(0);
+    });
   };
 
   const pickPhoto = async () => {
@@ -1548,7 +1597,34 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               plusButtonRotation.setValue(0);
             });
             
-            router.push('/add-post');
+            // Открываем модальное окно вместо перехода на другую страницу
+            setTempPinLocation(null);
+            setQuickAddLocation(null);
+            setQuickAddDescription('');
+            setQuickAddType('dps');
+            setQuickAddSeverity('medium');
+            setQuickAddPhotos([]);
+            
+            // Анимация открытия модального окна
+            setShowQuickAdd(true);
+            Animated.parallel([
+              Animated.timing(modalBackdropOpacity, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+              }),
+              Animated.timing(modalOpacity, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+              }),
+              Animated.spring(modalScale, {
+                toValue: 1,
+                tension: 100,
+                friction: 8,
+                useNativeDriver: true,
+              }),
+            ]).start();
           }}
           activeOpacity={0.8}
           accessibilityRole="button"
@@ -1564,7 +1640,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               })}
             ]
           }}>
-            <Plus size={20} color={cooldownSeconds > 0 ? "#9CA3AF" : "#007AFF"} />
+          <Plus size={20} color={cooldownSeconds > 0 ? "#9CA3AF" : "#007AFF"} />
           </Animated.View>
         </TouchableOpacity>
       </View>
@@ -1787,13 +1863,33 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
 
 
       {/* Quick Add Modal */}
-      <Modal
-        visible={showQuickAdd}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={handleQuickAddCancel}
-      >
-        <View style={styles.modalContainer}>
+      {showQuickAdd && (
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalBackdropTouchable}
+            activeOpacity={1}
+            onPress={handleQuickAddCancel}
+          >
+            <Animated.View 
+              style={[
+                styles.modalBackdrop,
+                { opacity: modalBackdropOpacity }
+              ]}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <Animated.View 
+              style={[
+                styles.modalContainer,
+                {
+                  opacity: modalOpacity,
+                  transform: [{ scale: modalScale }]
+                }
+              ]}
+            >
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={handleQuickAddCancel}>
               <X size={24} color="#9CA3AF" />
@@ -1982,15 +2078,17 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               </Text>
             </View>
           </ScrollView>
+          </Animated.View>
+          </TouchableOpacity>
         </View>
         <PermissionDialog />
-      </Modal>
+      )}
 
       {/* Event Details Modal */}
       <Modal
         visible={showEventDetails && selectedPost !== null}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        animationType="fade"
+        transparent={true}
         onRequestClose={() => {
           setShowEventDetails(false);
           setSelectedPost(null);
@@ -2151,8 +2249,8 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
       {/* Weekly Summary Modal */}
       <Modal
         visible={showWeeklySummary}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        animationType="fade"
+        transparent={true}
         onRequestClose={() => setShowWeeklySummary(false)}
       >
         <View style={styles.summaryContainer}>
@@ -3214,8 +3312,15 @@ const styles = StyleSheet.create({
   },
 
   modalContainer: {
-    flex: 1,
+    width: '90%',
+    maxHeight: '80%',
     backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -3916,6 +4021,33 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 122, 255, 0.1)',
     borderRadius: 8,
     zIndex: 1,
+  },
+  
+  // Modal animation styles
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBackdropTouchable: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
 
 
