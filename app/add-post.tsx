@@ -63,6 +63,12 @@ export default function AddPostScreen() {
   const savePulseValue = useRef(new Animated.Value(1)).current;
   const opacityValue = useRef(new Animated.Value(1)).current;
   const saveOpacityValue = useRef(new Animated.Value(1)).current;
+  
+  // Animation values for buttons and interactions
+  const typeButtonScale = useRef(new Animated.Value(1)).current;
+  const locationButtonScale = useRef(new Animated.Value(1)).current;
+  const photoButtonScale = useRef(new Animated.Value(1)).current;
+  const submitButtonScale = useRef(new Animated.Value(1)).current;
 
 
   const lastMyPostTs = useMemo(() => {
@@ -362,14 +368,7 @@ export default function AddPostScreen() {
     }
   };
 
-  // Auto-analyze severity when type or description changes
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      analyzeSeverityWithAI(selectedType, description);
-    }, 1000); // Debounce for 1 second
-
-    return () => clearTimeout(timeoutId);
-  }, [selectedType, description]);
+  // Убираем автоматический ИИ анализ - теперь только при сохранении
 
   // Pulsing animation for AI indicator
   useEffect(() => {
@@ -492,6 +491,9 @@ export default function AddPostScreen() {
       try {
         setIsSaving(true);
         
+        // Запускаем ИИ анализ только при сохранении
+        await analyzeSeverityWithAI(selectedType, description);
+        
         const finalAddress = address || await getAddressFromCoords(latitude, longitude);
         const now = Date.now();
         const postLifetime = POST_LIFETIMES[selectedType];
@@ -559,7 +561,24 @@ export default function AddPostScreen() {
         options={{
           title: '',
           headerRight: () => (
-            <TouchableOpacity onPress={handleSubmit} disabled={isSaving || cooldownSeconds > 0}>
+            <Animated.View style={{ transform: [{ scale: submitButtonScale }] }}>
+              <TouchableOpacity onPress={() => {
+                // Анимация нажатия
+                Animated.sequence([
+                  Animated.timing(submitButtonScale, {
+                    toValue: 0.95,
+                    duration: 100,
+                    useNativeDriver: true,
+                  }),
+                  Animated.timing(submitButtonScale, {
+                    toValue: 1,
+                    duration: 100,
+                    useNativeDriver: true,
+                  }),
+                ]).start();
+                
+                handleSubmit();
+              }} disabled={isSaving || cooldownSeconds > 0}>
               {isSaving ? (
                 <View style={styles.saveIndicator}>
                   <Animated.View style={{
@@ -579,7 +598,8 @@ export default function AddPostScreen() {
                   </Text>
                 </View>
               )}
-            </TouchableOpacity>
+              </TouchableOpacity>
+            </Animated.View>
           ),
         }} 
       />
@@ -601,25 +621,43 @@ export default function AddPostScreen() {
                 const IconComponent = type.icon;
                 const isSelected = selectedType === type.id;
                 return (
-                  <TouchableOpacity
-                    key={type.id}
-                    style={[
-                      styles.typeButton,
-                      isSelected && { backgroundColor: type.color, borderColor: type.color }
-                    ]}
-                    onPress={() => setSelectedType(type.id)}
-                  >
-                    <IconComponent 
-                      size={20} 
-                      color={isSelected ? '#FFFFFF' : type.color} 
-                    />
-                    <Text style={[
-                      styles.typeButtonText,
-                      isSelected && { color: '#FFFFFF' }
-                    ]}>
-                      {type.label}
-                    </Text>
-                  </TouchableOpacity>
+                  <Animated.View style={{ transform: [{ scale: typeButtonScale }] }}>
+                    <TouchableOpacity
+                      key={type.id}
+                      style={[
+                        styles.typeButton,
+                        isSelected && { backgroundColor: type.color, borderColor: type.color }
+                      ]}
+                      onPress={() => {
+                        // Анимация нажатия
+                        Animated.sequence([
+                          Animated.timing(typeButtonScale, {
+                            toValue: 0.95,
+                            duration: 100,
+                            useNativeDriver: true,
+                          }),
+                          Animated.timing(typeButtonScale, {
+                            toValue: 1,
+                            duration: 100,
+                            useNativeDriver: true,
+                          }),
+                        ]).start();
+                        
+                        setSelectedType(type.id);
+                      }}
+                    >
+                      <IconComponent 
+                        size={20} 
+                        color={isSelected ? '#FFFFFF' : type.color} 
+                      />
+                      <Text style={[
+                        styles.typeButtonText,
+                        isSelected && { color: '#FFFFFF' }
+                      ]}>
+                        {type.label}
+                      </Text>
+                    </TouchableOpacity>
+                  </Animated.View>
                 );
               })}
             </ScrollView>
@@ -661,34 +699,70 @@ export default function AddPostScreen() {
                   </View>
                 ))}
                 {selectedImages.length < 5 && (
-                  <TouchableOpacity
-                    style={styles.addMoreImageButton}
-                    onPress={showImagePicker}
-                    disabled={isUploadingImage}
-                  >
+                  <Animated.View style={{ transform: [{ scale: photoButtonScale }] }}>
+                    <TouchableOpacity
+                      style={styles.addMoreImageButton}
+                      onPress={() => {
+                        // Анимация нажатия
+                        Animated.sequence([
+                          Animated.timing(photoButtonScale, {
+                            toValue: 0.95,
+                            duration: 100,
+                            useNativeDriver: true,
+                          }),
+                          Animated.timing(photoButtonScale, {
+                            toValue: 1,
+                            duration: 100,
+                            useNativeDriver: true,
+                          }),
+                        ]).start();
+                        
+                        showImagePicker();
+                      }}
+                      disabled={isUploadingImage}
+                    >
                     {isUploadingImage ? (
                       <ActivityIndicator size="small" color="#0066FF" />
                     ) : (
                       <Plus size={20} color="#0066FF" />
                     )}
-                  </TouchableOpacity>
+                    </TouchableOpacity>
+                  </Animated.View>
                 )}
               </ScrollView>
             ) : (
-              <TouchableOpacity
-                style={styles.singlePhotoButton}
-                onPress={showImagePicker}
-                disabled={isUploadingImage}
-              >
+              <Animated.View style={{ transform: [{ scale: photoButtonScale }] }}>
+                <TouchableOpacity
+                  style={styles.singlePhotoButton}
+                  onPress={() => {
+                    // Анимация нажатия
+                    Animated.sequence([
+                      Animated.timing(photoButtonScale, {
+                        toValue: 0.95,
+                        duration: 100,
+                        useNativeDriver: true,
+                      }),
+                      Animated.timing(photoButtonScale, {
+                        toValue: 1,
+                        duration: 100,
+                        useNativeDriver: true,
+                      }),
+                    ]).start();
+                    
+                    showImagePicker();
+                  }}
+                  disabled={isUploadingImage}
+                >
                 {isUploadingImage ? (
                   <ActivityIndicator size="small" color="#0066FF" />
                 ) : (
                   <Camera size={24} color="#0066FF" />
                 )}
-              </TouchableOpacity>
+                </TouchableOpacity>
+              </Animated.View>
             )}
             <Text style={styles.imageHint}>
-              ИИ проверяет фото • Максимум 5 фото
+              Максимум 5 фото • ИИ анализ при сохранении
             </Text>
           </View>
 
@@ -727,18 +801,36 @@ export default function AddPostScreen() {
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity
-                style={styles.modernLocationButton}
-                onPress={() => getCurrentLocation(true)}
-                disabled={isGettingLocation}
-              >
+              <Animated.View style={{ transform: [{ scale: locationButtonScale }] }}>
+                <TouchableOpacity
+                  style={styles.modernLocationButton}
+                  onPress={() => {
+                    // Анимация нажатия
+                    Animated.sequence([
+                      Animated.timing(locationButtonScale, {
+                        toValue: 0.95,
+                        duration: 100,
+                        useNativeDriver: true,
+                      }),
+                      Animated.timing(locationButtonScale, {
+                        toValue: 1,
+                        duration: 100,
+                        useNativeDriver: true,
+                      }),
+                    ]).start();
+                    
+                    getCurrentLocation(true);
+                  }}
+                  disabled={isGettingLocation}
+                >
                 <View style={styles.locationIconContainer}>
                   <MapPin size={20} color="#0066FF" />
                 </View>
                 <Text style={styles.modernLocationButtonText}>
                   Определить текущее местоположение
                 </Text>
-              </TouchableOpacity>
+                </TouchableOpacity>
+              </Animated.View>
             )}
           </View>
 
