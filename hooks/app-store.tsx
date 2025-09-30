@@ -839,17 +839,6 @@ ${description ? `Описание от пользователя: "${description}
     }
 
     // Логика принятия решения:
-    // ВРЕМЕННО: Автоматически одобряем все посты для тестирования маркеров
-    console.log('Auto-approving post for testing markers');
-    finalPost = {
-      ...finalPost,
-      needsModeration: false,
-      autoApproved: true,
-      autoApprovalReason: 'Автоматически одобрено для тестирования',
-    };
-    
-    // Оригинальная логика (закомментирована для тестирования):
-    /*
     if (hasPhoto && imageApproved) {
       // Если есть фото и оно одобрено ИИ - публикуем сразу
       console.log('Post auto-approved based on image analysis');
@@ -888,7 +877,6 @@ ${description ? `Описание от пользователя: "${description}
           : 'Требует проверки модератором',
       };
     }
-    */
 
     setPosts((prev) => [finalPost, ...prev]);
     console.log('Post added:', finalPost.id, 'Needs moderation:', finalPost.needsModeration);

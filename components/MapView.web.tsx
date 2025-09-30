@@ -563,11 +563,46 @@ export const MapView = (props: any) => {
           try {
             const markerElement = document.createElement('div');
             const customHtml = (child.props as any).html as string | undefined;
-            markerElement.innerHTML = customHtml ? customHtml : (
-              child.props.children ? 
-              ReactDOMServer.renderToString(child.props.children) : 
-              '<div style="width: 20px; height: 20px; background: #FF3B30; border-radius: 50%; border: 2px solid white;"></div>'
-            );
+            
+            if (customHtml) {
+              markerElement.innerHTML = customHtml;
+            } else if (child.props.children) {
+              // Для React компонентов создаем простой HTML маркер
+              const postType = (child.props as any).postType || 'other';
+              const severity = (child.props as any).severity || 'medium';
+              const colors = {
+                dps: '#FF3B30',
+                patrol: '#007AFF', 
+                accident: '#FF9500',
+                camera: '#34C759',
+                roadwork: '#FF9500',
+                animals: '#8E44AD',
+                other: '#6C757D'
+              };
+              const color = colors[postType as keyof typeof colors] || '#6C757D';
+              const size = severity === 'high' ? '32px' : severity === 'medium' ? '28px' : '24px';
+              
+              markerElement.innerHTML = `
+                <div style="
+                  width: ${size}; 
+                  height: ${size}; 
+                  background: ${color}; 
+                  border-radius: 50%; 
+                  border: 3px solid white; 
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 12px;
+                  color: white;
+                  font-weight: bold;
+                ">
+                  ${postType === 'dps' ? 'Д' : postType === 'patrol' ? 'П' : postType === 'accident' ? 'ДТП' : '!'}
+                </div>
+              `;
+            } else {
+              markerElement.innerHTML = '<div style="width: 20px; height: 20px; background: #FF3B30; border-radius: 50%; border: 2px solid white;"></div>';
+            }
             
             // Ensure pointer alignment is centered
             const marker = new window.mapboxgl.Marker({ element: markerElement, anchor: 'center' })
