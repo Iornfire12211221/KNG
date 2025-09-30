@@ -1020,35 +1020,22 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
   };
 
   const pickPhoto = async () => {
-    console.log('pickPhoto called, Platform.OS:', Platform.OS, 'isTelegramWebApp:', isTelegramWebApp);
-    
-    if (Platform.OS === 'web' && !isTelegramWebApp) {
-      Alert.alert('Недоступно', 'Загрузка изображений недоступна в веб-версии');
-      return;
-    }
-
-    // Для Telegram WebApp используем встроенный API
-    if (Platform.OS === 'web' && isTelegramWebApp) {
+    if (Platform.OS === 'web') {
       try {
-        console.log('Setting isUploadingImage to true');
         setIsUploadingImage(true);
-        // Используем Telegram WebApp API для выбора файлов
+        // Используем HTML5 file input для выбора файлов
         if (typeof document !== 'undefined') {
-          console.log('Creating file input element');
           const input = document.createElement('input');
           input.type = 'file';
           input.accept = 'image/*';
           input.multiple = true;
           
           input.onchange = async (e: any) => {
-            console.log('File input changed, files:', e.target.files);
             const files = Array.from(e.target.files);
             if (files.length > 0) {
-              console.log('Processing', files.length, 'files');
               for (const file of files.slice(0, 5 - quickAddPhotos.length)) {
                 const reader = new FileReader();
                 reader.onload = (event: any) => {
-                  console.log('File read successfully, adding to photos');
                   setQuickAddPhotos(prev => [...prev, event.target.result]);
                 };
                 reader.readAsDataURL(file);
@@ -1057,16 +1044,14 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
             setIsUploadingImage(false);
           };
           
-          console.log('Clicking file input');
           input.click();
           return;
         } else {
-          console.error('Document not available');
           setIsUploadingImage(false);
           return;
         }
       } catch (error) {
-        console.error('Error picking photo in Telegram WebApp:', error);
+        console.error('Error picking photo:', error);
         setIsUploadingImage(false);
         return;
       }
@@ -1180,19 +1165,8 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
   };
 
   const showImagePicker = () => {
-    console.log('showImagePicker called, Platform.OS:', Platform.OS, 'isTelegramWebApp:', isTelegramWebApp);
-    console.log('window.Telegram:', typeof window !== 'undefined' ? window.Telegram : 'undefined');
-    
-    // Для Telegram WebApp сразу открываем галерею
-    if (Platform.OS === 'web' && isTelegramWebApp) {
-      console.log('Opening photo picker for Telegram WebApp');
-      pickPhoto();
-      return;
-    }
-    
-    // Для веб-версии (даже если не Telegram WebApp) пробуем открыть файловый диалог
+    // Для веб-версии сразу открываем файловый диалог
     if (Platform.OS === 'web') {
-      console.log('Opening photo picker for web platform');
       pickPhoto();
       return;
     }
@@ -1338,7 +1312,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                   description="Выберите тип события"
                 >
                   <View style={styles.tempPinMarker}>
-                    <MapPinIcon size={24} color="#FFFFFF" />
+                    <MapPinIcon size={18} color="#FFFFFF" />
                   </View>
                 </MarkerComponent>
               )}
@@ -1456,7 +1430,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                   description="Выберите тип события"
                 >
                   <View style={styles.tempPinMarker}>
-                    <MapPinIcon size={24} color="#FFFFFF" />
+                    <MapPinIcon size={18} color="#FFFFFF" />
                   </View>
                 </MarkerComponent>
               )}
@@ -1515,14 +1489,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                   const result = await requestLocation();
                   if (result.granted && result.location) {
                     const { latitude, longitude } = result.location;
-                    if (mapRef.current && mapRef.current.animateToRegion) {
-                      mapRef.current.animateToRegion({
-                        latitude,
-                        longitude,
-                        latitudeDelta: 0.01,
-                        longitudeDelta: 0.01,
-                      }, 700);
-                    }
+                    // Не центрируем карту автоматически при получении разрешения
                     const webLoc: Location.LocationObject = {
                       coords: {
                         latitude,
@@ -1547,14 +1514,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                   navigator.geolocation.getCurrentPosition(
                     (pos) => {
                       const { latitude, longitude } = pos.coords;
-                      if (mapRef.current && mapRef.current.animateToRegion) {
-                        mapRef.current.animateToRegion({
-                          latitude,
-                          longitude,
-                          latitudeDelta: 0.01,
-                          longitudeDelta: 0.01,
-                        }, 700);
-                      }
+                      // Не центрируем карту автоматически при получении геолокации
                       const webLoc: Location.LocationObject = {
                         coords: {
                           latitude,
@@ -1612,6 +1572,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                   if (last) {
                     console.log('Button: using last known location:', last.coords);
                     setUserLocation(last);
+                    // Центрируем карту только при нажатии кнопки
                     if (mapRef.current) {
                       mapRef.current.animateToRegion({
                         latitude: last.coords.latitude,
@@ -1630,6 +1591,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                     });
                     console.log('Button: quick current position:', quick.coords);
                     setUserLocation(quick);
+                    // Центрируем карту только при нажатии кнопки
                     if (mapRef.current) {
                       mapRef.current.animateToRegion({
                         latitude: quick.coords.latitude,
@@ -2117,10 +2079,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                   {quickAddPhotos.length < 5 && (
                     <TouchableOpacity
                       style={styles.addMoreImageButton}
-                      onPress={() => {
-                        console.log('Add more photo button pressed');
-                        showImagePicker();
-                      }}
+                      onPress={showImagePicker}
                       disabled={isUploadingImage}
                       activeOpacity={0.7}
                     >
@@ -2135,10 +2094,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               ) : (
                 <TouchableOpacity
                   style={styles.singlePhotoButton}
-                  onPress={() => {
-                    console.log('Photo button pressed');
-                    showImagePicker();
-                  }}
+                  onPress={showImagePicker}
                   disabled={isUploadingImage}
                   activeOpacity={0.7}
                 >
@@ -3744,19 +3700,19 @@ const styles = StyleSheet.create({
     borderColor: '#4B5563',
   },
   tempPinMarker: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#FF3B30',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: '#FFFFFF',
     shadowColor: '#FF3B30',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowRadius: 4,
+    elevation: 4,
   },
 
 
