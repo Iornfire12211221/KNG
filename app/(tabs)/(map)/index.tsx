@@ -1167,6 +1167,13 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
   };
 
   const showImagePicker = () => {
+    // Для Telegram WebApp сразу открываем галерею
+    if (Platform.OS === 'web' && isTelegramWebApp) {
+      pickPhoto();
+      return;
+    }
+    
+    // Для других платформ показываем выбор
     Alert.alert(
       'Фото',
       'Выберите способ добавления фотографии',
@@ -3394,8 +3401,8 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.08,
@@ -3945,13 +3952,14 @@ const styles = StyleSheet.create({
   singlePhotoButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    padding: 24,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 16,
+    padding: 32,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
     borderStyle: 'dashed',
-    minHeight: 90,
+    minHeight: 120,
+    marginVertical: 8,
   },
   imageHint: {
     fontSize: 12,
@@ -4019,7 +4027,7 @@ const styles = StyleSheet.create({
   addMoreImageButton: {
     width: 100,
     height: 100,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: '#0066FF',
     borderStyle: 'dashed',
