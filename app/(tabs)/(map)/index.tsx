@@ -1138,10 +1138,13 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                     longitude: userLocation.coords.longitude,
                   }}
                   title="Вы здесь"
-                  html={`<div style="position:relative;width:34px;height:34px;">
-                    <div style="position:absolute;left:0;top:0;width:34px;height:34px;border-radius:17px;background:rgba(0,122,255,0.18);border:2px solid rgba(0,122,255,0.35);"></div>
-                    <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:6px;background:#007AFF;border:2px solid #fff;"></div>
+                  html={`<div style=\"position:relative;width:34px;height:34px;\">
+                    <div style=\"position:absolute;left:0;top:0;width:34px;height:34px;border-radius:17px;background:rgba(0,122,255,0.18);border:2px solid rgba(0,122,255,0.35);animation:pulse 1.6s infinite ease-out;\"></div>
+                    <div style=\"position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:6px;background:#007AFF;border:2px solid #fff;box-shadow:0 0 0 2px rgba(255,255,255,0.6);\"></div>
+                    <style>@keyframes pulse{0%{transform:scale(0.9);opacity:0.8}70%{transform:scale(1.3);opacity:0.2}100%{transform:scale(1.6);opacity:0}}
+                    </style>
                   </div>`}
+                  webMarkerOptions={{ scaleWithZoom: true, baseScale: 1 }}
                 />
               )}
             </MapViewComponent>

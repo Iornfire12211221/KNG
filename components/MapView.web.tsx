@@ -525,6 +525,9 @@ export const MapView = (props: any) => {
             if (marker && typeof marker.remove === 'function') {
               marker.remove();
             }
+            if (marker && (marker as any)._onZoom && mapRef.current && mapRef.current.off) {
+              try { mapRef.current.off('zoom', (marker as any)._onZoom); } catch {}
+            }
           });
           markersRef.current = [];
         }
@@ -573,7 +576,23 @@ export const MapView = (props: any) => {
             if (child.props.onPress) {
               markerElement.addEventListener('click', child.props.onPress);
             }
-            
+            // Scale marker with zoom if requested
+            const opts = (child.props as any).webMarkerOptions || {};
+            if (opts.scaleWithZoom && mapRef.current) {
+              const applyScale = () => {
+                try {
+                  const z = mapRef.current.getZoom ? mapRef.current.getZoom() : 14;
+                  const scale = Math.max(0.6, Math.min(2.4, (opts.baseScale || 1) * (0.75 + (z - 14) * 0.12)));
+                  (markerElement as HTMLElement).style.transform = `scale(${scale})`;
+                  (markerElement as HTMLElement).style.transformOrigin = 'center';
+                } catch {}
+              };
+              applyScale();
+              const onZoom = () => applyScale();
+              mapRef.current.on('zoom', onZoom);
+              (marker as any)._onZoom = onZoom;
+            }
+
             markersRef.current.push(marker);
           } catch (error) {
             console.log('Error creating marker:', error);
