@@ -585,11 +585,11 @@ export const MapView = (props: any) => {
             
             if (customHtml) {
               markerElement.innerHTML = customHtml;
-             } else if (child.props.children) {
-               // Создаем маркер события
-                 // Создаем маркер точно как в событиях
-                 const postType = (child.props as any).postType || 'other';
-                 const severity = (child.props as any).severity || 'medium';
+            } else if (child.props.children) {
+              // Создаем маркер события
+              // Создаем маркер точно как в событиях
+              const postType = (child.props as any).postType || 'other';
+              const severity = (child.props as any).severity || 'medium';
               const colors = {
                 dps: '#FF3B30',
                 patrol: '#007AFF', 
@@ -601,52 +601,52 @@ export const MapView = (props: any) => {
               };
               const color = colors[postType as keyof typeof colors] || '#6C757D';
               
-               // Создаем аккуратные иконки как на втором скрине
-               const getIconHTML = (type: string, size: number) => {
-                 const strokeWidth = Math.max(2, size * 0.15);
-                 const iconSize = size;
-                 
-                 switch (type) {
-                   case 'dps': 
-                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
-                       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                       <path d="M12 8v4"/>
-                       <path d="M12 16h.01"/>
-                     </svg>`;
-                   case 'patrol': 
-                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
-                       <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
-                       <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
-                       <path d="M5 17h-2v-6l2.5 -6h7.5l4 6v6h-2"/>
-                       <path d="M9 7h4"/>
-                     </svg>`;
-                   case 'accident': 
-                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
-                       <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
-                       <path d="M12 9v4"/>
-                       <path d="M12 17h.01"/>
-                     </svg>`;
-                   case 'camera': 
-                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
-                       <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
-                       <circle cx="12" cy="13" r="3"/>
-                     </svg>`;
-                   case 'roadwork': 
-                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
-                       <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-                     </svg>`;
-                   case 'animals': 
-                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
-                       <path d="M13 16a3 3 0 0 1 2.24 5"/>
-                       <path d="M18 12h.01"/>
-                       <path d="M18 21h-8a4 4 0 0 1-4-4 7 7 0 0 1 7-7h.2L9.6 6.4a1 1 0 1 1 2.8-2.8L15.8 7h.2c3.3 0 6 2.7 6 6v1a2 2 0 0 1-2 2h-1a3 3 0 0 0-3 3"/>
-                     </svg>`;
-                   default: 
-                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
-                       <circle cx="12" cy="12" r="3"/>
-                     </svg>`;
-                 }
-               };
+              // Создаем аккуратные иконки как на втором скрине
+              const getIconHTML = (type: string, size: number) => {
+                const strokeWidth = Math.max(2, size * 0.15);
+                const iconSize = size;
+                
+                switch (type) {
+                  case 'dps': 
+                    return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                      <path d="M12 8v4"/>
+                      <path d="M12 16h.01"/>
+                    </svg>`;
+                  case 'patrol': 
+                    return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
+                      <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
+                      <path d="M5 17h-2v-6l2.5 -6h7.5l4 6v6h-2"/>
+                      <path d="M9 7h4"/>
+                    </svg>`;
+                  case 'accident': 
+                    return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                      <path d="M12 9v4"/>
+                      <path d="M12 17h.01"/>
+                    </svg>`;
+                  case 'camera': 
+                    return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                      <circle cx="12" cy="13" r="3"/>
+                    </svg>`;
+                  case 'roadwork': 
+                    return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                    </svg>`;
+                  case 'animals': 
+                    return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M13 16a3 3 0 0 1 2.24 5"/>
+                      <path d="M18 12h.01"/>
+                      <path d="M18 21h-8a4 4 0 0 1-4-4 7 7 0 0 1 7-7h.2L9.6 6.4a1 1 0 1 1 2.8-2.8L15.8 7h.2c3.3 0 6 2.7 6 6v1a2 2 0 0 1-2 2h-1a3 3 0 0 0-3 3"/>
+                    </svg>`;
+                  default: 
+                    return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>`;
+                }
+              };
               
               const getTypeLabel = (type: string) => {
                 switch (type) {
@@ -660,61 +660,60 @@ export const MapView = (props: any) => {
                 }
               };
               
-               const borderColor = severity === 'high' ? '#FF3B30' : severity === 'medium' ? '#FF9500' : '#FFFFFF';
-               
-               // Создаем аккуратные круглые маркеры меньшего размера
-               const createMarkerHTML = (scale: number) => {
-                 const size = Math.max(24, Math.min(32, 28 * scale));
-                 const iconSize = Math.max(10, Math.min(14, 12 * scale));
-                 const borderWidth = Math.max(1.5, 2 * scale);
-                 const labelSize = Math.max(8, Math.min(10, 9 * scale));
-                 
-                 return `
-                   <div style="
-                     position: relative;
-                     display: flex;
-                     flex-direction: column;
-                     align-items: center;
-                     cursor: pointer;
-                     transition: all 0.2s ease-out;
-                   ">
-                     <div style="
-                       width: ${size}px;
-                       height: ${size}px;
-                       border-radius: 50%;
-                       background: ${color};
-                       border: ${borderWidth}px solid #FFFFFF;
-                       display: flex;
-                       align-items: center;
-                       justify-content: center;
-                       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-                       transition: all 0.2s ease-out;
-                     ">
-                       ${getIconHTML(postType, iconSize)}
-                     </div>
-                     <div style="
-                       margin-top: 1px;
-                       background: ${color};
-                       color: white;
-                       padding: 1px 4px;
-                       border-radius: 6px;
-                       font-size: ${labelSize}px;
-                       font-weight: 600;
-                       white-space: nowrap;
-                       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-                       border: 1px solid rgba(255, 255, 255, 0.2);
-                     ">
-                       ${getTypeLabel(postType)}
-                     </div>
-                   </div>
-                 `;
-               };
-               
-               markerElement.innerHTML = createMarkerHTML(1);
-               }
-             } else {
-               markerElement.innerHTML = '<div style="width: 20px; height: 20px; background: #FF3B30; border-radius: 50%; border: 2px solid white;"></div>';
-             }
+              const borderColor = severity === 'high' ? '#FF3B30' : severity === 'medium' ? '#FF9500' : '#FFFFFF';
+              
+              // Создаем аккуратные круглые маркеры меньшего размера
+              const createMarkerHTML = (scale: number) => {
+                const size = Math.max(24, Math.min(32, 28 * scale));
+                const iconSize = Math.max(10, Math.min(14, 12 * scale));
+                const borderWidth = Math.max(1.5, 2 * scale);
+                const labelSize = Math.max(8, Math.min(10, 9 * scale));
+                
+                return `
+                  <div style="
+                    position: relative;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    cursor: pointer;
+                    transition: all 0.2s ease-out;
+                  ">
+                    <div style="
+                      width: ${size}px;
+                      height: ${size}px;
+                      border-radius: 50%;
+                      background: ${color};
+                      border: ${borderWidth}px solid #FFFFFF;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+                      transition: all 0.2s ease-out;
+                    ">
+                      ${getIconHTML(postType, iconSize)}
+                    </div>
+                    <div style="
+                      margin-top: 1px;
+                      background: ${color};
+                      color: white;
+                      padding: 1px 4px;
+                      border-radius: 6px;
+                      font-size: ${labelSize}px;
+                      font-weight: 600;
+                      white-space: nowrap;
+                      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+                      border: 1px solid rgba(255, 255, 255, 0.2);
+                    ">
+                      ${getTypeLabel(postType)}
+                    </div>
+                  </div>
+                `;
+              };
+              
+              markerElement.innerHTML = createMarkerHTML(1);
+            } else {
+              markerElement.innerHTML = '<div style="width: 20px; height: 20px; background: #FF3B30; border-radius: 50%; border: 2px solid white;"></div>';
+            }
             
             // Check if this is a user location marker
             const isUserMarker = markerElement.querySelector('[data-role="user-marker"]') !== null;
