@@ -580,7 +580,20 @@ export const MapView = (props: any) => {
                 other: '#6C757D'
               };
               const color = colors[postType as keyof typeof colors] || '#6C757D';
-              const size = severity === 'high' ? '32px' : severity === 'medium' ? '28px' : '24px';
+              const size = severity === 'high' ? '36px' : severity === 'medium' ? '32px' : '28px';
+              
+              // Создаем красивые иконки для каждого типа
+              const getIcon = (type: string) => {
+                switch (type) {
+                  case 'dps': return '🛡️';
+                  case 'patrol': return '🚔';
+                  case 'accident': return '⚠️';
+                  case 'camera': return '📷';
+                  case 'roadwork': return '🚧';
+                  case 'animals': return '🐾';
+                  default: return '📍';
+                }
+              };
               
               markerElement.innerHTML = `
                 <div style="
@@ -589,15 +602,16 @@ export const MapView = (props: any) => {
                   background: ${color}; 
                   border-radius: 50%; 
                   border: 3px solid white; 
-                  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
                   display: flex;
                   align-items: center;
                   justify-content: center;
-                  font-size: 12px;
+                  font-size: ${severity === 'high' ? '16px' : severity === 'medium' ? '14px' : '12px'};
                   color: white;
                   font-weight: bold;
+                  position: relative;
                 ">
-                  ${postType === 'dps' ? 'Д' : postType === 'patrol' ? 'П' : postType === 'accident' ? 'ДТП' : '!'}
+                  ${getIcon(postType)}
                 </div>
               `;
             } else {

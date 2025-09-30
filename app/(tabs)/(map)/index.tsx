@@ -316,10 +316,10 @@ export default function MapScreen() {
     };
   }, [userLocation]);
 
-  // Автоматически центрируем карту на пользователе при получении местоположения (только при первом запуске)
+  // Автоматически центрируем карту на пользователе только при первом запуске
   useEffect(() => {
-    if (userLocation && mapRef.current && !mapInitialized.current && !userHasMovedMap) {
-      console.log('Auto-centering map on user location:', userLocation.coords);
+    if (userLocation && mapRef.current && !mapInitialized.current) {
+      console.log('Auto-centering map on user location (first time only):', userLocation.coords);
       setTimeout(() => {
         if (mapRef.current) {
           mapRef.current.animateToRegion({
@@ -332,7 +332,7 @@ export default function MapScreen() {
       }, 500);
       mapInitialized.current = true;
     }
-  }, [userLocation, userHasMovedMap]);
+  }, [userLocation]);
 
   const requestLocationPermission = async () => {
     try {
@@ -357,14 +357,7 @@ export default function MapScreen() {
             timestamp: Date.now(),
           } as unknown as Location.LocationObject;
           setUserLocation(webLoc);
-          if (mapRef.current) {
-            mapRef.current.animateToRegion({
-              latitude: result.location.latitude,
-              longitude: result.location.longitude,
-              latitudeDelta: 0.02,
-              longitudeDelta: 0.02,
-            }, 1000);
-          }
+          // Не центрируем карту автоматически - только при нажатии кнопки
         } else {
           setLocationError('Доступ к геолокации запрещен');
           setTimeout(() => {
@@ -406,14 +399,7 @@ export default function MapScreen() {
         if (last) {
           console.log('Using last known location instantly:', last.coords);
           setUserLocation(last);
-          if (mapRef.current) {
-            mapRef.current.animateToRegion({
-              latitude: last.coords.latitude,
-              longitude: last.coords.longitude,
-              latitudeDelta: 0.02,
-              longitudeDelta: 0.02,
-            }, 600);
-          }
+          // Не центрируем карту автоматически - только при нажатии кнопки
         }
       } catch (e) {
         console.log('No last known location available', e);
@@ -428,14 +414,7 @@ export default function MapScreen() {
         quickGot = true;
         console.log('Quick location obtained:', quick.coords);
         setUserLocation(quick);
-        if (mapRef.current) {
-          mapRef.current.animateToRegion({
-            latitude: quick.coords.latitude,
-            longitude: quick.coords.longitude,
-            latitudeDelta: 0.02,
-            longitudeDelta: 0.02,
-          }, 700);
-        }
+        // Не центрируем карту автоматически - только при нажатии кнопки
       } catch (e) {
         console.log('Quick location timeout, will refine in background', e);
       }
@@ -451,14 +430,7 @@ export default function MapScreen() {
           });
           console.log('Precise location obtained (background):', precise.coords);
           setUserLocation(precise);
-          if (mapRef.current) {
-            mapRef.current.animateToRegion({
-              latitude: precise.coords.latitude,
-              longitude: precise.coords.longitude,
-              latitudeDelta: 0.02,
-              longitudeDelta: 0.02,
-            }, 700);
-          }
+          // Не центрируем карту автоматически - только при нажатии кнопки
         } catch (e) {
           console.log('Precise background fetch failed', e);
         }
@@ -747,6 +719,33 @@ export default function MapScreen() {
 
   const getAddressFromCoords = async (lat: number, lng: number) => {
     if (Platform.OS === 'web') {
+      // Для веб-версии используем OpenStreetMap Nominatim API
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+          {
+            headers: {
+              'User-Agent': 'KNG-App/1.0'
+            }
+          }
+        );
+        const data = await response.json();
+        
+        if (data && data.display_name) {
+          // Извлекаем основные части адреса
+          const parts = [];
+          if (data.address) {
+            if (data.address.road) parts.push(data.address.road);
+            if (data.address.house_number) parts.push(data.address.house_number);
+            if (data.address.suburb) parts.push(data.address.suburb);
+            if (data.address.city) parts.push(data.address.city);
+          }
+          
+          return parts.length > 0 ? parts.join(', ') : data.display_name.split(',')[0];
+        }
+      } catch (error) {
+        console.error('Error getting address from Nominatim:', error);
+      }
       return 'Неизвестный адрес';
     }
     
@@ -1031,27 +1030,33 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
       try {
         setIsUploadingImage(true);
         // Используем Telegram WebApp API для выбора файлов
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*';
-        input.multiple = true;
-        
-        input.onchange = async (e: any) => {
-          const files = Array.from(e.target.files);
-          if (files.length > 0) {
-            for (const file of files.slice(0, 5 - quickAddPhotos.length)) {
-              const reader = new FileReader();
-              reader.onload = (event: any) => {
-                setQuickAddPhotos(prev => [...prev, event.target.result]);
-              };
-              reader.readAsDataURL(file);
+        if (typeof document !== 'undefined') {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = 'image/*';
+          input.multiple = true;
+          
+          input.onchange = async (e: any) => {
+            const files = Array.from(e.target.files);
+            if (files.length > 0) {
+              for (const file of files.slice(0, 5 - quickAddPhotos.length)) {
+                const reader = new FileReader();
+                reader.onload = (event: any) => {
+                  setQuickAddPhotos(prev => [...prev, event.target.result]);
+                };
+                reader.readAsDataURL(file);
+              }
             }
-          }
+            setIsUploadingImage(false);
+          };
+          
+          input.click();
+          return;
+        } else {
+          console.error('Document not available');
           setIsUploadingImage(false);
-        };
-        
-        input.click();
-        return;
+          return;
+        }
       } catch (error) {
         console.error('Error picking photo in Telegram WebApp:', error);
         setIsUploadingImage(false);
