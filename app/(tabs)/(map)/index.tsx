@@ -360,7 +360,7 @@ export default function MapScreen() {
 
   // ВРЕМЕННО ОТКЛЮЧАЕМ автоматическое центрирование карты
   useEffect(() => {
-    console.log('useEffect triggered (AUTO-CENTER DISABLED):', {
+    console.log('🚫🚫🚫 useEffect triggered (AUTO-CENTER DISABLED) 🚫🚫🚫:', {
       userLocation: !!userLocation,
       mapRef: !!mapRef.current,
       mapInitialized: mapInitialized.current,
@@ -369,7 +369,7 @@ export default function MapScreen() {
     
     // Просто отмечаем, что карта инициализирована, но НЕ центрируем
     if (userLocation && mapRef.current && !mapInitialized.current) {
-      console.log('Map initialized but auto-centering DISABLED');
+      console.log('🚫🚫🚫 Map initialized but auto-centering DISABLED 🚫🚫🚫');
       mapInitialized.current = true;
     }
   }, [userLocation, userHasMovedMap]);
