@@ -825,7 +825,7 @@ export const MapView = (props: any) => {
                         }
                       </style>
                     `;
-                  } else if (createMarkerHTML) {
+                  } else if (typeof createMarkerHTML === 'function') {
                     // Обычные маркеры событий - более агрессивное уменьшение
                     let scale;
                     if (z <= 5) {
@@ -841,6 +841,8 @@ export const MapView = (props: any) => {
                     }
                     console.log('Event marker scale:', scale, 'for zoom:', z); // Debug log
                     markerElement.innerHTML = createMarkerHTML(scale);
+                  } else {
+                    console.log('createMarkerHTML is not available for marker scaling');
                   }
                 } catch (error) {
                   console.log('Error applying marker scale:', error);

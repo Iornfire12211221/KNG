@@ -1584,6 +1584,10 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               } finally {
                 setTimeout(() => setIsLoadingLocation(false), 300);
               }
+              
+              // Центрируем карту на пользователе после получения локации
+              console.log('🔵🔵🔵 Web button: calling centerOnUser 🔵🔵🔵');
+              centerOnUser();
             } else {
               // Для мобильных - быстрое центрирование на пользователе
               if (userLocation) {
