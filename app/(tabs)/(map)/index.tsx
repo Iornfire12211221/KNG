@@ -51,23 +51,25 @@ const { width, height } = Dimensions.get('window');
 
 // Универсальная функция для центрирования карты
 const centerMapOnLocation = (latitude: number, longitude: number, latitudeDelta: number = 0.01, longitudeDelta: number = 0.01) => {
+  console.log('🎯 centerMapOnLocation called with:', { latitude, longitude, latitudeDelta, longitudeDelta });
+  console.log('🎯 Platform.OS:', Platform.OS);
+  console.log('🎯 window.globalMapInstance available:', !!window.globalMapInstance);
+  
   if (Platform.OS === 'web') {
     // Для веб-версии используем flyTo через глобальный экземпляр карты
     if (window.globalMapInstance && window.globalMapInstance.flyTo) {
+      console.log('🎯 Using globalMapInstance.flyTo with center:', [longitude, latitude]);
       window.globalMapInstance.flyTo({
         center: [longitude, latitude],
         zoom: 15,
         duration: 1000
       });
+      console.log('🎯 flyTo command sent successfully');
+    } else {
+      console.log('❌ globalMapInstance not available for centering');
     }
-  } else if (mapRef.current && mapRef.current.animateToRegion) {
-    // Для мобильной версии используем animateToRegion
-    mapRef.current.animateToRegion({
-      latitude,
-      longitude,
-      latitudeDelta,
-      longitudeDelta,
-    }, 1000);
+  } else {
+    console.log('❌ No centering method available for mobile');
   }
 };
 
@@ -1718,12 +1720,25 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                   
                   if (isTelegramWebApp) {
                     console.log('📱 Using Telegram WebApp location API');
-                    const result = await requestLocation();
-                    console.log('📱 Telegram result:', result);
-                    
-                    if (result.granted && result.location) {
-                      const { latitude, longitude } = result.location;
-                      console.log('✅ Got Telegram location:', latitude, longitude);
+                    try {
+                      const result = await requestLocation();
+                      console.log('📱 Telegram result:', result);
+                      
+                      if (result.granted && result.location) {
+                        const { latitude, longitude } = result.location;
+                        console.log('✅ Got Telegram location:', latitude, longitude);
+                        console.log('📍 Location coordinates:', { lat: latitude, lng: longitude });
+                        
+                        // Проверяем, что это не координаты Кингисеппа
+                        const isKingisepp = Math.abs(latitude - KINGISEPP_CENTER.latitude) < 0.01 && 
+                                          Math.abs(longitude - KINGISEPP_CENTER.longitude) < 0.01;
+                        
+                        if (isKingisepp) {
+                          console.log('⚠️ WARNING: Got Kingisepp coordinates instead of real location!');
+                          console.log('⚠️ This might be a fallback location or cached data');
+                        } else {
+                          console.log('✅ Real location received (not Kingisepp)');
+                        }
                       
                       // Сохраняем локацию
                       const webLoc: Location.LocationObject = {
@@ -1755,12 +1770,18 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                         centerMapOnLocation(latitude, longitude, 0.01, 0.01);
                       }
                       
-                      hapticFeedback('success');
-                      console.log('✅ Location request completed successfully!');
-                    } else {
-                      console.log('❌ Telegram location denied');
+                        hapticFeedback('success');
+                        console.log('✅ Location request completed successfully!');
+                      } else {
+                        console.log('❌ Telegram location denied or no location data');
+                        console.log('❌ Result details:', result);
+                        hapticFeedback('error');
+                        setLocationError('Доступ к геолокации запрещен');
+                      }
+                    } catch (error) {
+                      console.log('❌ Telegram location request failed:', error);
                       hapticFeedback('error');
-                      setLocationError('Доступ к геолокации запрещен');
+                      setLocationError('Ошибка запроса локации через Telegram');
                     }
                   } else if (navigator.geolocation) {
                     console.log('🌐 Using browser geolocation API');
@@ -1768,6 +1789,18 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                       (pos) => {
                         const { latitude, longitude } = pos.coords;
                         console.log('✅ Got browser location:', latitude, longitude);
+                        console.log('📍 Browser coordinates:', { lat: latitude, lng: longitude });
+                        
+                        // Проверяем, что это не координаты Кингисеппа
+                        const isKingisepp = Math.abs(latitude - KINGISEPP_CENTER.latitude) < 0.01 && 
+                                          Math.abs(longitude - KINGISEPP_CENTER.longitude) < 0.01;
+                        
+                        if (isKingisepp) {
+                          console.log('⚠️ WARNING: Got Kingisepp coordinates from browser!');
+                          console.log('⚠️ This might be a fallback location or cached data');
+                        } else {
+                          console.log('✅ Real browser location received (not Kingisepp)');
+                        }
                         
                         // Сохраняем локацию
                         const webLoc: Location.LocationObject = {

@@ -241,15 +241,24 @@ export const useTelegram = () => {
 
   const requestLocation = useCallback(() => {
     return new Promise<{ granted: boolean; location?: { latitude: number; longitude: number } }>((resolve) => {
+      console.log('🔍 requestLocation called');
+      console.log('🔍 webApp available:', !!webApp);
+      console.log('🔍 webApp.requestLocation available:', !!webApp?.requestLocation);
+      
       if (webApp?.requestLocation) {
+        console.log('📱 Using Telegram WebApp requestLocation');
         webApp.requestLocation((granted, location) => {
+          console.log('📱 Telegram requestLocation callback:', { granted, location });
           resolve({ granted, location });
         });
       } else {
+        console.log('🌐 Using browser geolocation fallback');
         // Fallback для обычного браузера
         if (navigator.geolocation) {
+          console.log('🌐 Browser geolocation available, requesting position...');
           navigator.geolocation.getCurrentPosition(
             (position) => {
+              console.log('🌐 Browser geolocation success:', position.coords);
               resolve({
                 granted: true,
                 location: {
@@ -258,12 +267,14 @@ export const useTelegram = () => {
                 }
               });
             },
-            () => {
+            (error) => {
+              console.log('🌐 Browser geolocation error:', error);
               resolve({ granted: false });
             },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } // Изменили maximumAge на 0 для получения свежих данных
           );
         } else {
+          console.log('❌ No geolocation available');
           resolve({ granted: false });
         }
       }
