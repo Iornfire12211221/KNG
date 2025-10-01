@@ -86,6 +86,8 @@ export const MapView = (props: any) => {
     map.on('load', () => {
       globalMapInstance = map;
       globalMapContainer = mapContainerRef.current;
+      // Экспортируем глобальный экземпляр карты для внешнего использования
+      (window as any).globalMapInstance = map;
       isMapInitializing = false;
       setMapLoaded(true);
       setIsLoading(false);
@@ -161,26 +163,24 @@ export const MapView = (props: any) => {
       });
     }
 
-    // Добавляем обработчик зума для принудительного обновления маркеров
-    map.on('zoomend', () => {
-      console.log('Map zoom ended, forcing marker update');
-      // Принудительно обновляем все маркеры
-      markersRef.current.forEach((marker) => {
+    // Добавляем обработчики зума для принудительного обновления маркеров
+    const updateAllMarkers = () => {
+      console.log('Updating all markers, count:', markersRef.current.length);
+      markersRef.current.forEach((marker, index) => {
         if (marker && marker._onZoom) {
-          marker._onZoom();
+          try {
+            marker._onZoom();
+          } catch (error) {
+            console.log(`Error updating marker ${index}:`, error);
+          }
         }
       });
-    });
+    };
 
-    map.on('moveend', () => {
-      console.log('Map move ended, forcing marker update');
-      // Принудительно обновляем все маркеры
-      markersRef.current.forEach((marker) => {
-        if (marker && marker._onZoom) {
-          marker._onZoom();
-        }
-      });
-    });
+    map.on('zoom', updateAllMarkers);
+    map.on('zoomend', updateAllMarkers);
+    map.on('move', updateAllMarkers);
+    map.on('moveend', updateAllMarkers);
 
     if (onLongPress) {
       let pressTimer: number | null = null;
@@ -466,27 +466,31 @@ export const MapView = (props: any) => {
         return;
       }
       
-      // Preload resources with higher priority
+      // Preload resources with higher priority and correct crossorigin
       const preloadScript = document.createElement('link');
       preloadScript.rel = 'preload';
       preloadScript.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
       preloadScript.as = 'script';
+      preloadScript.crossOrigin = 'anonymous';
       document.head.appendChild(preloadScript);
       
       const preloadCSS = document.createElement('link');
       preloadCSS.rel = 'preload';
       preloadCSS.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
       preloadCSS.as = 'style';
+      preloadCSS.crossOrigin = 'anonymous';
       document.head.appendChild(preloadCSS);
       
       // Load Mapbox GL JS
       const script = document.createElement('script');
       script.src = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
       script.async = true;
+      script.crossOrigin = 'anonymous';
       script.onload = () => {
         const link = document.createElement('link');
         link.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
         link.rel = 'stylesheet';
+        link.crossOrigin = 'anonymous';
         link.onload = () => {
           // Добавляем CSS для скрытия элементов Mapbox
           const style = document.createElement('style');

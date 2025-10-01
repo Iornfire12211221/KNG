@@ -39,6 +39,14 @@ import LoadingOverlay from '@/components/LoadingOverlay';
 import GlassView from '@/components/GlassView';
 import * as ImagePicker from 'expo-image-picker';
 
+// Declare global types for Mapbox
+declare global {
+  interface Window {
+    mapboxgl: any;
+    globalMapInstance: any;
+  }
+}
+
 const { width, height } = Dimensions.get('window');
 
 // Кингисепп координаты
@@ -1698,7 +1706,16 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                     setUserLocation(webLoc);
                     
                     // Центрируем карту на локации пользователя
-                    if (mapRef.current && mapRef.current.animateToRegion) {
+                    if (Platform.OS === 'web') {
+                      // Для веб-версии используем flyTo через глобальный экземпляр карты
+                      if (window.globalMapInstance && window.globalMapInstance.flyTo) {
+                        window.globalMapInstance.flyTo({
+                          center: [longitude, latitude],
+                          zoom: 15,
+                          duration: 1000
+                        });
+                      }
+                    } else if (mapRef.current && mapRef.current.animateToRegion) {
                       mapRef.current.animateToRegion({
                         latitude,
                         longitude,
@@ -1734,7 +1751,16 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                       setUserLocation(webLoc);
                       
                       // Центрируем карту на локации пользователя
-                      if (mapRef.current && mapRef.current.animateToRegion) {
+                      if (Platform.OS === 'web') {
+                        // Для веб-версии используем flyTo через глобальный экземпляр карты
+                        if (window.globalMapInstance && window.globalMapInstance.flyTo) {
+                          window.globalMapInstance.flyTo({
+                            center: [longitude, latitude],
+                            zoom: 15,
+                            duration: 1000
+                          });
+                        }
+                      } else if (mapRef.current && mapRef.current.animateToRegion) {
                         mapRef.current.animateToRegion({
                           latitude,
                           longitude,
