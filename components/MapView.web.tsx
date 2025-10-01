@@ -671,10 +671,8 @@ export const MapView = (props: any) => {
                     </svg>`;
                   case 'patrol': 
                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
-                      <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
-                      <path d="M5 17h-2v-6l2.5 -6h7.5l4 6v6h-2"/>
-                      <path d="M9 7h4"/>
+                      <path d="M12 2L4 6v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V6l-8-4z"/>
+                      <path d="M12 8v8M8 12h8"/>
                     </svg>`;
                   case 'accident': 
                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
@@ -816,34 +814,40 @@ export const MapView = (props: any) => {
                   } else if (typeof createMarkerHTML === 'function') {
                     // Минималистичные маркеры событий - скрываем при сильном отдалении
                     let scale;
-                    if (z <= 6) {
-                      // При сильном отдалении - скрываем маркеры
+                    if (z <= 10) {
+                      // При сильном отдалении - полностью скрываем маркеры
                       markerElement.style.display = 'none';
                       markerElement.style.opacity = '0';
+                      markerElement.style.visibility = 'hidden';
+                      markerElement.style.pointerEvents = 'none';
+                      console.log('🔴 Hiding marker at zoom:', z);
                       return;
-                    } else if (z <= 8) {
+                    } else if (z <= 11) {
                       // При среднем отдалении - очень маленькие
-                      scale = 0.2;
+                      scale = 0.3;
                       markerElement.style.display = 'block';
-                      markerElement.style.opacity = '0.7';
-                    } else if (z <= 10) {
-                      // При нормальном отдалении - маленькие
-                      scale = 0.4;
+                      markerElement.style.opacity = '0.6';
+                      markerElement.style.visibility = 'visible';
+                      markerElement.style.pointerEvents = 'auto';
+                      console.log('🟡 Small marker at zoom:', z);
+                    } else if (z <= 13) {
+                      // При нормальном отдалении - средние
+                      scale = 0.5 + (z - 11) * 0.25;
                       markerElement.style.display = 'block';
                       markerElement.style.opacity = '0.8';
-                    } else if (z <= 12) {
-                      // При приближении - средние
-                      scale = 0.6 + (z - 10) * 0.2;
-                      markerElement.style.display = 'block';
-                      markerElement.style.opacity = '0.9';
+                      markerElement.style.visibility = 'visible';
+                      markerElement.style.pointerEvents = 'auto';
+                      console.log('🟢 Medium marker at zoom:', z);
                     } else {
                       // При близком приближении - полный размер
                       scale = 1.0;
                       markerElement.style.display = 'block';
                       markerElement.style.opacity = '1';
+                      markerElement.style.visibility = 'visible';
+                      markerElement.style.pointerEvents = 'auto';
+                      console.log('🔵 Full marker at zoom:', z);
                     }
-                    console.log('Event marker scale:', scale, 'for zoom:', z); // Debug log
-                    markerElement.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                    markerElement.style.transition = 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
                     markerElement.innerHTML = createMarkerHTML(scale);
                   } else {
                     console.log('createMarkerHTML is not available for marker scaling');

@@ -112,22 +112,26 @@ const DPSIcon = ({ size, color }: { size: number; color: string }) => (
   <Shield size={size} color={color} />
 );
 
-const PatrolIcon = ({ size, color }: { size: number; color: string }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    {/* Основной корпус автомобиля */}
-    <Path 
-      d="M3 12h2l1.5-4h11l1.5 4h2v6h-2v-2H5v2H3v-6z" 
-      stroke={color} 
-      strokeWidth="1.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-      fill="none"
-    />
-    {/* Колеса */}
-    <Circle cx="6" cy="18" r="2" fill={color} />
-    <Circle cx="18" cy="18" r="2" fill={color} />
-  </Svg>
-);
+  const PatrolIcon = ({ size, color }: { size: number; color: string }) => (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {/* Щит с крестом - символ безопасности и защиты */}
+      <Path 
+        d="M12 2L4 6v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V6l-8-4z" 
+        stroke={color} 
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeLinejoin="round"
+        fill="none"
+      />
+      {/* Крест в центре щита */}
+      <Path 
+        d="M12 8v8M8 12h8" 
+        stroke={color} 
+        strokeWidth="2" 
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
 
 const AccidentIcon = ({ size, color }: { size: number; color: string }) => (
   <AlertTriangle size={size} color={color} />
@@ -2965,13 +2969,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   postCardSelected: {
-    borderColor: '#007AFF',
-    borderWidth: 2,
-    shadowColor: '#007AFF',
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 6,
-    transform: [{ scale: 1.02 }],
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 4,
+    transform: [{ scale: 1.01 }],
   },
   postHeader: {
     flexDirection: 'row',
