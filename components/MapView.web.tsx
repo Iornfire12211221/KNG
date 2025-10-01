@@ -795,10 +795,11 @@ export const MapView = (props: any) => {
                   const z = mapRef.current.getZoom ? mapRef.current.getZoom() : 14;
                   
                   // Проверяем, изменился ли зум значительно (оптимизация)
-                  if (Math.abs(z - lastZoomLevel) < 0.1) {
+                  if (Math.abs(z - lastZoomLevel) < 0.05) {
                     return; // Не обновляем, если зум изменился незначительно
                   }
                   lastZoomLevel = z;
+                  console.log('Zoom level changed to:', z);
                   
                   if (isUserMarker) {
                     // Специальная обработка для маркера пользователя - более агрессивное уменьшение
@@ -932,7 +933,10 @@ export const MapView = (props: any) => {
               const onZoom = () => {
                 // Уменьшенный дебаунсинг для лучшей отзывчивости
                 clearTimeout(zoomTimeout);
-                zoomTimeout = setTimeout(() => applyScale(), 100); // Reduced for better responsiveness
+                zoomTimeout = setTimeout(() => {
+                  console.log('Applying scale to marker');
+                  applyScale();
+                }, 50); // Even faster for better responsiveness
               };
               
               // Добавляем обработчики событий зума
@@ -946,7 +950,7 @@ export const MapView = (props: any) => {
                 if (mapRef.current) {
                   applyScale();
                 }
-              }, 500); // Reduced for better responsiveness
+              }, 200); // Even faster for better responsiveness
               
               // Сохраняем interval для очистки
               (marker as any)._intervalId = intervalId;

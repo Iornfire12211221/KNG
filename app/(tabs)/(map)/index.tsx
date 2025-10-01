@@ -49,6 +49,28 @@ declare global {
 
 const { width, height } = Dimensions.get('window');
 
+// Универсальная функция для центрирования карты
+const centerMapOnLocation = (latitude: number, longitude: number, latitudeDelta: number = 0.01, longitudeDelta: number = 0.01) => {
+  if (Platform.OS === 'web') {
+    // Для веб-версии используем flyTo через глобальный экземпляр карты
+    if (window.globalMapInstance && window.globalMapInstance.flyTo) {
+      window.globalMapInstance.flyTo({
+        center: [longitude, latitude],
+        zoom: 15,
+        duration: 1000
+      });
+    }
+  } else if (mapRef.current && mapRef.current.animateToRegion) {
+    // Для мобильной версии используем animateToRegion
+    mapRef.current.animateToRegion({
+      latitude,
+      longitude,
+      latitudeDelta,
+      longitudeDelta,
+    }, 1000);
+  }
+};
+
 // Кингисепп координаты
 const KINGISEPP_CENTER = {
   latitude: 59.3733,
@@ -366,12 +388,12 @@ export default function MapScreen() {
     if (userLocation && mapRef.current && !mapInitialized.current) {
       setTimeout(() => {
         if (mapRef.current && !userHasMovedMap) {
-          mapRef.current.animateToRegion({
-            latitude: userLocation.coords.latitude,
-            longitude: userLocation.coords.longitude,
-            latitudeDelta: 0.02,
-            longitudeDelta: 0.02,
-          }, 1000);
+          centerMapOnLocation(
+            userLocation.coords.latitude,
+            userLocation.coords.longitude,
+            0.02,
+            0.02
+          );
         }
       }, 500);
       mapInitialized.current = true;
@@ -406,12 +428,12 @@ export default function MapScreen() {
           setLocationError('Доступ к геолокации запрещен');
           setTimeout(() => {
             if (mapRef.current) {
-              mapRef.current.animateToRegion({
-                latitude: KINGISEPP_CENTER.latitude,
-                longitude: KINGISEPP_CENTER.longitude,
-                latitudeDelta: 0.05,
-                longitudeDelta: 0.05,
-              }, 1000);
+              centerMapOnLocation(
+                KINGISEPP_CENTER.latitude,
+                KINGISEPP_CENTER.longitude,
+                0.05,
+                0.05
+              );
             }
           }, 300);
         }
@@ -426,12 +448,12 @@ export default function MapScreen() {
         setLocationError('Доступ к геолокации запрещен');
         setTimeout(() => {
           if (mapRef.current) {
-            mapRef.current.animateToRegion({
-              latitude: KINGISEPP_CENTER.latitude,
-              longitude: KINGISEPP_CENTER.longitude,
-              latitudeDelta: 0.05,
-              longitudeDelta: 0.05,
-            }, 1000);
+            centerMapOnLocation(
+              KINGISEPP_CENTER.latitude,
+              KINGISEPP_CENTER.longitude,
+              0.05,
+              0.05
+            );
           }
         }, 300);
         return;
@@ -486,12 +508,12 @@ export default function MapScreen() {
       console.error('Error getting location:', error);
       setTimeout(() => {
         if (mapRef.current) {
-          mapRef.current.animateToRegion({
-            latitude: KINGISEPP_CENTER.latitude,
-            longitude: KINGISEPP_CENTER.longitude,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
-          }, 1000);
+          centerMapOnLocation(
+            KINGISEPP_CENTER.latitude,
+            KINGISEPP_CENTER.longitude,
+            0.05,
+            0.05
+          );
         }
       }, 300);
     } finally {
@@ -659,12 +681,12 @@ export default function MapScreen() {
 
   const centerOnUser = useCallback(() => {
     if (userLocation && mapRef.current) {
-      mapRef.current.animateToRegion({
-        latitude: userLocation.coords.latitude,
-        longitude: userLocation.coords.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      }, 1000);
+      centerMapOnLocation(
+        userLocation.coords.latitude,
+        userLocation.coords.longitude,
+        0.01,
+        0.01
+      );
     } else if (!userLocation) {
       requestLocationPermission();
     }
@@ -1715,13 +1737,13 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                           duration: 1000
                         });
                       }
-                    } else if (mapRef.current && mapRef.current.animateToRegion) {
-                      mapRef.current.animateToRegion({
+                    } else {
+                      centerMapOnLocation(
                         latitude,
                         longitude,
-                        latitudeDelta: 0.01,
-                        longitudeDelta: 0.01,
-                      }, 1000);
+                        0.01,
+                        0.01
+                      );
                     }
                     
                     hapticFeedback('success');
@@ -1760,13 +1782,13 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                             duration: 1000
                           });
                         }
-                      } else if (mapRef.current && mapRef.current.animateToRegion) {
-                        mapRef.current.animateToRegion({
+                      } else {
+                        centerMapOnLocation(
                           latitude,
                           longitude,
-                          latitudeDelta: 0.01,
-                          longitudeDelta: 0.01,
-                        }, 1000);
+                          0.01,
+                          0.01
+                        );
                       }
                     },
                     (error) => {
@@ -1818,12 +1840,12 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                     setUserLocation(last);
                     // Центрируем карту только при нажатии кнопки
                     if (mapRef.current) {
-                      mapRef.current.animateToRegion({
-                        latitude: last.coords.latitude,
-                        longitude: last.coords.longitude,
-                        latitudeDelta: 0.01,
-                        longitudeDelta: 0.01,
-                      }, 600);
+                      centerMapOnLocation(
+                        last.coords.latitude,
+                        last.coords.longitude,
+                        0.01,
+                        0.01
+                      );
                     }
                   }
 
@@ -1837,12 +1859,12 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                     setUserLocation(quick);
                     // Центрируем карту только при нажатии кнопки
                     if (mapRef.current) {
-                      mapRef.current.animateToRegion({
-                        latitude: quick.coords.latitude,
-                        longitude: quick.coords.longitude,
-                        latitudeDelta: 0.01,
-                        longitudeDelta: 0.01,
-                      }, 700);
+                      centerMapOnLocation(
+                        quick.coords.latitude,
+                        quick.coords.longitude,
+                        0.01,
+                        0.01
+                      );
                     }
                   } catch (e) {
                     console.log('Button: quick location timeout', e);
@@ -2022,12 +2044,12 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                     // Плавно центрируем карту на маркере события
                     if (mapRef.current && post.latitude && post.longitude) {
                       console.log('🔵🔵🔵 Navigating to event marker:', post.latitude, post.longitude);
-                      mapRef.current.animateToRegion({
-                        latitude: post.latitude,
-                        longitude: post.longitude,
-                        latitudeDelta: 0.005,
-                        longitudeDelta: 0.005,
-                      }, 1000);
+                      centerMapOnLocation(
+                        post.latitude,
+                        post.longitude,
+                        0.005,
+                        0.005
+                      );
                     }
                   }}
                   onLongPress={() => {
