@@ -620,6 +620,55 @@ export const MapView = (props: any) => {
               };
               const color = colors[postType as keyof typeof colors] || '#6C757D';
               
+              // Создаем функцию для генерации HTML маркера
+              const createMarkerHTML = (scale: number) => {
+                const borderColor = severity === 'high' ? '#FF3B30' : severity === 'medium' ? '#FF9500' : '#FFFFFF';
+                const size = Math.max(24, Math.min(32, 28 * scale));
+                const iconSize = Math.max(10, Math.min(14, 12 * scale));
+                const borderWidth = Math.max(1.5, 2 * scale);
+                const labelSize = Math.max(8, Math.min(10, 9 * scale));
+                
+                return `
+                  <div style="
+                    position: relative;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    cursor: pointer;
+                    transition: all 0.2s ease-out;
+                  ">
+                    <div style="
+                      width: ${size}px;
+                      height: ${size}px;
+                      border-radius: 50%;
+                      background: ${color};
+                      border: ${borderWidth}px solid #FFFFFF;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+                      transition: all 0.2s ease-out;
+                    ">
+                      ${getIconHTML(postType, iconSize)}
+                    </div>
+                    <div style="
+                      margin-top: 1px;
+                      background: ${color};
+                      color: white;
+                      padding: 1px 4px;
+                      border-radius: 6px;
+                      font-size: ${labelSize}px;
+                      font-weight: 600;
+                      white-space: nowrap;
+                      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+                      border: 1px solid rgba(255, 255, 255, 0.2);
+                    ">
+                      ${getTypeLabel(postType)}
+                    </div>
+                  </div>
+                `;
+              };
+              
               // Создаем аккуратные иконки как на втором скрине
               const getIconHTML = (type: string, size: number) => {
                 const strokeWidth = Math.max(2, size * 0.15);
@@ -679,54 +728,6 @@ export const MapView = (props: any) => {
                 }
               };
               
-              // Создаем аккуратные круглые маркеры меньшего размера
-              const createMarkerHTML = (scale: number) => {
-                const borderColor = severity === 'high' ? '#FF3B30' : severity === 'medium' ? '#FF9500' : '#FFFFFF';
-                const size = Math.max(24, Math.min(32, 28 * scale));
-                const iconSize = Math.max(10, Math.min(14, 12 * scale));
-                const borderWidth = Math.max(1.5, 2 * scale);
-                const labelSize = Math.max(8, Math.min(10, 9 * scale));
-                
-                return `
-                  <div style="
-                    position: relative;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    cursor: pointer;
-                    transition: all 0.2s ease-out;
-                  ">
-                    <div style="
-                      width: ${size}px;
-                      height: ${size}px;
-                      border-radius: 50%;
-                      background: ${color};
-                      border: ${borderWidth}px solid #FFFFFF;
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
-                      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-                      transition: all 0.2s ease-out;
-                    ">
-                      ${getIconHTML(postType, iconSize)}
-                    </div>
-                    <div style="
-                      margin-top: 1px;
-                      background: ${color};
-                      color: white;
-                      padding: 1px 4px;
-                      border-radius: 6px;
-                      font-size: ${labelSize}px;
-                      font-weight: 600;
-                      white-space: nowrap;
-                      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-                      border: 1px solid rgba(255, 255, 255, 0.2);
-                    ">
-                      ${getTypeLabel(postType)}
-                    </div>
-                  </div>
-                `;
-              };
               
               markerElement.innerHTML = createMarkerHTML(1);
             } else {
