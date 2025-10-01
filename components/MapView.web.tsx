@@ -620,20 +620,19 @@ export const MapView = (props: any) => {
               };
               const color = colors[postType as keyof typeof colors] || '#6C757D';
               
-              // Создаем функцию для генерации HTML маркера
+              // Создаем функцию для генерации HTML маркера (минималистичный дизайн)
               const createMarkerHTML = (scale: number) => {
-                const borderColor = severity === 'high' ? '#FF3B30' : severity === 'medium' ? '#FF9500' : '#FFFFFF';
-                const size = Math.max(24, Math.min(32, 28 * scale));
-                const iconSize = Math.max(10, Math.min(14, 12 * scale));
-                const borderWidth = Math.max(1.5, 2 * scale);
-                const labelSize = Math.max(8, Math.min(10, 9 * scale));
+                // Базовый размер меньше и без текста
+                const size = Math.max(16, Math.min(24, 20 * scale));
+                const iconSize = Math.max(8, Math.min(12, 10 * scale));
+                const borderWidth = Math.max(1, 1.5 * scale);
                 
                 return `
                   <div style="
                     position: relative;
                     display: flex;
-                    flex-direction: column;
                     align-items: center;
+                    justify-content: center;
                     cursor: pointer;
                     transition: all 0.2s ease-out;
                   ">
@@ -646,24 +645,10 @@ export const MapView = (props: any) => {
                       display: flex;
                       align-items: center;
                       justify-content: center;
-                      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+                      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
                       transition: all 0.2s ease-out;
                     ">
                       ${getIconHTML(postType, iconSize)}
-                    </div>
-                    <div style="
-                      margin-top: 1px;
-                      background: ${color};
-                      color: white;
-                      padding: 1px 4px;
-                      border-radius: 6px;
-                      font-size: ${labelSize}px;
-                      font-weight: 600;
-                      white-space: nowrap;
-                      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-                      border: 1px solid rgba(255, 255, 255, 0.2);
-                    ">
-                      ${getTypeLabel(postType)}
                     </div>
                   </div>
                 `;
@@ -826,18 +811,28 @@ export const MapView = (props: any) => {
                       </style>
                     `;
                   } else if (typeof createMarkerHTML === 'function') {
-                    // Обычные маркеры событий - более агрессивное уменьшение
+                    // Минималистичные маркеры событий - скрываем при сильном отдалении
                     let scale;
-                    if (z <= 5) {
-                      scale = Math.max(0.1, 0.1 + (z - 3) * 0.05);
+                    if (z <= 4) {
+                      // При очень сильном отдалении - скрываем маркеры
+                      markerElement.style.display = 'none';
+                      return;
+                    } else if (z <= 6) {
+                      // При сильном отдалении - очень маленькие
+                      scale = 0.3;
+                      markerElement.style.display = 'block';
                     } else if (z <= 8) {
-                      scale = 0.2 + (z - 5) * 0.1;
+                      // При среднем отдалении - маленькие
+                      scale = 0.5;
+                      markerElement.style.display = 'block';
                     } else if (z <= 12) {
-                      scale = 0.5 + (z - 8) * 0.1;
-                    } else if (z <= 16) {
-                      scale = 0.9 + (z - 12) * 0.025;
+                      // При нормальном приближении - средние
+                      scale = 0.7 + (z - 8) * 0.075;
+                      markerElement.style.display = 'block';
                     } else {
-                      scale = Math.min(1.0, 1.0 + (z - 16) * 0.01);
+                      // При близком приближении - полный размер
+                      scale = 1.0;
+                      markerElement.style.display = 'block';
                     }
                     console.log('Event marker scale:', scale, 'for zoom:', z); // Debug log
                     markerElement.innerHTML = createMarkerHTML(scale);
