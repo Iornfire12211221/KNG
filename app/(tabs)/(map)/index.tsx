@@ -1705,9 +1705,33 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                 setIsLoadingLocation(true);
                 setLocationError(null);
                 hapticFeedback('light');
-                // Упрощённый обработчик — без лишней диагностики
+                console.log('Location button pressed, starting location request...');
                 
-                // Используем Telegram API если доступен
+                // Проверяем, что карта загружена
+                if (!window.globalMapInstance) {
+                  console.log('Map not loaded yet, waiting...');
+                  // Ждем загрузки карты
+                  let mapAttempts = 0;
+                  const maxMapAttempts = 100; // 10 секунд
+                  
+                  const waitForMapLoad = async () => {
+                    mapAttempts++;
+                    if (window.globalMapInstance) {
+                      console.log('Map loaded, proceeding with location request');
+                      await proceedWithLocationRequest();
+                    } else if (mapAttempts < maxMapAttempts) {
+                      console.log(`Waiting for map to load... (${mapAttempts}/${maxMapAttempts})`);
+                      setTimeout(waitForMapLoad, 100);
+                    } else {
+                      console.log('Map load timeout, proceeding anyway');
+                      await proceedWithLocationRequest();
+                    }
+                  };
+                  
+                  const proceedWithLocationRequest = async () => {
+                    // Упрощённый обработчик — без лишней диагностики
+                    
+                    // Используем Telegram API если доступен
                 if (isTelegramWebApp) {
                   const result = await requestLocation();
                   if (result.granted && result.location) {
@@ -1728,23 +1752,36 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                     setUserLocation(webLoc);
                     
                     // Центрируем карту на локации пользователя
-                    if (Platform.OS === 'web') {
-                      // Для веб-версии используем flyTo через глобальный экземпляр карты
+                    console.log('Centering map on location:', latitude, longitude);
+                    
+                    // Ждем, пока карта загрузится (максимум 5 секунд)
+                    let attempts = 0;
+                    const maxAttempts = 50; // 5 секунд при 100ms интервале
+                    
+                    const waitForMap = () => {
+                      attempts++;
                       if (window.globalMapInstance && window.globalMapInstance.flyTo) {
+                        console.log('Using globalMapInstance.flyTo');
                         window.globalMapInstance.flyTo({
                           center: [longitude, latitude],
                           zoom: 15,
                           duration: 1000
                         });
+                      } else if (attempts < maxAttempts) {
+                        console.log(`globalMapInstance not available, retrying... (${attempts}/${maxAttempts})`);
+                        setTimeout(waitForMap, 100);
+                      } else {
+                        console.log('globalMapInstance timeout, using centerMapOnLocation');
+                        centerMapOnLocation(
+                          latitude,
+                          longitude,
+                          0.01,
+                          0.01
+                        );
                       }
-                    } else {
-                      centerMapOnLocation(
-                        latitude,
-                        longitude,
-                        0.01,
-                        0.01
-                      );
-                    }
+                    };
+                    
+                    waitForMap();
                     
                     hapticFeedback('success');
                   } else {
@@ -1773,23 +1810,36 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                       setUserLocation(webLoc);
                       
                       // Центрируем карту на локации пользователя
-                      if (Platform.OS === 'web') {
-                        // Для веб-версии используем flyTo через глобальный экземпляр карты
+                      console.log('Centering map on location (fallback):', latitude, longitude);
+                      
+                      // Ждем, пока карта загрузится (максимум 5 секунд)
+                      let attemptsFallback = 0;
+                      const maxAttemptsFallback = 50; // 5 секунд при 100ms интервале
+                      
+                      const waitForMapFallback = () => {
+                        attemptsFallback++;
                         if (window.globalMapInstance && window.globalMapInstance.flyTo) {
+                          console.log('Using globalMapInstance.flyTo (fallback)');
                           window.globalMapInstance.flyTo({
                             center: [longitude, latitude],
                             zoom: 15,
                             duration: 1000
                           });
+                        } else if (attemptsFallback < maxAttemptsFallback) {
+                          console.log(`globalMapInstance not available (fallback), retrying... (${attemptsFallback}/${maxAttemptsFallback})`);
+                          setTimeout(waitForMapFallback, 100);
+                        } else {
+                          console.log('globalMapInstance timeout (fallback), using centerMapOnLocation');
+                          centerMapOnLocation(
+                            latitude,
+                            longitude,
+                            0.01,
+                            0.01
+                          );
                         }
-                      } else {
-                        centerMapOnLocation(
-                          latitude,
-                          longitude,
-                          0.01,
-                          0.01
-                        );
-                      }
+                      };
+                      
+                      waitForMapFallback();
                     },
                     (error) => {
                     console.log('Web geolocation error', error);
@@ -1803,6 +1853,14 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                   );
                 } else if (mapRef.current && mapRef.current.resetNorth) {
                   mapRef.current.resetNorth();
+                }
+                  };
+                  
+                  // Запускаем ожидание загрузки карты
+                  waitForMapLoad();
+                } else {
+                  // Карта уже загружена, выполняем запрос локации
+                  await proceedWithLocationRequest();
                 }
               } finally {
                 setTimeout(() => setIsLoadingLocation(false), 300);
