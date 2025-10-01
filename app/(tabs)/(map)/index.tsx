@@ -353,18 +353,28 @@ export default function MapScreen() {
     };
   }, []); // Пустой массив зависимостей - вычисляется только один раз
 
-  // ВРЕМЕННО ОТКЛЮЧАЕМ автоматическое центрирование карты
+  // Центрируем карту на пользователе ТОЛЬКО один раз при загрузке
   useEffect(() => {
-    console.log('🚫🚫🚫 useEffect triggered (AUTO-CENTER DISABLED) 🚫🚫🚫:', {
+    console.log('🚫🚫🚫 useEffect triggered (AUTO-CENTER ONCE) 🚫🚫🚫:', {
       userLocation: !!userLocation,
       mapRef: !!mapRef.current,
       mapInitialized: mapInitialized.current,
       userHasMovedMap: userHasMovedMap
     });
     
-    // Просто отмечаем, что карта инициализирована, но НЕ центрируем
+    // Центрируем карту на пользователе только один раз при первой загрузке
     if (userLocation && mapRef.current && !mapInitialized.current) {
-      console.log('🚫🚫🚫 Map initialized but auto-centering DISABLED 🚫🚫🚫');
+      console.log('🚫🚫🚫 Centering map on user location ONCE 🚫🚫🚫');
+      setTimeout(() => {
+        if (mapRef.current && !userHasMovedMap) {
+          mapRef.current.animateToRegion({
+            latitude: userLocation.coords.latitude,
+            longitude: userLocation.coords.longitude,
+            latitudeDelta: 0.02,
+            longitudeDelta: 0.02,
+          }, 1500);
+        }
+      }, 1000);
       mapInitialized.current = true;
     }
   }, [userLocation, userHasMovedMap]);
