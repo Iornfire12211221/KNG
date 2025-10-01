@@ -358,40 +358,19 @@ export default function MapScreen() {
     };
   }, [userLocation]);
 
-  // Автоматически центрируем карту на пользователе только при первом запуске
+  // ВРЕМЕННО ОТКЛЮЧАЕМ автоматическое центрирование карты
   useEffect(() => {
-    console.log('useEffect triggered:', {
+    console.log('useEffect triggered (AUTO-CENTER DISABLED):', {
       userLocation: !!userLocation,
       mapRef: !!mapRef.current,
       mapInitialized: mapInitialized.current,
       userHasMovedMap: userHasMovedMap
     });
     
-    // Дополнительная проверка: не центрируем, если пользователь уже перемещал карту
-    if (userLocation && mapRef.current && !mapInitialized.current && !userHasMovedMap) {
-      console.log('Auto-centering map on user location (first time only):', userLocation.coords);
-      setTimeout(() => {
-        // Двойная проверка перед центрированием
-        if (mapRef.current && !userHasMovedMap && !mapInitialized.current) {
-          console.log('Actually centering map now');
-          mapRef.current.animateToRegion({
-            latitude: userLocation.coords.latitude,
-            longitude: userLocation.coords.longitude,
-            latitudeDelta: 0.02,
-            longitudeDelta: 0.02,
-          }, 1500);
-        } else {
-          console.log('Skipping auto-center due to state change');
-        }
-      }, 500);
+    // Просто отмечаем, что карта инициализирована, но НЕ центрируем
+    if (userLocation && mapRef.current && !mapInitialized.current) {
+      console.log('Map initialized but auto-centering DISABLED');
       mapInitialized.current = true;
-    } else {
-      console.log('Skipping auto-center:', {
-        hasUserLocation: !!userLocation,
-        hasMapRef: !!mapRef.current,
-        isInitialized: mapInitialized.current,
-        hasMovedMap: userHasMovedMap
-      });
     }
   }, [userLocation, userHasMovedMap]);
 
