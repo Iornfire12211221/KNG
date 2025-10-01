@@ -224,8 +224,7 @@ export default function MapScreen() {
   }, [clearExpiredPosts]);
 
   useEffect(() => {
-      console.log('🔵🔵🔵 useEffect calling requestLocationPermission 🔵🔵🔵');
-      requestLocationPermission();
+    requestLocationPermission();
   }, []);
 
   const lastMyPostTs = React.useMemo(() => {
@@ -352,16 +351,8 @@ export default function MapScreen() {
 
   // Центрируем карту на пользователе ТОЛЬКО один раз при загрузке
   useEffect(() => {
-    console.log('🚫🚫🚫 useEffect triggered (AUTO-CENTER ONCE) 🚫🚫🚫:', {
-      userLocation: !!userLocation,
-      mapRef: !!mapRef.current,
-      mapInitialized: mapInitialized.current,
-      userHasMovedMap: userHasMovedMap
-    });
-    
     // Центрируем карту на пользователе только один раз при первой загрузке
     if (userLocation && mapRef.current && !mapInitialized.current) {
-      console.log('🚫🚫🚫 Centering map on user location ONCE 🚫🚫🚫');
       setTimeout(() => {
         if (mapRef.current && !userHasMovedMap) {
           mapRef.current.animateToRegion({
@@ -369,19 +360,17 @@ export default function MapScreen() {
             longitude: userLocation.coords.longitude,
             latitudeDelta: 0.02,
             longitudeDelta: 0.02,
-          }, 1500);
+          }, 1000);
         }
-      }, 1000);
+      }, 500);
       mapInitialized.current = true;
     }
   }, [userLocation, userHasMovedMap]);
 
   const requestLocationPermission = async () => {
-    console.log('🔵🔵🔵 requestLocationPermission called 🔵🔵🔵');
     try {
       setIsLoadingLocation(true);
       setLocationError(null);
-      console.log('Requesting location permission...');
 
       if (Platform.OS === 'web' && isTelegramWebApp) {
         // Для Telegram WebApp используем специальный API
@@ -651,28 +640,86 @@ export default function MapScreen() {
   };
 
   const centerOnUser = useCallback(() => {
-    console.log('🔵🔵🔵 centerOnUser called 🔵🔵🔵:', {
-      hasUserLocation: !!userLocation,
-      userLocation: userLocation?.coords,
-      hasMapRef: !!mapRef.current,
-      stack: new Error().stack
-    });
     if (userLocation && mapRef.current) {
-      console.log('🔵🔵🔵 centerOnUser: calling animateToRegion 🔵🔵🔵');
       mapRef.current.animateToRegion({
         latitude: userLocation.coords.latitude,
         longitude: userLocation.coords.longitude,
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
       }, 1000);
-    } else {
-      console.log('🔵🔵🔵 centerOnUser: missing userLocation or mapRef 🔵🔵🔵');
-      if (!userLocation) {
-        console.log('🔵🔵🔵 No userLocation, requesting permission... 🔵🔵🔵');
-        requestLocationPermission();
-      }
+    } else if (!userLocation) {
+      requestLocationPermission();
     }
   }, [userLocation]);
+
+  // Мемоизированный компонент карточки события
+  const EventCard = memo(({ post, selectedPost, onPress, onLongPress, getTypeColor, getTypeLabel }: any) => (
+    <TouchableOpacity
+      style={[
+        styles.singlePostCard,
+        selectedPost === post.id && styles.postCardSelected,
+        post.needsModeration && styles.postCardModeration,
+        isRecent && styles.postCardRecent
+      ]}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.postHeader}>
+        <View style={styles.postTypeInfo}>
+          <View style={[styles.postTypeIcon, { backgroundColor: getTypeColor(post.type) }]}>
+            {post.type === 'dps' && <DPSIcon size={16} color="#FFFFFF" />}
+            {post.type === 'patrol' && <PatrolIcon size={16} color="#FFFFFF" />}
+            {post.type === 'accident' && <AccidentIcon size={16} color="#FFFFFF" />}
+            {post.type === 'camera' && <Camera size={16} color="#FFFFFF" />}
+            {post.type === 'roadwork' && <Wrench size={16} color="#FFFFFF" />}
+            {post.type === 'animals' && <Heart size={16} color="#FFFFFF" />}
+            {post.type === 'other' && <MapPin size={16} color="#FFFFFF" />}
+          </View>
+          <View style={styles.postInfo}>
+            <View style={styles.postUserRow}>
+              <Text style={styles.postUser}>{post.userName}</Text>
+            </View>
+            <View style={styles.postTime}>
+              <Clock size={12} color="#8E8E93" />
+              <Text style={styles.postTimeText}>
+                {new Date(post.timestamp).toLocaleString('ru-RU', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+      
+      <Text style={styles.postDescription} numberOfLines={2}>
+        {post.description}
+      </Text>
+      
+      {post.address && (
+        <Text style={styles.postAddress} numberOfLines={1}>
+          📍 {post.address}
+        </Text>
+      )}
+      
+      <View style={styles.postActions}>
+        <View style={styles.likeButton}>
+          <Heart size={14} color="#8E8E93" />
+          <Text style={styles.likeText}>0</Text>
+        </View>
+        
+        {post.needsModeration && (
+          <View style={styles.verifyButton}>
+            <Shield size={14} color="#FF9500" />
+            <Text style={styles.verifyText}>Проверить</Text>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  ));
 
   // Вспомогательные функции для карточек
   const getTypeColor = useCallback((type: string) => {

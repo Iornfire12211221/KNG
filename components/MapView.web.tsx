@@ -736,7 +736,6 @@ export const MapView = (props: any) => {
               const applyScale = () => {
                 try {
                   const z = mapRef.current.getZoom ? mapRef.current.getZoom() : 14;
-                  console.log('Applying scale for zoom level:', z); // Debug log
                   
                   if (isUserMarker) {
                     // Специальная обработка для маркера пользователя - более агрессивное уменьшение
@@ -820,7 +819,6 @@ export const MapView = (props: any) => {
                       markerElement.style.visibility = 'hidden';
                       markerElement.style.pointerEvents = 'none';
                       markerElement.style.transform = 'scale(0)';
-                      console.log('🔴 Hiding marker at zoom:', z);
                       return;
                     } else if (z <= 13) {
                       // При среднем отдалении - очень маленькие
@@ -830,7 +828,6 @@ export const MapView = (props: any) => {
                       markerElement.style.visibility = 'visible';
                       markerElement.style.pointerEvents = 'auto';
                       markerElement.style.transform = 'scale(0.5)';
-                      console.log('🟡 Very small marker at zoom:', z);
                     } else if (z <= 14) {
                       // При нормальном отдалении - маленькие
                       scale = 0.4;
@@ -839,7 +836,6 @@ export const MapView = (props: any) => {
                       markerElement.style.visibility = 'visible';
                       markerElement.style.pointerEvents = 'auto';
                       markerElement.style.transform = 'scale(0.7)';
-                      console.log('🟢 Small marker at zoom:', z);
                     } else if (z <= 15) {
                       // При приближении - средние
                       scale = 0.7;
@@ -848,7 +844,6 @@ export const MapView = (props: any) => {
                       markerElement.style.visibility = 'visible';
                       markerElement.style.pointerEvents = 'auto';
                       markerElement.style.transform = 'scale(0.9)';
-                      console.log('🔵 Medium marker at zoom:', z);
                     } else {
                       // При близком приближении - полный размер
                       scale = 1.0;
@@ -857,40 +852,36 @@ export const MapView = (props: any) => {
                       markerElement.style.visibility = 'visible';
                       markerElement.style.pointerEvents = 'auto';
                       markerElement.style.transform = 'scale(1)';
-                      console.log('🟣 Full marker at zoom:', z);
                     }
                     markerElement.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out';
                     markerElement.innerHTML = createMarkerHTML(scale);
-                  } else {
-                    console.log('createMarkerHTML is not available for marker scaling');
                   }
                 } catch (error) {
-                  console.log('Error applying marker scale:', error);
+                  // Silently handle errors to avoid performance impact
                 }
               };
               
               // Применяем масштаб сразу
               applyScale();
               
-              // Добавляем обработчики событий зума
+              // Оптимизированные обработчики событий зума
+              let zoomTimeout: NodeJS.Timeout;
               const onZoom = () => {
-                console.log('🔄 Zoom event triggered'); // Debug log
-                setTimeout(() => applyScale(), 50); // Небольшая задержка для стабильности
+                // Дебаунсинг для улучшения производительности
+                clearTimeout(zoomTimeout);
+                zoomTimeout = setTimeout(() => applyScale(), 100);
               };
               
-              // Добавляем несколько обработчиков для надежности
-              mapRef.current.on('zoom', onZoom);
+              // Добавляем только необходимые обработчики
               mapRef.current.on('zoomend', onZoom);
               mapRef.current.on('moveend', onZoom);
-              mapRef.current.on('move', onZoom);
-              mapRef.current.on('idle', onZoom);
               
-              // Принудительно обновляем каждые 200мс для более быстрого отклика
+              // Увеличиваем интервал обновления для лучшей производительности
               const intervalId = setInterval(() => {
                 if (mapRef.current) {
                   applyScale();
                 }
-              }, 200);
+              }, 500);
               
               // Сохраняем interval для очистки
               (marker as any)._intervalId = intervalId;
