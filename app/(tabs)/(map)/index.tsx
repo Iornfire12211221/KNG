@@ -1707,28 +1707,8 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                 hapticFeedback('light');
                 console.log('Location button pressed, starting location request...');
                 
-                // Проверяем, что карта загружена
-                if (!window.globalMapInstance) {
-                  console.log('Map not loaded yet, waiting...');
-                  // Ждем загрузки карты
-                  let mapAttempts = 0;
-                  const maxMapAttempts = 100; // 10 секунд
-                  
-                  const waitForMapLoad = async () => {
-                    mapAttempts++;
-                    if (window.globalMapInstance) {
-                      console.log('Map loaded, proceeding with location request');
-                      await proceedWithLocationRequest();
-                    } else if (mapAttempts < maxMapAttempts) {
-                      console.log(`Waiting for map to load... (${mapAttempts}/${maxMapAttempts})`);
-                      setTimeout(waitForMapLoad, 100);
-                    } else {
-                      console.log('Map load timeout, proceeding anyway');
-                      await proceedWithLocationRequest();
-                    }
-                  };
-                  
-                  const proceedWithLocationRequest = async () => {
+                // Определяем функцию запроса локации
+                const proceedWithLocationRequest = async () => {
                     // Упрощённый обработчик — без лишней диагностики
                     
                     // Используем Telegram API если доступен
@@ -1854,6 +1834,27 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                 } else if (mapRef.current && mapRef.current.resetNorth) {
                   mapRef.current.resetNorth();
                 }
+                };
+                
+                // Проверяем, что карта загружена
+                if (!window.globalMapInstance) {
+                  console.log('Map not loaded yet, waiting...');
+                  // Ждем загрузки карты
+                  let mapAttempts = 0;
+                  const maxMapAttempts = 100; // 10 секунд
+                  
+                  const waitForMapLoad = async () => {
+                    mapAttempts++;
+                    if (window.globalMapInstance) {
+                      console.log('Map loaded, proceeding with location request');
+                      await proceedWithLocationRequest();
+                    } else if (mapAttempts < maxMapAttempts) {
+                      console.log(`Waiting for map to load... (${mapAttempts}/${maxMapAttempts})`);
+                      setTimeout(waitForMapLoad, 100);
+                    } else {
+                      console.log('Map load timeout, proceeding anyway');
+                      await proceedWithLocationRequest();
+                    }
                   };
                   
                   // Запускаем ожидание загрузки карты
