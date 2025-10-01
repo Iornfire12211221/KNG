@@ -149,6 +149,7 @@ export const MapView = (props: any) => {
 
     if (onPress) {
       map.on('click', (e: any) => {
+        console.log('Map clicked at:', e.lngLat);
         onPress({
           nativeEvent: {
             coordinate: {
@@ -365,6 +366,23 @@ export const MapView = (props: any) => {
       if (mapContainer) {
         mapContainer.addEventListener('contextmenu', handleContextMenu, { passive: false });
         mapContainer.style.touchAction = 'pan-x pan-y'; // Allow panning but prevent other gestures
+        
+        // Добавляем обработчик клика для мобильных устройств
+        mapContainer.addEventListener('click', (e: any) => {
+          console.log('Map container clicked');
+          if (onPress) {
+            const rect = mapContainer.getBoundingClientRect();
+            const point = map.unproject([e.clientX - rect.left, e.clientY - rect.top]);
+            onPress({
+              nativeEvent: {
+                coordinate: {
+                  latitude: point.lat,
+                  longitude: point.lng
+                }
+              }
+            });
+          }
+        });
       }
     }
 
@@ -543,7 +561,15 @@ export const MapView = (props: any) => {
               marker.remove();
             }
             if (marker && (marker as any)._onZoom && mapRef.current && mapRef.current.off) {
-              try { mapRef.current.off('zoom', (marker as any)._onZoom); } catch {}
+              try { 
+                mapRef.current.off('zoom', (marker as any)._onZoom);
+                mapRef.current.off('zoomend', (marker as any)._onZoom);
+                mapRef.current.off('move', (marker as any)._onZoom);
+                mapRef.current.off('moveend', (marker as any)._onZoom);
+              } catch {}
+            }
+            if (marker && (marker as any)._intervalId) {
+              clearInterval((marker as any)._intervalId);
             }
           });
           markersRef.current = [];
@@ -738,7 +764,7 @@ export const MapView = (props: any) => {
                   const z = mapRef.current.getZoom ? mapRef.current.getZoom() : 14;
                   
                   // Проверяем, изменился ли зум значительно (оптимизация)
-                  if (Math.abs(z - lastZoomLevel) < 0.5) {
+                  if (Math.abs(z - lastZoomLevel) < 0.1) {
                     return; // Не обновляем, если зум изменился незначительно
                   }
                   lastZoomLevel = z;
@@ -816,37 +842,37 @@ export const MapView = (props: any) => {
                       </style>
                     `;
                   } else if (typeof createMarkerHTML === 'function') {
-                    // Минималистичные маркеры событий - скрываем при сильном отдалении
+                    // Минималистичные маркеры событий - всегда видимые, но с разным размером
                     let scale;
-                    if (z <= 12) {
-                      // При сильном отдалении - полностью скрываем маркеры
-                      markerElement.style.display = 'none';
-                      markerElement.style.opacity = '0';
-                      markerElement.style.visibility = 'hidden';
-                      markerElement.style.pointerEvents = 'none';
-                      markerElement.style.transform = 'scale(0)';
-                      return;
-                    } else if (z <= 13) {
-                      // При среднем отдалении - очень маленькие
-                      scale = 0.2;
-                      markerElement.style.display = 'block';
-                      markerElement.style.opacity = '0.4';
-                      markerElement.style.visibility = 'visible';
-                      markerElement.style.pointerEvents = 'auto';
-                      markerElement.style.transform = 'scale(0.5)';
-                    } else if (z <= 14) {
-                      // При нормальном отдалении - маленькие
-                      scale = 0.4;
+                    if (z <= 10) {
+                      // При очень сильном отдалении - очень маленькие, но видимые
+                      scale = 0.3;
                       markerElement.style.display = 'block';
                       markerElement.style.opacity = '0.6';
                       markerElement.style.visibility = 'visible';
                       markerElement.style.pointerEvents = 'auto';
+                      markerElement.style.transform = 'scale(0.6)';
+                    } else if (z <= 12) {
+                      // При сильном отдалении - маленькие
+                      scale = 0.5;
+                      markerElement.style.display = 'block';
+                      markerElement.style.opacity = '0.7';
+                      markerElement.style.visibility = 'visible';
+                      markerElement.style.pointerEvents = 'auto';
                       markerElement.style.transform = 'scale(0.7)';
-                    } else if (z <= 15) {
-                      // При приближении - средние
+                    } else if (z <= 14) {
+                      // При нормальном отдалении - средние
                       scale = 0.7;
                       markerElement.style.display = 'block';
                       markerElement.style.opacity = '0.8';
+                      markerElement.style.visibility = 'visible';
+                      markerElement.style.pointerEvents = 'auto';
+                      markerElement.style.transform = 'scale(0.8)';
+                    } else if (z <= 16) {
+                      // При приближении - большие
+                      scale = 0.9;
+                      markerElement.style.display = 'block';
+                      markerElement.style.opacity = '0.9';
                       markerElement.style.visibility = 'visible';
                       markerElement.style.pointerEvents = 'auto';
                       markerElement.style.transform = 'scale(0.9)';
@@ -859,7 +885,7 @@ export const MapView = (props: any) => {
                       markerElement.style.pointerEvents = 'auto';
                       markerElement.style.transform = 'scale(1)';
                     }
-                    markerElement.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+                    markerElement.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out';
                     markerElement.innerHTML = createMarkerHTML(scale);
                   }
                 } catch (error) {
@@ -873,21 +899,23 @@ export const MapView = (props: any) => {
               // Оптимизированные обработчики событий зума
               let zoomTimeout: NodeJS.Timeout;
               const onZoom = () => {
-                // Увеличенный дебаунсинг для лучшей производительности
+                // Уменьшенный дебаунсинг для лучшей отзывчивости
                 clearTimeout(zoomTimeout);
-                zoomTimeout = setTimeout(() => applyScale(), 300); // Increased from 100ms to 300ms
+                zoomTimeout = setTimeout(() => applyScale(), 100); // Reduced for better responsiveness
               };
               
-              // Добавляем только необходимые обработчики
+              // Добавляем обработчики событий зума
+              mapRef.current.on('zoom', onZoom);
               mapRef.current.on('zoomend', onZoom);
+              mapRef.current.on('move', onZoom);
               mapRef.current.on('moveend', onZoom);
               
-              // Увеличиваем интервал обновления для лучшей производительности
+              // Уменьшаем интервал обновления для лучшей отзывчивости
               const intervalId = setInterval(() => {
                 if (mapRef.current) {
                   applyScale();
                 }
-              }, 1000); // Increased from 500ms to 1000ms
+              }, 500); // Reduced for better responsiveness
               
               // Сохраняем interval для очистки
               (marker as any)._intervalId = intervalId;
