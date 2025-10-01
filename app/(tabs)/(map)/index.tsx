@@ -227,6 +227,7 @@ export default function MapScreen() {
   }, [clearExpiredPosts]);
 
   useEffect(() => {
+      console.log('🔵🔵🔵 useEffect calling requestLocationPermission 🔵🔵🔵');
       requestLocationPermission();
   }, []);
 
