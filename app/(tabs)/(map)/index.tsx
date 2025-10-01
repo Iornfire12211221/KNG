@@ -17,6 +17,7 @@ import {
   PanResponder,
   Animated,
 } from 'react-native';
+import Svg, { Path, Circle } from 'react-native-svg';
 import { useApp } from '@/hooks/app-store';
 import { useTelegram } from '@/hooks/telegram';
 import { router } from 'expo-router';
@@ -112,7 +113,20 @@ const DPSIcon = ({ size, color }: { size: number; color: string }) => (
 );
 
 const PatrolIcon = ({ size, color }: { size: number; color: string }) => (
-  <Car size={size} color={color} />
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    {/* Основной корпус автомобиля */}
+    <Path 
+      d="M3 12h2l1.5-4h11l1.5 4h2v6h-2v-2H5v2H3v-6z" 
+      stroke={color} 
+      strokeWidth="1.5" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+      fill="none"
+    />
+    {/* Колеса */}
+    <Circle cx="6" cy="18" r="2" fill={color} />
+    <Circle cx="18" cy="18" r="2" fill={color} />
+  </Svg>
 );
 
 const AccidentIcon = ({ size, color }: { size: number; color: string }) => (
