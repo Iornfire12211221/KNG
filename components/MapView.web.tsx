@@ -731,11 +731,19 @@ export const MapView = (props: any) => {
               markerElement.addEventListener('click', child.props.onPress);
             }
             
-            // Масштабирование маркеров с зумом карты
+            // Масштабирование маркеров с зумом карты - оптимизированная версия
             if (mapRef.current) {
+              let lastZoomLevel = -1; // Кэшируем последний уровень зума
+              
               const applyScale = () => {
                 try {
                   const z = mapRef.current.getZoom ? mapRef.current.getZoom() : 14;
+                  
+                  // Проверяем, изменился ли зум значительно (оптимизация)
+                  if (Math.abs(z - lastZoomLevel) < 0.5) {
+                    return; // Не обновляем, если зум изменился незначительно
+                  }
+                  lastZoomLevel = z;
                   
                   if (isUserMarker) {
                     // Специальная обработка для маркера пользователя - более агрессивное уменьшение
@@ -764,7 +772,7 @@ export const MapView = (props: any) => {
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        transition: all 0.2s ease-out;
+                        transition: all 0.3s ease-out;
                       ">
                         <!-- Пульсирующий круг -->
                         <div style="
@@ -787,7 +795,7 @@ export const MapView = (props: any) => {
                           background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
                           border: ${borderWidth}px solid #FFFFFF;
                           box-shadow: 0 2px ${shadowBlur}px rgba(0, 122, 255, 0.3);
-                          transition: all 0.2s ease-out;
+                          transition: all 0.3s ease-out;
                           z-index: 2;
                           position: relative;
                         "></div>
@@ -853,7 +861,7 @@ export const MapView = (props: any) => {
                       markerElement.style.pointerEvents = 'auto';
                       markerElement.style.transform = 'scale(1)';
                     }
-                    markerElement.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out';
+                    markerElement.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
                     markerElement.innerHTML = createMarkerHTML(scale);
                   }
                 } catch (error) {
@@ -867,9 +875,9 @@ export const MapView = (props: any) => {
               // Оптимизированные обработчики событий зума
               let zoomTimeout: NodeJS.Timeout;
               const onZoom = () => {
-                // Дебаунсинг для улучшения производительности
+                // Увеличенный дебаунсинг для лучшей производительности
                 clearTimeout(zoomTimeout);
-                zoomTimeout = setTimeout(() => applyScale(), 100);
+                zoomTimeout = setTimeout(() => applyScale(), 300); // Increased from 100ms to 300ms
               };
               
               // Добавляем только необходимые обработчики
@@ -881,7 +889,7 @@ export const MapView = (props: any) => {
                 if (mapRef.current) {
                   applyScale();
                 }
-              }, 500);
+              }, 1000); // Increased from 500ms to 1000ms
               
               // Сохраняем interval для очистки
               (marker as any)._intervalId = intervalId;

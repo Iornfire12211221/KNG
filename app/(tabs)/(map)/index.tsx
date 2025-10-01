@@ -20,6 +20,7 @@ import {
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useApp } from '@/hooks/app-store';
 import { useTelegram } from '@/hooks/telegram';
+import { usePerformanceOptimization, useOptimizedAnimation } from '@/hooks/performance';
 import { router } from 'expo-router';
 import { Plus, Navigation, AlertCircle, Clock, Trash2, Heart, Shield, Car, AlertTriangle, Camera, Construction, CheckCircle2, X, Settings, Rabbit, TrendingUp, Filter, MapPin as MapPinIcon, Zap, Target, Users, CarFront, Wrench, MoreHorizontal, CheckCheck } from 'lucide-react-native';
 import { getLandmarkForAddress, getRandomLandmark } from '@/constants/kingisepp-landmarks';
@@ -165,6 +166,8 @@ const SEVERITY_LEVELS = [
 export default function MapScreen() {
   const { posts, removePost, currentUser, clearExpiredPosts, likePost, verifyPost, addPost } = useApp();
   const { requestLocation, isTelegramWebApp, hapticFeedback } = useTelegram();
+  const { isLowEndDevice, debounce, throttle } = usePerformanceOptimization();
+  const { createOptimizedAnimation } = useOptimizedAnimation();
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
   const [selectedPost, setSelectedPost] = useState<string | null>(null);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
@@ -198,7 +201,7 @@ export default function MapScreen() {
   const rippleScale = useRef(new Animated.Value(0)).current;
   const rippleOpacity = useRef(new Animated.Value(0)).current;
   
-  // Animation values for modal
+  // Animation values for modal - simplified for better performance
   const modalTranslateY = useRef(new Animated.Value(height)).current;
   const modalOpacity = useRef(new Animated.Value(0)).current;
   const modalBackdropOpacity = useRef(new Animated.Value(0)).current;
@@ -557,10 +560,17 @@ export default function MapScreen() {
     return R * c;
   };
 
-  // Мемоизируем отфильтрованные посты
+  // Мемоизируем отфильтрованные посты с оптимизацией для слабых устройств
   const filteredPosts = useMemo(() => {
-    return posts.filter(post => !post.needsModeration || post.userId === currentUser?.id);
-  }, [posts, currentUser?.id]);
+    const filtered = posts.filter(post => !post.needsModeration || post.userId === currentUser?.id);
+    
+    // Для слабых устройств ограничиваем количество постов
+    if (isLowEndDevice) {
+      return filtered.slice(0, 20); // Максимум 20 постов для слабых устройств
+    }
+    
+    return filtered;
+  }, [posts, currentUser?.id, isLowEndDevice]);
 
   const getWeeklyEvents = () => {
     const now = Date.now();
@@ -838,24 +848,32 @@ export default function MapScreen() {
     });
     setShowQuickAdd(true);
     console.log('Starting modal animation');
-    Animated.parallel([
-      Animated.timing(modalBackdropOpacity, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(modalOpacity, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.spring(modalTranslateY, {
-        toValue: 0,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // Optimized animation for better performance
+    if (isLowEndDevice) {
+      // For low-end devices, use instant animation
+      modalBackdropOpacity.setValue(1);
+      modalOpacity.setValue(1);
+      modalTranslateY.setValue(0);
+    } else {
+      // For better devices, use smooth animation
+      Animated.parallel([
+        Animated.timing(modalBackdropOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(modalOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(modalTranslateY, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
   };
 
   const getAddressFromCoords = async (lat: number, lng: number) => {
@@ -1149,40 +1167,59 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
   };
 
   const handleQuickAddCancel = () => {
-    // Анимация закрытия модального окна (вниз как в Telegram)
-    Animated.parallel([
-      Animated.timing(modalBackdropOpacity, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-      Animated.timing(modalOpacity, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-      Animated.timing(modalTranslateY, {
-        toValue: height,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-    setShowQuickAdd(false);
-    setQuickAddLocation(null);
-    setQuickAddDescription('');
-    setQuickAddPhotos([]);
-      
-      // Сброс анимационных значений
+    // Optimized animation for better performance
+    if (isLowEndDevice) {
+      // For low-end devices, use instant animation
+      setShowQuickAdd(false);
+      setQuickAddLocation(null);
+      setQuickAddDescription('');
+      setQuickAddPhotos([]);
       modalTranslateY.setValue(height);
       modalOpacity.setValue(0);
       modalBackdropOpacity.setValue(0);
-    });
+    } else {
+      // For better devices, use smooth animation
+      Animated.parallel([
+        Animated.timing(modalBackdropOpacity, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(modalOpacity, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(modalTranslateY, {
+          toValue: height,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setShowQuickAdd(false);
+        setQuickAddLocation(null);
+        setQuickAddDescription('');
+        setQuickAddPhotos([]);
+        
+        // Сброс анимационных значений
+        modalTranslateY.setValue(height);
+        modalOpacity.setValue(0);
+        modalBackdropOpacity.setValue(0);
+      });
+    }
   };
 
   const pickPhoto = async () => {
     if (Platform.OS === 'web') {
       try {
         setIsUploadingImage(true);
+        
+        // Add timeout for better UX
+        const timeoutId = setTimeout(() => {
+          setIsUploadingImage(false);
+          console.warn('Photo picker timeout');
+        }, 30000); // 30 second timeout
+        
         // Используем HTML5 file input для выбора файлов
         if (typeof document !== 'undefined') {
           const input = document.createElement('input');
@@ -1191,12 +1228,22 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
           input.multiple = true;
           
           input.onchange = async (e: any) => {
+            clearTimeout(timeoutId);
             const files = Array.from(e.target.files);
             if (files.length > 0) {
               for (const file of files.slice(0, 5 - quickAddPhotos.length)) {
+                // Check file size (max 10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                  console.error('File too large:', file.name);
+                  continue;
+                }
+                
                 const reader = new FileReader();
                 reader.onload = (event: any) => {
                   setQuickAddPhotos(prev => [...prev, event.target.result]);
+                };
+                reader.onerror = () => {
+                  console.error('Error reading file:', file.name);
                 };
                 reader.readAsDataURL(file);
               }
@@ -1219,10 +1266,19 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
 
     try {
       setIsUploadingImage(true);
+      
+      // Add timeout for mobile
+      const timeoutId = setTimeout(() => {
+        setIsUploadingImage(false);
+        console.warn('Photo picker timeout on mobile');
+      }, 30000);
+      
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
       if (status !== 'granted') {
+        clearTimeout(timeoutId);
         Alert.alert('Ошибка', 'Нет доступа к галерее');
+        setIsUploadingImage(false);
         return;
       }
 
@@ -1234,6 +1290,8 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
         quality: 0.8,
         base64: true,
       });
+
+      clearTimeout(timeoutId);
 
       if (!result.canceled && result.assets) {
         const newImages: string[] = [];
@@ -1790,26 +1848,33 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
             setQuickAddSeverity('medium');
             setQuickAddPhotos([]);
             
-            // Анимация открытия модального окна (снизу вверх как в Telegram)
+            // Optimized animation for better performance
             setShowQuickAdd(true);
-            Animated.parallel([
-              Animated.timing(modalBackdropOpacity, {
-                toValue: 1,
-                duration: 300,
-                useNativeDriver: true,
-              }),
-              Animated.timing(modalOpacity, {
-                toValue: 1,
-                duration: 300,
-                useNativeDriver: true,
-              }),
-              Animated.spring(modalTranslateY, {
-                toValue: 0,
-                tension: 100,
-                friction: 8,
-                useNativeDriver: true,
-              }),
-            ]).start();
+            if (isLowEndDevice) {
+              // For low-end devices, use instant animation
+              modalBackdropOpacity.setValue(1);
+              modalOpacity.setValue(1);
+              modalTranslateY.setValue(0);
+            } else {
+              // For better devices, use smooth animation
+              Animated.parallel([
+                Animated.timing(modalBackdropOpacity, {
+                  toValue: 1,
+                  duration: 200,
+                  useNativeDriver: true,
+                }),
+                Animated.timing(modalOpacity, {
+                  toValue: 1,
+                  duration: 200,
+                  useNativeDriver: true,
+                }),
+                Animated.timing(modalTranslateY, {
+                  toValue: 0,
+                  duration: 200,
+                  useNativeDriver: true,
+                }),
+              ]).start();
+            }
           }}
           activeOpacity={0.8}
           accessibilityRole="button"

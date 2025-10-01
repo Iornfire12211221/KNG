@@ -1,0 +1,102 @@
+/* Оптимизации для Telegram WebApp */
+
+/* Отключаем анимации для слабых устройств */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Оптимизация для мобильных устройств */
+@media (max-width: 768px) {
+  /* Уменьшаем тени и эффекты */
+  .mapboxgl-marker {
+    filter: none !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+  }
+  
+  /* Упрощаем анимации */
+  .mapboxgl-marker svg {
+    transition: none !important;
+  }
+  
+  /* Отключаем сложные эффекты */
+  .mapboxgl-marker::before,
+  .mapboxgl-marker::after {
+    display: none !important;
+  }
+}
+
+/* Оптимизация для Telegram WebApp */
+.telegram-webapp {
+  /* Улучшаем производительность скролла */
+  -webkit-overflow-scrolling: touch;
+  overflow-scrolling: touch;
+  
+  /* Оптимизируем рендеринг */
+  will-change: auto;
+  transform: translateZ(0);
+  
+  /* Уменьшаем использование GPU */
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Оптимизация для карты */
+.mapboxgl-map {
+  /* Улучшаем производительность */
+  contain: layout style paint;
+  
+  /* Оптимизируем рендеринг маркеров */
+  .mapboxgl-marker {
+    contain: layout style paint;
+    will-change: transform;
+  }
+}
+
+/* Отключаем ненужные эффекты для слабых устройств */
+.low-end-device {
+  /* Убираем тени */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  
+  /* Упрощаем анимации */
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+  
+  /* Уменьшаем прозрачность */
+  .modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+  }
+}
+
+/* Оптимизация для модальных окон */
+.modal-container {
+  /* Улучшаем производительность анимаций */
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+/* Оптимизация для списков */
+.optimized-list {
+  /* Виртуализация для больших списков */
+  contain: layout style paint;
+  overflow: hidden;
+}
+
+/* Оптимизация для изображений */
+.optimized-image {
+  /* Улучшаем загрузку изображений */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  
+  /* Оптимизируем размер */
+  max-width: 100%;
+  height: auto;
+}
