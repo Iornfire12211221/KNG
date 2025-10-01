@@ -381,7 +381,7 @@ export const MapView = (props: any) => {
             duration,
             stack: new Error().stack
           });
-          // ВРЕМЕННО ВКЛЮЧАЕМ центрирование карты для показа маркера пользователя
+          // ВКЛЮЧАЕМ центрирование карты для кнопки и показа маркера пользователя
           console.log('🚫🚫🚫 animateToRegion ENABLED - centering map 🚫🚫🚫');
           map.flyTo({
             center: [region.longitude, region.latitude],
@@ -679,10 +679,9 @@ export const MapView = (props: any) => {
                 }
               };
               
-              const borderColor = severity === 'high' ? '#FF3B30' : severity === 'medium' ? '#FF9500' : '#FFFFFF';
-              
               // Создаем аккуратные круглые маркеры меньшего размера
               const createMarkerHTML = (scale: number) => {
+                const borderColor = severity === 'high' ? '#FF3B30' : severity === 'medium' ? '#FF9500' : '#FFFFFF';
                 const size = Math.max(24, Math.min(32, 28 * scale));
                 const iconSize = Math.max(10, Math.min(14, 12 * scale));
                 const borderWidth = Math.max(1.5, 2 * scale);
