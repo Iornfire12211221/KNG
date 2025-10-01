@@ -1700,190 +1700,172 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
             styles.mapControlButtonBlue
           ]}
           onPress={async () => {
+            console.log('🚀🚀🚀 LOCATION BUTTON PRESSED! 🚀🚀🚀');
+            console.log('Platform.OS:', Platform.OS);
+            console.log('isTelegramWebApp:', isTelegramWebApp);
+            console.log('window.globalMapInstance:', !!window.globalMapInstance);
+            
             if (Platform.OS === 'web') {
               try {
                 setIsLoadingLocation(true);
                 setLocationError(null);
                 hapticFeedback('light');
-                console.log('Location button pressed, starting location request...');
+                console.log('✅ Starting location request...');
                 
-                // Определяем функцию запроса локации
-                const proceedWithLocationRequest = async () => {
-                    // Упрощённый обработчик — без лишней диагностики
+                // Простая и надежная функция запроса локации
+                const requestLocationAndCenter = async () => {
+                  console.log('📍 Requesting location...');
+                  
+                  if (isTelegramWebApp) {
+                    console.log('📱 Using Telegram WebApp location API');
+                    const result = await requestLocation();
+                    console.log('📱 Telegram result:', result);
                     
-                    // Используем Telegram API если доступен
-                if (isTelegramWebApp) {
-                  const result = await requestLocation();
-                  if (result.granted && result.location) {
-                    const { latitude, longitude } = result.location;
-                    // Центрируем карту на полученной локации
-                    const webLoc: Location.LocationObject = {
-                      coords: {
-                        latitude,
-                        longitude,
-                        altitude: null as unknown as number,
-                        accuracy: 10, // Telegram обычно дает точность ~10м
-                        altitudeAccuracy: null as unknown as number,
-                        heading: 0,
-                        speed: 0,
-                      },
-                      timestamp: Date.now(),
-                    } as unknown as Location.LocationObject;
-                    setUserLocation(webLoc);
-                    
-                    // Центрируем карту на локации пользователя
-                    console.log('Centering map on location:', latitude, longitude);
-                    
-                    // Ждем, пока карта загрузится (максимум 5 секунд)
-                    let attempts = 0;
-                    const maxAttempts = 50; // 5 секунд при 100ms интервале
-                    
-                    const waitForMap = () => {
-                      attempts++;
-                      if (window.globalMapInstance && window.globalMapInstance.flyTo) {
-                        console.log('Using globalMapInstance.flyTo');
-                        window.globalMapInstance.flyTo({
-                          center: [longitude, latitude],
-                          zoom: 15,
-                          duration: 1000
-                        });
-                      } else if (attempts < maxAttempts) {
-                        console.log(`globalMapInstance not available, retrying... (${attempts}/${maxAttempts})`);
-                        setTimeout(waitForMap, 100);
-                      } else {
-                        console.log('globalMapInstance timeout, using centerMapOnLocation');
-                        centerMapOnLocation(
-                          latitude,
-                          longitude,
-                          0.01,
-                          0.01
-                        );
-                      }
-                    };
-                    
-                    waitForMap();
-                    
-                    hapticFeedback('success');
-                  } else {
-                    console.log('Telegram location permission denied');
-                    hapticFeedback('error');
-                    setLocationError('Доступ к геолокации запрещен');
-                  }
-                } else if (navigator.geolocation) {
-                  // Fallback для обычного браузера
-                  navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                      const { latitude, longitude } = pos.coords;
-                      // Центрируем карту на полученной геолокации
+                    if (result.granted && result.location) {
+                      const { latitude, longitude } = result.location;
+                      console.log('✅ Got Telegram location:', latitude, longitude);
+                      
+                      // Сохраняем локацию
                       const webLoc: Location.LocationObject = {
                         coords: {
                           latitude,
                           longitude,
                           altitude: null as unknown as number,
-                          accuracy: pos.coords.accuracy ?? 0,
+                          accuracy: 10,
                           altitudeAccuracy: null as unknown as number,
-                          heading: pos.coords.heading ?? 0,
-                          speed: pos.coords.speed ?? 0,
+                          heading: 0,
+                          speed: 0,
                         },
-                        timestamp: pos.timestamp,
+                        timestamp: Date.now(),
                       } as unknown as Location.LocationObject;
                       setUserLocation(webLoc);
                       
-                      // Центрируем карту на локации пользователя
-                      console.log('Centering map on location (fallback):', latitude, longitude);
+                      // Центрируем карту
+                      console.log('🎯 Centering map on Telegram location...');
+                      if (window.globalMapInstance && window.globalMapInstance.flyTo) {
+                        console.log('✅ Using globalMapInstance.flyTo');
+                        window.globalMapInstance.flyTo({
+                          center: [longitude, latitude],
+                          zoom: 15,
+                          duration: 1000
+                        });
+                        console.log('✅ Map centered with flyTo!');
+                      } else {
+                        console.log('⚠️ globalMapInstance not available, using centerMapOnLocation');
+                        centerMapOnLocation(latitude, longitude, 0.01, 0.01);
+                      }
                       
-                      // Ждем, пока карта загрузится (максимум 5 секунд)
-                      let attemptsFallback = 0;
-                      const maxAttemptsFallback = 50; // 5 секунд при 100ms интервале
-                      
-                      const waitForMapFallback = () => {
-                        attemptsFallback++;
+                      hapticFeedback('success');
+                      console.log('✅ Location request completed successfully!');
+                    } else {
+                      console.log('❌ Telegram location denied');
+                      hapticFeedback('error');
+                      setLocationError('Доступ к геолокации запрещен');
+                    }
+                  } else if (navigator.geolocation) {
+                    console.log('🌐 Using browser geolocation API');
+                    navigator.geolocation.getCurrentPosition(
+                      (pos) => {
+                        const { latitude, longitude } = pos.coords;
+                        console.log('✅ Got browser location:', latitude, longitude);
+                        
+                        // Сохраняем локацию
+                        const webLoc: Location.LocationObject = {
+                          coords: {
+                            latitude,
+                            longitude,
+                            altitude: null as unknown as number,
+                            accuracy: pos.coords.accuracy ?? 0,
+                            altitudeAccuracy: null as unknown as number,
+                            heading: pos.coords.heading ?? 0,
+                            speed: pos.coords.speed ?? 0,
+                          },
+                          timestamp: pos.timestamp,
+                        } as unknown as Location.LocationObject;
+                        setUserLocation(webLoc);
+                        
+                        // Центрируем карту
+                        console.log('🎯 Centering map on browser location...');
                         if (window.globalMapInstance && window.globalMapInstance.flyTo) {
-                          console.log('Using globalMapInstance.flyTo (fallback)');
+                          console.log('✅ Using globalMapInstance.flyTo (browser)');
                           window.globalMapInstance.flyTo({
                             center: [longitude, latitude],
                             zoom: 15,
                             duration: 1000
                           });
-                        } else if (attemptsFallback < maxAttemptsFallback) {
-                          console.log(`globalMapInstance not available (fallback), retrying... (${attemptsFallback}/${maxAttemptsFallback})`);
-                          setTimeout(waitForMapFallback, 100);
+                          console.log('✅ Map centered with flyTo (browser)!');
                         } else {
-                          console.log('globalMapInstance timeout (fallback), using centerMapOnLocation');
-                          centerMapOnLocation(
-                            latitude,
-                            longitude,
-                            0.01,
-                            0.01
-                          );
+                          console.log('⚠️ globalMapInstance not available (browser), using centerMapOnLocation');
+                          centerMapOnLocation(latitude, longitude, 0.01, 0.01);
                         }
-                      };
-                      
-                      waitForMapFallback();
-                    },
-                    (error) => {
-                    console.log('Web geolocation error', error);
-                      hapticFeedback('error');
-                      setLocationError('Ошибка определения местоположения');
-                      if (mapRef.current && mapRef.current.resetNorth) {
-                        mapRef.current.resetNorth();
-                      }
-                    },
-                    { enableHighAccuracy: true, maximumAge: 60000, timeout: 8000 }
-                  );
-                } else if (mapRef.current && mapRef.current.resetNorth) {
-                  mapRef.current.resetNorth();
-                }
+                        
+                        hapticFeedback('success');
+                        console.log('✅ Browser location request completed successfully!');
+                      },
+                      (error) => {
+                        console.log('❌ Browser geolocation error:', error);
+                        hapticFeedback('error');
+                        setLocationError('Ошибка определения местоположения');
+                      },
+                      { enableHighAccuracy: true, maximumAge: 60000, timeout: 8000 }
+                    );
+                  } else {
+                    console.log('❌ No geolocation available');
+                    hapticFeedback('error');
+                    setLocationError('Геолокация не поддерживается');
+                  }
                 };
                 
-                // Проверяем, что карта загружена
+                // Ждем загрузки карты если нужно
                 if (!window.globalMapInstance) {
-                  console.log('Map not loaded yet, waiting...');
-                  // Ждем загрузки карты
+                  console.log('⏳ Map not loaded yet, waiting...');
                   let mapAttempts = 0;
-                  const maxMapAttempts = 100; // 10 секунд
+                  const maxMapAttempts = 50; // 5 секунд
                   
-                  const waitForMapLoad = async () => {
+                  const waitForMap = () => {
                     mapAttempts++;
+                    console.log(`⏳ Waiting for map... (${mapAttempts}/${maxMapAttempts})`);
+                    
                     if (window.globalMapInstance) {
-                      console.log('Map loaded, proceeding with location request');
-                      await proceedWithLocationRequest();
+                      console.log('✅ Map loaded, proceeding with location request');
+                      requestLocationAndCenter();
                     } else if (mapAttempts < maxMapAttempts) {
-                      console.log(`Waiting for map to load... (${mapAttempts}/${maxMapAttempts})`);
-                      setTimeout(waitForMapLoad, 100);
+                      setTimeout(waitForMap, 100);
                     } else {
-                      console.log('Map load timeout, proceeding anyway');
-                      await proceedWithLocationRequest();
+                      console.log('⚠️ Map load timeout, proceeding anyway');
+                      requestLocationAndCenter();
                     }
                   };
                   
-                  // Запускаем ожидание загрузки карты
-                  waitForMapLoad();
+                  waitForMap();
                 } else {
-                  // Карта уже загружена, выполняем запрос локации
-                  await proceedWithLocationRequest();
+                  console.log('✅ Map already loaded, proceeding immediately');
+                  await requestLocationAndCenter();
                 }
+                
+              } catch (error) {
+                console.error('❌ Location request error:', error);
+                hapticFeedback('error');
+                setLocationError('Ошибка запроса локации');
               } finally {
+                console.log('🏁 Location request finished');
                 setTimeout(() => setIsLoadingLocation(false), 300);
               }
-              
-              // Центрируем карту на пользователе после получения локации
-              console.log('🔵🔵🔵 Web button: calling centerOnUser 🔵🔵🔵');
-              centerOnUser();
             } else {
-              // Для мобильных - быстрое центрирование на пользователе
+              // Мобильная версия
+              console.log('📱 Mobile location request...');
               if (userLocation) {
-                console.log('Centering on existing user location:', userLocation.coords);
+                console.log('✅ Centering on existing user location:', userLocation.coords);
                 centerOnUser();
               } else {
-                console.log('No user location, requesting permission...');
+                console.log('📍 No user location, requesting permission...');
                 setIsLoadingLocation(true);
                 try {
                   const { status } = await Location.requestForegroundPermissionsAsync();
-                  console.log('Location permission status:', status);
+                  console.log('📱 Location permission status:', status);
 
                   if (status !== 'granted') {
-                    console.log('Location permission denied');
+                    console.log('❌ Location permission denied');
                     Alert.alert(
                       'Доступ к местоположению',
                       'Для центрирования карты на вашем местоположении необходимо разрешить доступ к геолокации в настройках приложения.',
@@ -1895,9 +1877,8 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                   // Мгновенно пробуем last known
                   const last = await Location.getLastKnownPositionAsync();
                   if (last) {
-                    console.log('Button: using last known location:', last.coords);
+                    console.log('✅ Using last known location:', last.coords);
                     setUserLocation(last);
-                    // Центрируем карту только при нажатии кнопки
                     if (mapRef.current) {
                       centerMapOnLocation(
                         last.coords.latitude,
@@ -1914,9 +1895,8 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                     quick = await Location.getCurrentPositionAsync({
                       accuracy: Location.Accuracy.Balanced,
                     });
-                    console.log('Button: quick current position:', quick.coords);
+                    console.log('✅ Quick current position:', quick.coords);
                     setUserLocation(quick);
-                    // Центрируем карту только при нажатии кнопки
                     if (mapRef.current) {
                       centerMapOnLocation(
                         quick.coords.latitude,
@@ -1926,13 +1906,12 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                       );
                     }
                   } catch (e) {
-                    console.log('Button: quick location timeout', e);
+                    console.log('⚠️ Quick location timeout:', e);
                   }
 
-                  // Запускаем трекинг для уточнения
                   startLocationTracking();
                 } catch (error) {
-                  console.error('Error getting location:', error);
+                  console.error('❌ Error getting location:', error);
                   Alert.alert(
                     'Ошибка',
                     'Не удалось определить ваше местоположение. Проверьте, включена ли геолокация на устройстве.',
