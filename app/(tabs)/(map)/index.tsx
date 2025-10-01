@@ -849,27 +849,27 @@ export default function MapScreen() {
     setShowQuickAdd(true);
     console.log('Starting modal animation');
     // Optimized animation for better performance
-    if (isLowEndDevice) {
-      // For low-end devices, use instant animation
+    if (isLowEndDevice || Platform.OS === 'web') {
+      // For low-end devices and web, use instant animation
       modalBackdropOpacity.setValue(1);
       modalOpacity.setValue(1);
       modalTranslateY.setValue(0);
     } else {
-      // For better devices, use smooth animation
+      // For mobile devices, use smooth but fast animation
       Animated.parallel([
         Animated.timing(modalBackdropOpacity, {
           toValue: 1,
-          duration: 200,
+          duration: 150, // Faster for mobile
           useNativeDriver: true,
         }),
         Animated.timing(modalOpacity, {
           toValue: 1,
-          duration: 200,
+          duration: 150, // Faster for mobile
           useNativeDriver: true,
         }),
         Animated.timing(modalTranslateY, {
           toValue: 0,
-          duration: 200,
+          duration: 150, // Faster for mobile
           useNativeDriver: true,
         }),
       ]).start();
@@ -1168,8 +1168,8 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
 
   const handleQuickAddCancel = () => {
     // Optimized animation for better performance
-    if (isLowEndDevice) {
-      // For low-end devices, use instant animation
+    if (isLowEndDevice || Platform.OS === 'web') {
+      // For low-end devices and web, use instant animation
       setShowQuickAdd(false);
       setQuickAddLocation(null);
       setQuickAddDescription('');
@@ -1178,21 +1178,21 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
       modalOpacity.setValue(0);
       modalBackdropOpacity.setValue(0);
     } else {
-      // For better devices, use smooth animation
+      // For mobile devices, use smooth but fast animation
       Animated.parallel([
         Animated.timing(modalBackdropOpacity, {
           toValue: 0,
-          duration: 150,
+          duration: 100, // Even faster for mobile
           useNativeDriver: true,
         }),
         Animated.timing(modalOpacity, {
           toValue: 0,
-          duration: 150,
+          duration: 100, // Even faster for mobile
           useNativeDriver: true,
         }),
         Animated.timing(modalTranslateY, {
           toValue: height,
-          duration: 150,
+          duration: 100, // Even faster for mobile
           useNativeDriver: true,
         }),
       ]).start(() => {
@@ -1240,7 +1240,13 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                 
                 const reader = new FileReader();
                 reader.onload = (event: any) => {
-                  setQuickAddPhotos(prev => [...prev, event.target.result]);
+                  const result = event.target.result;
+                  // Проверяем, что результат валидный
+                  if (result && typeof result === 'string' && result.startsWith('data:image/')) {
+                    setQuickAddPhotos(prev => [...prev, result]);
+                  } else {
+                    console.error('Invalid image data for file:', file.name);
+                  }
                 };
                 reader.onerror = () => {
                   console.error('Error reading file:', file.name);
@@ -1301,7 +1307,13 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
           }
         }
         if (newImages.length > 0) {
-          setQuickAddPhotos(prev => [...prev, ...newImages].slice(0, 5)); // Максимум 5 фото
+          // Валидируем изображения перед добавлением
+          const validImages = newImages.filter(img => 
+            img && typeof img === 'string' && img.startsWith('data:image/')
+          );
+          if (validImages.length > 0) {
+            setQuickAddPhotos(prev => [...prev, ...validImages].slice(0, 5)); // Максимум 5 фото
+          }
         }
       }
     } catch (error) {
@@ -1850,27 +1862,27 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
             
             // Optimized animation for better performance
             setShowQuickAdd(true);
-            if (isLowEndDevice) {
-              // For low-end devices, use instant animation
+            if (isLowEndDevice || Platform.OS === 'web') {
+              // For low-end devices and web, use instant animation
               modalBackdropOpacity.setValue(1);
               modalOpacity.setValue(1);
               modalTranslateY.setValue(0);
             } else {
-              // For better devices, use smooth animation
+              // For mobile devices, use smooth but fast animation
               Animated.parallel([
                 Animated.timing(modalBackdropOpacity, {
                   toValue: 1,
-                  duration: 200,
+                  duration: 150, // Faster for mobile
                   useNativeDriver: true,
                 }),
                 Animated.timing(modalOpacity, {
                   toValue: 1,
-                  duration: 200,
+                  duration: 150, // Faster for mobile
                   useNativeDriver: true,
                 }),
                 Animated.timing(modalTranslateY, {
                   toValue: 0,
-                  duration: 200,
+                  duration: 150, // Faster for mobile
                   useNativeDriver: true,
                 }),
               ]).start();
@@ -2250,7 +2262,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                   {quickAddPhotos.map((image, index) => (
                     <View key={index} style={styles.imageContainer}>
                       <Image 
-                        source={{ uri: `data:image/jpeg;base64,${image}` }} 
+                        source={{ uri: image.startsWith('data:') ? image : `data:image/jpeg;base64,${image}` }} 
                         style={styles.selectedImageSmall}
                         resizeMode="cover"
                       />

@@ -45,17 +45,15 @@ export const MapView = (props: any) => {
         setMapLoaded(true);
         setIsLoading(false);
         
-        // Update initial region if provided - DISABLED
+        // Update initial region if provided - ENABLED
         if (initialRegion) {
-          console.log('🚫🚫🚫 globalMapInstance.flyTo DISABLED 🚫🚫🚫:', initialRegion);
-          // ВРЕМЕННО ОТКЛЮЧАЕМ автоматическое центрирование при обновлении initialRegion
-          /*
+          console.log('✅✅✅ globalMapInstance.flyTo ENABLED ✅✅✅:', initialRegion);
+          // ВКЛЮЧАЕМ автоматическое центрирование при обновлении initialRegion
           globalMapInstance.flyTo({
             center: [initialRegion.longitude, initialRegion.latitude],
             zoom: 14,
             duration: 0 // Instant for cached map
           });
-          */
         }
         
         return;

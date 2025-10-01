@@ -44,6 +44,30 @@
   perspective: 1000px;
 }
 
+/* Специальные оптимизации для модальных окон в Telegram */
+.modal-container {
+  /* Улучшаем производительность анимаций */
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  
+  /* Ускоряем анимации для мобильных */
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+}
+
+/* Оптимизация для изображений в Telegram */
+.telegram-image {
+  /* Улучшаем загрузку изображений */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  
+  /* Предотвращаем дублирование data: URLs */
+  background-image: none !important;
+  
+  /* Оптимизируем размер */
+  max-width: 100%;
+  height: auto;
+}
+
 /* Оптимизация для карты */
 .mapboxgl-map {
   /* Улучшаем производительность */
