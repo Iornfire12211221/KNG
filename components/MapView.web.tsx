@@ -816,26 +816,31 @@ export const MapView = (props: any) => {
                   } else if (typeof createMarkerHTML === 'function') {
                     // Минималистичные маркеры событий - скрываем при сильном отдалении
                     let scale;
-                    if (z <= 4) {
-                      // При очень сильном отдалении - скрываем маркеры
+                    if (z <= 6) {
+                      // При сильном отдалении - скрываем маркеры
                       markerElement.style.display = 'none';
+                      markerElement.style.opacity = '0';
                       return;
-                    } else if (z <= 6) {
-                      // При сильном отдалении - очень маленькие
-                      scale = 0.3;
-                      markerElement.style.display = 'block';
                     } else if (z <= 8) {
-                      // При среднем отдалении - маленькие
-                      scale = 0.5;
+                      // При среднем отдалении - очень маленькие
+                      scale = 0.2;
                       markerElement.style.display = 'block';
+                      markerElement.style.opacity = '0.7';
+                    } else if (z <= 10) {
+                      // При нормальном отдалении - маленькие
+                      scale = 0.4;
+                      markerElement.style.display = 'block';
+                      markerElement.style.opacity = '0.8';
                     } else if (z <= 12) {
-                      // При нормальном приближении - средние
-                      scale = 0.7 + (z - 8) * 0.075;
+                      // При приближении - средние
+                      scale = 0.6 + (z - 10) * 0.2;
                       markerElement.style.display = 'block';
+                      markerElement.style.opacity = '0.9';
                     } else {
                       // При близком приближении - полный размер
                       scale = 1.0;
                       markerElement.style.display = 'block';
+                      markerElement.style.opacity = '1';
                     }
                     console.log('Event marker scale:', scale, 'for zoom:', z); // Debug log
                     markerElement.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
