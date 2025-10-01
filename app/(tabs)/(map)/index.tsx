@@ -713,7 +713,6 @@ export default function MapScreen() {
       rippleOpacity.setValue(0);
     });
     
-    setTempPinLocation({ latitude, longitude });
     setQuickAddLocation({ latitude, longitude });
     setQuickAddDescription('');
     setQuickAddType('dps');
