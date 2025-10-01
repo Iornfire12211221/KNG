@@ -340,23 +340,17 @@ export default function MapScreen() {
     }
   }, [isSavingPost, savePulseValue, saveOpacityValue]);
 
-  // Мемоизируем начальный регион карты
+  // Мемоизируем начальный регион карты - СТАТИЧНЫЙ, НЕ ЗАВИСИТ ОТ userLocation
   const initialRegion = useMemo(() => {
-    if (userLocation) {
-      return {
-        latitude: userLocation.coords.latitude,
-        longitude: userLocation.coords.longitude,
-        latitudeDelta: 0.02,
-        longitudeDelta: 0.02,
-      };
-    }
+    console.log('🚫🚫🚫 initialRegion computed (STATIC) 🚫🚫🚫');
+    // Всегда используем центр Кингисеппа, не зависим от userLocation
     return {
       latitude: KINGISEPP_CENTER.latitude,
       longitude: KINGISEPP_CENTER.longitude,
       latitudeDelta: 0.05,
       longitudeDelta: 0.05,
     };
-  }, [userLocation]);
+  }, []); // Пустой массив зависимостей - вычисляется только один раз
 
   // ВРЕМЕННО ОТКЛЮЧАЕМ автоматическое центрирование карты
   useEffect(() => {
