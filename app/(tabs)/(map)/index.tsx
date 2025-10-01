@@ -654,19 +654,26 @@ export default function MapScreen() {
   };
 
   const centerOnUser = useCallback(() => {
-    console.log('centerOnUser called:', {
+    console.log('🔵🔵🔵 centerOnUser called 🔵🔵🔵:', {
       hasUserLocation: !!userLocation,
+      userLocation: userLocation?.coords,
       hasMapRef: !!mapRef.current,
       stack: new Error().stack
     });
     if (userLocation && mapRef.current) {
-      console.log('centerOnUser: calling animateToRegion');
+      console.log('🔵🔵🔵 centerOnUser: calling animateToRegion 🔵🔵🔵');
       mapRef.current.animateToRegion({
         latitude: userLocation.coords.latitude,
         longitude: userLocation.coords.longitude,
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
       }, 1000);
+    } else {
+      console.log('🔵🔵🔵 centerOnUser: missing userLocation or mapRef 🔵🔵🔵');
+      if (!userLocation) {
+        console.log('🔵🔵🔵 No userLocation, requesting permission... 🔵🔵🔵');
+        requestLocationPermission();
+      }
     }
   }, [userLocation]);
 
