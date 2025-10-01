@@ -367,19 +367,31 @@ export default function MapScreen() {
       userHasMovedMap: userHasMovedMap
     });
     
+    // Дополнительная проверка: не центрируем, если пользователь уже перемещал карту
     if (userLocation && mapRef.current && !mapInitialized.current && !userHasMovedMap) {
       console.log('Auto-centering map on user location (first time only):', userLocation.coords);
       setTimeout(() => {
-        if (mapRef.current && !userHasMovedMap) {
+        // Двойная проверка перед центрированием
+        if (mapRef.current && !userHasMovedMap && !mapInitialized.current) {
+          console.log('Actually centering map now');
           mapRef.current.animateToRegion({
             latitude: userLocation.coords.latitude,
             longitude: userLocation.coords.longitude,
             latitudeDelta: 0.02,
             longitudeDelta: 0.02,
           }, 1500);
+        } else {
+          console.log('Skipping auto-center due to state change');
         }
       }, 500);
       mapInitialized.current = true;
+    } else {
+      console.log('Skipping auto-center:', {
+        hasUserLocation: !!userLocation,
+        hasMapRef: !!mapRef.current,
+        isInitialized: mapInitialized.current,
+        hasMovedMap: userHasMovedMap
+      });
     }
   }, [userLocation, userHasMovedMap]);
 
@@ -1018,14 +1030,27 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
       
       const result = await addPost(post);
       if (result.success) {
+        console.log('Post saved successfully, closing modal');
+        console.log('Current state before closing:', {
+          userHasMovedMap,
+          mapInitialized: mapInitialized.current,
+          userLocation: !!userLocation
+        });
+        
         setShowQuickAdd(false);
         setQuickAddLocation(null);
         setQuickAddDescription('');
         setQuickAddPhotos([]);
-        // НЕ сбрасываем userHasMovedMap - пользователь должен остаться на том же месте
+        
+        // Принудительно устанавливаем userHasMovedMap в true, чтобы предотвратить центрирование
+        if (!userHasMovedMap) {
+          console.log('Setting userHasMovedMap to true to prevent auto-centering');
+          setUserHasMovedMap(true);
+        }
         
         // Принудительно обновляем масштабирование маркеров
         setTimeout(() => {
+          console.log('Force updating markers after post save');
           if (mapRef.current && mapRef.current.forceUpdateMarkers) {
             mapRef.current.forceUpdateMarkers();
           }
