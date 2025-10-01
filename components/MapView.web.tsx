@@ -180,6 +180,14 @@ export const MapView = (props: any) => {
       
       const triggerLongPress = (coords: { lat: number; lng: number }) => {
         console.log('Long press triggered at:', coords);
+        console.log('Calling onLongPress with event:', {
+          nativeEvent: {
+            coordinate: {
+              latitude: coords.lat,
+              longitude: coords.lng
+            }
+          }
+        });
         onLongPress({
           nativeEvent: {
             coordinate: {

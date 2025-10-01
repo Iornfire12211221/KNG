@@ -655,9 +655,12 @@ export default function MapScreen() {
 
   const handleMapLongPress = (event: any) => {
     console.log('Map long press triggered', event);
+    console.log('Current cooldown seconds:', cooldownSeconds);
+    console.log('Current showQuickAdd state:', showQuickAdd);
     
     // Проверяем кулдаун
     if (cooldownSeconds > 0) {
+      console.log('Long press blocked by cooldown');
       Alert.alert(
         'Подождите',
         `Можно создать новый пост через ${cooldownSeconds} секунд`,
@@ -718,7 +721,9 @@ export default function MapScreen() {
     setQuickAddPhotos([]);
     
     // Анимация открытия модального окна (снизу вверх как в Telegram)
+    console.log('Setting showQuickAdd to true');
     setShowQuickAdd(true);
+    console.log('Starting modal animation');
     Animated.parallel([
       Animated.timing(modalBackdropOpacity, {
         toValue: 1,
