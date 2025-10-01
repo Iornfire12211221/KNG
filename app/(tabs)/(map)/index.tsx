@@ -346,6 +346,13 @@ export default function MapScreen() {
 
   // Автоматически центрируем карту на пользователе только при первом запуске
   useEffect(() => {
+    console.log('useEffect triggered:', {
+      userLocation: !!userLocation,
+      mapRef: !!mapRef.current,
+      mapInitialized: mapInitialized.current,
+      userHasMovedMap: userHasMovedMap
+    });
+    
     if (userLocation && mapRef.current && !mapInitialized.current && !userHasMovedMap) {
       console.log('Auto-centering map on user location (first time only):', userLocation.coords);
       setTimeout(() => {
@@ -648,7 +655,9 @@ export default function MapScreen() {
 
   const handleRegionChange = () => {
     // Отмечаем, что пользователь переместил карту
+    console.log('handleRegionChange called, userHasMovedMap:', userHasMovedMap);
     if (!userHasMovedMap) {
+      console.log('Setting userHasMovedMap to true');
       setUserHasMovedMap(true);
     }
   };
