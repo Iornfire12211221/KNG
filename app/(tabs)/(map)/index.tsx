@@ -722,6 +722,12 @@ export default function MapScreen() {
     
     // Анимация открытия модального окна (снизу вверх как в Telegram)
     console.log('Setting showQuickAdd to true');
+    console.log('Current animation values:', {
+      modalTranslateY: modalTranslateY._value,
+      modalOpacity: modalOpacity._value,
+      modalBackdropOpacity: modalBackdropOpacity._value,
+      height: height
+    });
     setShowQuickAdd(true);
     console.log('Starting modal animation');
     Animated.parallel([
