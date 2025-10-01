@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback, memo } from 'react';
 import {
   View,
   StyleSheet,
@@ -676,6 +676,34 @@ export default function MapScreen() {
       }
     }
   }, [userLocation]);
+
+  // Вспомогательные функции для карточек
+  const getTypeColor = useCallback((type: string) => {
+    const colors = {
+      dps: '#FF3B30',
+      patrol: '#007AFF', 
+      accident: '#FF9500',
+      camera: '#34C759',
+      roadwork: '#FF9500',
+      animals: '#8E44AD',
+      other: '#6C757D'
+    };
+    return colors[type as keyof typeof colors] || '#6C757D';
+  }, []);
+
+  const getTypeLabel = useCallback((type: string) => {
+    const labels = {
+      dps: 'ДПС',
+      patrol: 'Патруль',
+      accident: 'ДТП',
+      camera: 'Камера',
+      roadwork: 'Ремонт',
+      animals: 'Животные',
+      other: 'Другое'
+    };
+    return labels[type as keyof typeof labels] || 'Другое';
+  }, []);
+
 
   const handleMapPress = (event: any) => {
     // Обычное нажатие - ничего не делаем
