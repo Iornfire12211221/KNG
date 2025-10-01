@@ -671,8 +671,7 @@ export const MapView = (props: any) => {
                     </svg>`;
                   case 'patrol': 
                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M12 2L4 6v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V6l-8-4z"/>
-                      <path d="M12 8v8M8 12h8"/>
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                     </svg>`;
                   case 'accident': 
                     return `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
@@ -814,30 +813,42 @@ export const MapView = (props: any) => {
                   } else if (typeof createMarkerHTML === 'function') {
                     // Минималистичные маркеры событий - скрываем при сильном отдалении
                     let scale;
-                    if (z <= 10) {
+                    if (z <= 12) {
                       // При сильном отдалении - полностью скрываем маркеры
                       markerElement.style.display = 'none';
                       markerElement.style.opacity = '0';
                       markerElement.style.visibility = 'hidden';
                       markerElement.style.pointerEvents = 'none';
+                      markerElement.style.transform = 'scale(0)';
                       console.log('🔴 Hiding marker at zoom:', z);
                       return;
-                    } else if (z <= 11) {
+                    } else if (z <= 13) {
                       // При среднем отдалении - очень маленькие
-                      scale = 0.3;
+                      scale = 0.2;
+                      markerElement.style.display = 'block';
+                      markerElement.style.opacity = '0.4';
+                      markerElement.style.visibility = 'visible';
+                      markerElement.style.pointerEvents = 'auto';
+                      markerElement.style.transform = 'scale(0.5)';
+                      console.log('🟡 Very small marker at zoom:', z);
+                    } else if (z <= 14) {
+                      // При нормальном отдалении - маленькие
+                      scale = 0.4;
                       markerElement.style.display = 'block';
                       markerElement.style.opacity = '0.6';
                       markerElement.style.visibility = 'visible';
                       markerElement.style.pointerEvents = 'auto';
-                      console.log('🟡 Small marker at zoom:', z);
-                    } else if (z <= 13) {
-                      // При нормальном отдалении - средние
-                      scale = 0.5 + (z - 11) * 0.25;
+                      markerElement.style.transform = 'scale(0.7)';
+                      console.log('🟢 Small marker at zoom:', z);
+                    } else if (z <= 15) {
+                      // При приближении - средние
+                      scale = 0.7;
                       markerElement.style.display = 'block';
                       markerElement.style.opacity = '0.8';
                       markerElement.style.visibility = 'visible';
                       markerElement.style.pointerEvents = 'auto';
-                      console.log('🟢 Medium marker at zoom:', z);
+                      markerElement.style.transform = 'scale(0.9)';
+                      console.log('🔵 Medium marker at zoom:', z);
                     } else {
                       // При близком приближении - полный размер
                       scale = 1.0;
@@ -845,9 +856,10 @@ export const MapView = (props: any) => {
                       markerElement.style.opacity = '1';
                       markerElement.style.visibility = 'visible';
                       markerElement.style.pointerEvents = 'auto';
-                      console.log('🔵 Full marker at zoom:', z);
+                      markerElement.style.transform = 'scale(1)';
+                      console.log('🟣 Full marker at zoom:', z);
                     }
-                    markerElement.style.transition = 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                    markerElement.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out';
                     markerElement.innerHTML = createMarkerHTML(scale);
                   } else {
                     console.log('createMarkerHTML is not available for marker scaling');
@@ -862,8 +874,8 @@ export const MapView = (props: any) => {
               
               // Добавляем обработчики событий зума
               const onZoom = () => {
-                console.log('Zoom event triggered'); // Debug log
-                applyScale();
+                console.log('🔄 Zoom event triggered'); // Debug log
+                setTimeout(() => applyScale(), 50); // Небольшая задержка для стабильности
               };
               
               // Добавляем несколько обработчиков для надежности
@@ -871,13 +883,14 @@ export const MapView = (props: any) => {
               mapRef.current.on('zoomend', onZoom);
               mapRef.current.on('moveend', onZoom);
               mapRef.current.on('move', onZoom);
+              mapRef.current.on('idle', onZoom);
               
-              // Принудительно обновляем каждые 500мс для тестирования
+              // Принудительно обновляем каждые 200мс для более быстрого отклика
               const intervalId = setInterval(() => {
                 if (mapRef.current) {
                   applyScale();
                 }
-              }, 500);
+              }, 200);
               
               // Сохраняем interval для очистки
               (marker as any)._intervalId = intervalId;

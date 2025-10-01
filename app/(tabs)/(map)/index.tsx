@@ -114,21 +114,14 @@ const DPSIcon = ({ size, color }: { size: number; color: string }) => (
 
   const PatrolIcon = ({ size, color }: { size: number; color: string }) => (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      {/* Щит с крестом - символ безопасности и защиты */}
+      {/* Звезда - символ важности и приоритета */}
       <Path 
-        d="M12 2L4 6v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V6l-8-4z" 
+        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" 
         stroke={color} 
         strokeWidth="2" 
         strokeLinecap="round" 
         strokeLinejoin="round"
         fill="none"
-      />
-      {/* Крест в центре щита */}
-      <Path 
-        d="M12 8v8M8 12h8" 
-        stroke={color} 
-        strokeWidth="2" 
-        strokeLinecap="round"
       />
     </Svg>
   );
