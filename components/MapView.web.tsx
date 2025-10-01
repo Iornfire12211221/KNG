@@ -772,6 +772,9 @@ export const MapView = (props: any) => {
                           background: rgba(0, 122, 255, 0.08);
                           animation: pulse 8s infinite;
                           z-index: 1;
+                          top: 50%;
+                          left: 50%;
+                          transform: translate(-50%, -50%);
                         "></div>
                         <!-- Основной маркер -->
                         <div style="
@@ -789,15 +792,15 @@ export const MapView = (props: any) => {
                       <style>
                         @keyframes pulse {
                           0% {
-                            transform: scale(0.9);
+                            transform: translate(-50%, -50%) scale(0.9);
                             opacity: 0.3;
                           }
                           50% {
-                            transform: scale(1.1);
+                            transform: translate(-50%, -50%) scale(1.1);
                             opacity: 0.1;
                           }
                           100% {
-                            transform: scale(1.2);
+                            transform: translate(-50%, -50%) scale(1.2);
                             opacity: 0;
                           }
                         }
