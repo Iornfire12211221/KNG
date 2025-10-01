@@ -645,9 +645,12 @@ export const MapView = (props: any) => {
                       display: flex;
                       align-items: center;
                       justify-content: center;
-                      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-                      transition: all 0.2s ease-out;
-                    ">
+                      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+                      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                      cursor: pointer;
+                      transform: scale(1);
+                    " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
+                    >
                       ${getIconHTML(postType, iconSize)}
                     </div>
                   </div>
@@ -835,6 +838,7 @@ export const MapView = (props: any) => {
                       markerElement.style.display = 'block';
                     }
                     console.log('Event marker scale:', scale, 'for zoom:', z); // Debug log
+                    markerElement.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
                     markerElement.innerHTML = createMarkerHTML(scale);
                   } else {
                     console.log('createMarkerHTML is not available for marker scaling');

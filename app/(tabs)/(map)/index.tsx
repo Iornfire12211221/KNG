@@ -1808,8 +1808,19 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                     isRecent && styles.postCardRecent
                   ]}
                   onPress={() => {
-                    // Устанавливаем выбранный пост без центрирования карты
+                    // Устанавливаем выбранный пост
                     setSelectedPost(post.id);
+                    
+                    // Плавно центрируем карту на маркере события
+                    if (mapRef.current && post.latitude && post.longitude) {
+                      console.log('🔵🔵🔵 Navigating to event marker:', post.latitude, post.longitude);
+                      mapRef.current.animateToRegion({
+                        latitude: post.latitude,
+                        longitude: post.longitude,
+                        latitudeDelta: 0.005,
+                        longitudeDelta: 0.005,
+                      }, 1000);
+                    }
                   }}
                   onLongPress={() => {
                     // Анимация нажатия
@@ -2914,16 +2925,20 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 0,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
     width: width * 0.9,
     height: height * 0.24,
     marginHorizontal: width * 0.05,
+    transform: [{ scale: 1 }],
   },
   postCardSelected: {
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+    transform: [{ scale: 1.02 }],
   },
   postHeader: {
     flexDirection: 'row',
@@ -3111,12 +3126,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 6,
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.05)',
+    transform: [{ scale: 1 }],
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
   },
   mapControlButtonBlue: {
     width: 48,
@@ -3126,12 +3143,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 6,
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.05)',
+    transform: [{ scale: 1 }],
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
   },
   mapControlButtonLoading: {
     // отключено подсвечивание при загрузке
