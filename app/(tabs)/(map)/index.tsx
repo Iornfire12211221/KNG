@@ -369,6 +369,7 @@ export default function MapScreen() {
   }, [userLocation, userHasMovedMap]);
 
   const requestLocationPermission = async () => {
+    console.log('🔵🔵🔵 requestLocationPermission called 🔵🔵🔵');
     try {
       setIsLoadingLocation(true);
       setLocationError(null);
@@ -390,6 +391,7 @@ export default function MapScreen() {
             },
             timestamp: Date.now(),
           } as unknown as Location.LocationObject;
+          console.log('🔵🔵🔵 Setting userLocation (Telegram):', webLoc.coords);
           setUserLocation(webLoc);
           // Не центрируем карту автоматически - только при нажатии кнопки
         } else {
@@ -432,6 +434,7 @@ export default function MapScreen() {
         const last = await Location.getLastKnownPositionAsync();
         if (last) {
           console.log('Using last known location instantly:', last.coords);
+          console.log('🔵🔵🔵 Setting userLocation (last known):', last.coords);
           setUserLocation(last);
           // Не центрируем карту автоматически - только при нажатии кнопки
         }
@@ -447,6 +450,7 @@ export default function MapScreen() {
         });
         quickGot = true;
         console.log('Quick location obtained:', quick.coords);
+        console.log('🔵🔵🔵 Setting userLocation (quick):', quick.coords);
         setUserLocation(quick);
         // Не центрируем карту автоматически - только при нажатии кнопки
       } catch (e) {
@@ -463,6 +467,7 @@ export default function MapScreen() {
             accuracy: Location.Accuracy.High,
           });
           console.log('Precise location obtained (background):', precise.coords);
+          console.log('🔵🔵🔵 Setting userLocation (precise):', precise.coords);
           setUserLocation(precise);
           // Не центрируем карту автоматически - только при нажатии кнопки
         } catch (e) {
