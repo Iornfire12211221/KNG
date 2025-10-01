@@ -372,16 +372,21 @@ export const MapView = (props: any) => {
     if (props.ref) {
       props.ref.current = {
         animateToRegion: (region: any, duration = 1000) => {
-          console.log('animateToRegion called:', {
+          console.log('animateToRegion called (DISABLED):', {
             region,
             duration,
             stack: new Error().stack
           });
+          // ВРЕМЕННО ОТКЛЮЧАЕМ все центрирование карты
+          console.log('animateToRegion DISABLED - not centering map');
+          return;
+          /*
           map.flyTo({
             center: [region.longitude, region.latitude],
             zoom: 15,
             duration: duration
           });
+          */
         },
         zoomIn: () => {
           map.zoomIn();

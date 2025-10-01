@@ -644,7 +644,13 @@ export default function MapScreen() {
   };
 
   const centerOnUser = useCallback(() => {
+    console.log('centerOnUser called:', {
+      hasUserLocation: !!userLocation,
+      hasMapRef: !!mapRef.current,
+      stack: new Error().stack
+    });
     if (userLocation && mapRef.current) {
+      console.log('centerOnUser: calling animateToRegion');
       mapRef.current.animateToRegion({
         latitude: userLocation.coords.latitude,
         longitude: userLocation.coords.longitude,
