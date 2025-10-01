@@ -161,6 +161,27 @@ export const MapView = (props: any) => {
       });
     }
 
+    // Добавляем обработчик зума для принудительного обновления маркеров
+    map.on('zoomend', () => {
+      console.log('Map zoom ended, forcing marker update');
+      // Принудительно обновляем все маркеры
+      markersRef.current.forEach((marker) => {
+        if (marker && marker._onZoom) {
+          marker._onZoom();
+        }
+      });
+    });
+
+    map.on('moveend', () => {
+      console.log('Map move ended, forcing marker update');
+      // Принудительно обновляем все маркеры
+      markersRef.current.forEach((marker) => {
+        if (marker && marker._onZoom) {
+          marker._onZoom();
+        }
+      });
+    });
+
     if (onLongPress) {
       let pressTimer: number | null = null;
       let startCoords: { lat: number; lng: number } | null = null;
@@ -603,6 +624,12 @@ export const MapView = (props: any) => {
       console.log('Error force updating markers:', error);
     }
   }, [mapLoaded]);
+
+  // Экспортируем функцию для внешнего использования
+  React.useImperativeHandle(props.ref, () => ({
+    ...(props.ref?.current || {}),
+    forceUpdateMarkers,
+  }), [forceUpdateMarkers]);
 
   // Handle markers
   useEffect(() => {

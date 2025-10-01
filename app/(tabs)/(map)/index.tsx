@@ -1452,6 +1452,12 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               initialRegion={initialRegion}
               onPress={handleMapPress}
               onLongPress={handleMapLongPress}
+              onRegionChangeComplete={(region) => {
+                // Принудительно обновляем маркеры при изменении региона
+                if (mapRef.current && mapRef.current.forceUpdateMarkers) {
+                  mapRef.current.forceUpdateMarkers();
+                }
+              }}
               onRegionChange={handleRegionChange}
               onMapReady={() => {
                 console.log('Map ready (web)');
@@ -1532,6 +1538,12 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               initialRegion={initialRegion}
               onPress={handleMapPress}
               onLongPress={handleMapLongPress}
+              onRegionChangeComplete={(region) => {
+                // Принудительно обновляем маркеры при изменении региона
+                if (mapRef.current && mapRef.current.forceUpdateMarkers) {
+                  mapRef.current.forceUpdateMarkers();
+                }
+              }}
               onRegionChange={handleRegionChange}
               onMapReady={() => {
                 console.log('Map ready (native)');
@@ -1670,7 +1682,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                   const result = await requestLocation();
                   if (result.granted && result.location) {
                     const { latitude, longitude } = result.location;
-                    // Не центрируем карту автоматически при получении разрешения
+                    // Центрируем карту на полученной локации
                     const webLoc: Location.LocationObject = {
                       coords: {
                         latitude,
@@ -1684,6 +1696,17 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                       timestamp: Date.now(),
                     } as unknown as Location.LocationObject;
                     setUserLocation(webLoc);
+                    
+                    // Центрируем карту на локации пользователя
+                    if (mapRef.current && mapRef.current.animateToRegion) {
+                      mapRef.current.animateToRegion({
+                        latitude,
+                        longitude,
+                        latitudeDelta: 0.01,
+                        longitudeDelta: 0.01,
+                      }, 1000);
+                    }
+                    
                     hapticFeedback('success');
                   } else {
                     console.log('Telegram location permission denied');
@@ -1695,7 +1718,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                   navigator.geolocation.getCurrentPosition(
                     (pos) => {
                       const { latitude, longitude } = pos.coords;
-                      // Не центрируем карту автоматически при получении геолокации
+                      // Центрируем карту на полученной геолокации
                       const webLoc: Location.LocationObject = {
                         coords: {
                           latitude,
@@ -1709,6 +1732,16 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                         timestamp: pos.timestamp,
                       } as unknown as Location.LocationObject;
                       setUserLocation(webLoc);
+                      
+                      // Центрируем карту на локации пользователя
+                      if (mapRef.current && mapRef.current.animateToRegion) {
+                        mapRef.current.animateToRegion({
+                          latitude,
+                          longitude,
+                          latitudeDelta: 0.01,
+                          longitudeDelta: 0.01,
+                        }, 1000);
+                      }
                     },
                     (error) => {
                     console.log('Web geolocation error', error);
