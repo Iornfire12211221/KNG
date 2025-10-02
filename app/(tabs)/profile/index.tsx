@@ -10,7 +10,6 @@ import {
   Image,
   Linking,
   Platform,
-  Animated,
 } from 'react-native';
 import { useApp } from '@/hooks/app-store';
 import { 
@@ -32,8 +31,6 @@ export default function ProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(currentUser?.name || '');
   const [editTelegram, setEditTelegram] = useState(currentUser?.telegramUsername || '');
-  const [saveAnimation] = useState(new Animated.Value(1));
-
   const handleLogout = () => {
     Alert.alert(
       'Выход',
@@ -62,29 +59,12 @@ export default function ProfileScreen() {
       return;
     }
 
-    // Запускаем анимацию
-    Animated.sequence([
-      Animated.timing(saveAnimation, {
-        toValue: 0.9,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.spring(saveAnimation, {
-        toValue: 1,
-        friction: 3,
-        tension: 40,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
     await updateUser({
       name: editName.trim(),
       telegramUsername: editTelegram.trim(),
     });
     
-    setTimeout(() => {
-      setIsEditing(false);
-    }, 300);
+    setIsEditing(false);
   };
 
   const handleCancel = () => {
@@ -146,11 +126,9 @@ export default function ProfileScreen() {
               <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
                 <X size={20} color="#666" strokeWidth={2} />
               </TouchableOpacity>
-              <Animated.View style={{ transform: [{ scale: saveAnimation }] }}>
-                <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-                  <Check size={20} color="#FFF" strokeWidth={2.5} />
-                </TouchableOpacity>
-              </Animated.View>
+              <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+                <Check size={20} color="#FFF" strokeWidth={2.5} />
+              </TouchableOpacity>
             </View>
           </View>
         ) : (

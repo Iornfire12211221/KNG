@@ -677,10 +677,10 @@ export const MapView = (props: any) => {
               
               // Создаем функцию для генерации HTML маркера (минималистичный дизайн)
               const createMarkerHTML = (scale: number) => {
-                // Базовый размер меньше и без текста
-                const size = Math.max(16, Math.min(24, 20 * scale));
-                const iconSize = Math.max(8, Math.min(12, 10 * scale));
-                const borderWidth = Math.max(1, 1.5 * scale);
+                // Увеличенный размер маркеров
+                const size = Math.max(20, Math.min(32, 26 * scale));
+                const iconSize = Math.max(10, Math.min(16, 13 * scale));
+                const borderWidth = Math.max(1.5, 2 * scale);
                 
                 return `
                   <div style="

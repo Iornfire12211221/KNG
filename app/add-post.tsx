@@ -561,45 +561,24 @@ export default function AddPostScreen() {
         options={{
           title: '',
           headerRight: () => (
-            <Animated.View style={{ transform: [{ scale: submitButtonScale }] }}>
-              <TouchableOpacity onPress={() => {
-                // Анимация нажатия
-                Animated.sequence([
-                  Animated.timing(submitButtonScale, {
-                    toValue: 0.95,
-                    duration: 100,
-                    useNativeDriver: true,
-                  }),
-                  Animated.timing(submitButtonScale, {
-                    toValue: 1,
-                    duration: 100,
-                    useNativeDriver: true,
-                  }),
-                ]).start();
-                
-                handleSubmit();
-              }} disabled={isSaving || cooldownSeconds > 0}>
+            <TouchableOpacity 
+              onPress={handleSubmit} 
+              disabled={isSaving || cooldownSeconds > 0}
+              style={styles.headerSaveButton}
+            >
               {isSaving ? (
                 <View style={styles.saveIndicator}>
-                  <Animated.View style={{
-                    transform: [{ scale: savePulseValue }],
-                    opacity: saveOpacityValue
-                  }}>
-                    <View style={styles.savePulse}>
-                      <View style={styles.savePulseInner} />
-                    </View>
-                  </Animated.View>
-                  <Text style={styles.saveText}>AI проверка</Text>
+                  <ActivityIndicator size="small" color="#007AFF" />
                 </View>
               ) : (
-                <View style={[styles.headerSaveButton, (cooldownSeconds > 0) ? styles.headerSaveButtonDisabled : undefined]}>
-                  <Text style={styles.headerSaveButtonText}>
-                    {cooldownSeconds > 0 ? `Через ${cooldownSeconds}с` : 'Сохранить'}
-                  </Text>
-                </View>
+                <Text style={[
+                  styles.headerSaveButtonText,
+                  (cooldownSeconds > 0) && styles.headerSaveButtonTextDisabled
+                ]}>
+                  {cooldownSeconds > 0 ? `${cooldownSeconds}с` : 'Сохранить'}
+                </Text>
               )}
-              </TouchableOpacity>
-            </Animated.View>
+            </TouchableOpacity>
           ),
         }} 
       />
@@ -1243,6 +1222,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  headerSaveButtonTextDisabled: {
+    color: '#FFFFFF80',
   },
   modalBackdrop: {
     flex: 1,
