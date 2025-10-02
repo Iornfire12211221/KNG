@@ -1298,26 +1298,27 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
             const files = Array.from(e.target.files);
             if (files.length > 0) {
               for (const file of files.slice(0, 5 - quickAddPhotos.length)) {
+                const fileObj = file as File;
                 // Check file size (max 10MB)
-                if (file.size > 10 * 1024 * 1024) {
-                  console.error('File too large:', file.name);
+                if (fileObj.size > 10 * 1024 * 1024) {
+                  console.error('File too large:', fileObj.name);
                   continue;
                 }
                 
                 const reader = new FileReader();
-                reader.onload = (event: any) => {
-                  const result = event.target.result;
+                reader.onload = (event: ProgressEvent<FileReader>) => {
+                  const result = event.target?.result;
                   // Проверяем, что результат валидный
                   if (result && typeof result === 'string' && result.startsWith('data:image/')) {
                     setQuickAddPhotos(prev => [...prev, result]);
                   } else {
-                    console.error('Invalid image data for file:', file.name);
+                    console.error('Invalid image data for file:', fileObj.name);
                   }
                 };
                 reader.onerror = () => {
-                  console.error('Error reading file:', file.name);
+                  console.error('Error reading file:', fileObj.name);
                 };
-                reader.readAsDataURL(file);
+                reader.readAsDataURL(fileObj);
               }
             }
             setIsUploadingImage(false);
@@ -1518,7 +1519,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               initialRegion={initialRegion}
               onPress={handleMapPress}
               onLongPress={handleMapLongPress}
-              onRegionChangeComplete={(region) => {
+              onRegionChangeComplete={(region: any) => {
                 // Принудительно обновляем маркеры при изменении региона
                 if (mapRef.current && mapRef.current.forceUpdateMarkers) {
                   mapRef.current.forceUpdateMarkers();
@@ -1604,7 +1605,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               initialRegion={initialRegion}
               onPress={handleMapPress}
               onLongPress={handleMapLongPress}
-              onRegionChangeComplete={(region) => {
+              onRegionChangeComplete={(region: any) => {
                 // Принудительно обновляем маркеры при изменении региона
                 if (mapRef.current && mapRef.current.forceUpdateMarkers) {
                   mapRef.current.forceUpdateMarkers();
@@ -3498,7 +3499,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.05)',
     transform: [{ scale: 1 }],
-    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
   },
   mapControlButtonBlue: {
     width: 48,
@@ -3515,7 +3515,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.05)',
     transform: [{ scale: 1 }],
-    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
   },
   mapControlButtonLoading: {
     // отключено подсвечивание при загрузке
