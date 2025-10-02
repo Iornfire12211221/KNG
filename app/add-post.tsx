@@ -44,6 +44,8 @@ const SEVERITY_LEVELS = [
 ];
 
 export default function AddPostScreen() {
+  console.log('🚀 AddPostScreen component loaded');
+  
   const { addPost, currentUser, posts } = useApp();
   const [description, setDescription] = useState('');
   const [latitude, setLatitude] = useState(KINGISEPP_CENTER.latitude);
@@ -591,12 +593,21 @@ export default function AddPostScreen() {
     }
   };
 
+  console.log('🎨 Rendering AddPostScreen', { 
+    isSaving, 
+    cooldownSeconds, 
+    description: description.length,
+    selectedImages: selectedImages.length 
+  });
+
   return (
     <>
       <Stack.Screen 
         options={{
           title: '',
-          headerRight: () => (
+          headerRight: () => {
+            console.log('🔘 Creating header save button', { isSaving, cooldownSeconds });
+            return (
             <TouchableOpacity 
               onPress={() => {
                 console.log('🔘 Save button pressed');
@@ -622,7 +633,8 @@ export default function AddPostScreen() {
                 </Text>
               )}
             </TouchableOpacity>
-          ),
+            );
+          },
         }} 
       />
       <KeyboardAvoidingView

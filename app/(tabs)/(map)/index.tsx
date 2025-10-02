@@ -1091,11 +1091,25 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
   };
 
   const handleQuickAddSubmit = async () => {
-    if (!quickAddLocation || !currentUser) return;
+    console.log('🚀 handleQuickAddSubmit called', {
+      quickAddLocation,
+      currentUser: !!currentUser,
+      quickAddDescription: quickAddDescription.trim(),
+      quickAddPhotos: quickAddPhotos.length,
+      isSavingPost,
+      cooldownSeconds
+    });
+    
+    if (!quickAddLocation || !currentUser) {
+      console.log('❌ Missing location or user', { quickAddLocation, currentUser: !!currentUser });
+      return;
+    }
 
     // Валидация: пост должен иметь либо описание, либо фото
     const hasDescription = quickAddDescription.trim().length > 0;
     const hasPhoto = quickAddPhotos.length > 0;
+    
+    console.log('📝 Quick add validation:', { hasDescription, hasPhoto });
     
     if (!hasDescription && !hasPhoto) {
       Alert.alert(
@@ -2305,7 +2319,11 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                 (isSavingPost || cooldownSeconds > 0) && styles.saveButtonDisabled
               ]}
               onPress={() => {
-                if (isSavingPost || cooldownSeconds > 0) return;
+                console.log('🔘 Quick add save button pressed', { isSavingPost, cooldownSeconds });
+                if (isSavingPost || cooldownSeconds > 0) {
+                  console.log('❌ Save blocked', { isSavingPost, cooldownSeconds });
+                  return;
+                }
                 handleQuickAddSubmit();
               }}
               disabled={isSavingPost || cooldownSeconds > 0}
