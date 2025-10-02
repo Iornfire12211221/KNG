@@ -875,55 +875,66 @@ export const MapView = (props: any) => {
                     `;
                   } else {
                     // Маркеры событий - скрываются при зуме <= 10
-                    let scale;
+                    // Находим внутренний элемент для применения transform
+                    const innerElement = markerElement.firstElementChild as HTMLElement;
+                    
                     if (z <= 10) {
                       // При зуме <= 10 - СКРЫВАЕМ маркеры
-                      scale = 0.3;
                       markerElement.style.display = 'none';
                       markerElement.style.opacity = '0';
                       markerElement.style.visibility = 'hidden';
                       markerElement.style.pointerEvents = 'none';
-                      markerElement.style.transform = 'scale(0)';
+                      if (innerElement) {
+                        innerElement.style.transform = 'scale(0)';
+                      }
                       console.log(`📍 Event marker HIDDEN at zoom ${z.toFixed(2)}`);
                     } else if (z <= 12) {
                       // При сильном отдалении - маленькие
-                      scale = 0.5;
-                      markerElement.style.display = 'block';
-                      markerElement.style.opacity = '0.7';
-                      markerElement.style.visibility = 'visible';
-                      markerElement.style.pointerEvents = 'auto';
-                      markerElement.style.transform = 'scale(0.7)';
-                      console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 0.7)`);
-                    } else if (z <= 14) {
-                      // При нормальном отдалении - средние
-                      scale = 0.7;
-                      markerElement.style.display = 'block';
-                      markerElement.style.opacity = '0.8';
-                      markerElement.style.visibility = 'visible';
-                      markerElement.style.pointerEvents = 'auto';
-                      markerElement.style.transform = 'scale(0.8)';
-                      console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 0.8)`);
-                    } else if (z <= 16) {
-                      // При приближении - большие
-                      scale = 0.9;
-                      markerElement.style.display = 'block';
-                      markerElement.style.opacity = '0.9';
-                      markerElement.style.visibility = 'visible';
-                      markerElement.style.pointerEvents = 'auto';
-                      markerElement.style.transform = 'scale(0.9)';
-                      console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 0.9)`);
-                    } else {
-                      // При близком приближении - полный размер
-                      scale = 1.0;
                       markerElement.style.display = 'block';
                       markerElement.style.opacity = '1';
                       markerElement.style.visibility = 'visible';
                       markerElement.style.pointerEvents = 'auto';
-                      markerElement.style.transform = 'scale(1)';
+                      if (innerElement) {
+                        innerElement.style.transform = 'scale(0.7)';
+                        innerElement.style.transition = 'transform 0.2s ease-out';
+                      }
+                      console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 0.7)`);
+                    } else if (z <= 14) {
+                      // При нормальном отдалении - средние
+                      markerElement.style.display = 'block';
+                      markerElement.style.opacity = '1';
+                      markerElement.style.visibility = 'visible';
+                      markerElement.style.pointerEvents = 'auto';
+                      if (innerElement) {
+                        innerElement.style.transform = 'scale(0.85)';
+                        innerElement.style.transition = 'transform 0.2s ease-out';
+                      }
+                      console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 0.85)`);
+                    } else if (z <= 16) {
+                      // При приближении - большие
+                      markerElement.style.display = 'block';
+                      markerElement.style.opacity = '1';
+                      markerElement.style.visibility = 'visible';
+                      markerElement.style.pointerEvents = 'auto';
+                      if (innerElement) {
+                        innerElement.style.transform = 'scale(0.95)';
+                        innerElement.style.transition = 'transform 0.2s ease-out';
+                      }
+                      console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 0.95)`);
+                    } else {
+                      // При близком приближении - полный размер
+                      markerElement.style.display = 'block';
+                      markerElement.style.opacity = '1';
+                      markerElement.style.visibility = 'visible';
+                      markerElement.style.pointerEvents = 'auto';
+                      if (innerElement) {
+                        innerElement.style.transform = 'scale(1)';
+                        innerElement.style.transition = 'transform 0.2s ease-out';
+                      }
                       console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 1.0)`);
                     }
-                    markerElement.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out';
-                    // HTML уже создан ранее, просто меняем стили
+                    // Transition только для opacity на контейнере
+                    markerElement.style.transition = 'opacity 0.2s ease-out';
                   }
                 } catch (error) {
                   // Silently handle errors to avoid performance impact
