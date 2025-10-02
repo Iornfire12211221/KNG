@@ -2020,7 +2020,17 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
             });
             
             // Открываем модальное окно вместо перехода на другую страницу
-            setQuickAddLocation(null);
+            // Используем текущее местоположение пользователя или центр карты
+            const currentLocation = userLocation ? {
+              latitude: userLocation.coords.latitude,
+              longitude: userLocation.coords.longitude
+            } : {
+              latitude: KINGISEPP_CENTER.latitude,
+              longitude: KINGISEPP_CENTER.longitude
+            };
+            
+            console.log('🎯 Setting quickAddLocation for plus button:', currentLocation);
+            setQuickAddLocation(currentLocation);
             setQuickAddDescription('');
             setQuickAddType('dps');
             setQuickAddSeverity('medium');
