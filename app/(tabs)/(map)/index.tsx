@@ -2349,25 +2349,25 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               disabled={isSavingPost || cooldownSeconds > 0}
             >
               {isSavingPost ? (
-                <View style={styles.aiCheckingContainer}>
-                  <Animated.View style={{
-                    transform: [{ rotate: savePulseValue.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['0deg', '360deg']
-                    }) }]
-                  }}>
-                    <View style={styles.aiSpinner}>
-                      <View style={styles.aiSpinnerDot1} />
-                      <View style={styles.aiSpinnerDot2} />
-                      <View style={styles.aiSpinnerDot3} />
-                    </View>
-                  </Animated.View>
-                  <Animated.View style={{
-                    opacity: saveOpacityValue,
-                    transform: [{ scale: saveOpacityValue }]
-                  }}>
-                    <Zap size={16} color="#FFFFFF" />
-                  </Animated.View>
+                <View style={styles.loadingDotsContainer}>
+                  <Animated.View style={[styles.loadingDot, {
+                    opacity: savePulseValue.interpolate({
+                      inputRange: [0, 0.33, 0.66, 1],
+                      outputRange: [0.3, 1, 0.3, 0.3]
+                    })
+                  }]} />
+                  <Animated.View style={[styles.loadingDot, {
+                    opacity: savePulseValue.interpolate({
+                      inputRange: [0, 0.33, 0.66, 1],
+                      outputRange: [0.3, 0.3, 1, 0.3]
+                    })
+                  }]} />
+                  <Animated.View style={[styles.loadingDot, {
+                    opacity: savePulseValue.interpolate({
+                      inputRange: [0, 0.33, 0.66, 1],
+                      outputRange: [0.3, 0.3, 0.3, 1]
+                    })
+                  }]} />
                 </View>
               ) : (
                 <Text style={[
@@ -3835,48 +3835,17 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     opacity: 0.8,
   },
-  aiCheckingContainer: {
+  loadingDotsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 4,
   },
-  aiSpinner: {
-    width: 20,
-    height: 20,
-    position: 'relative',
-  },
-  aiSpinnerDot1: {
-    position: 'absolute',
-    top: 2,
-    left: 9,
-    width: 2,
+  loadingDot: {
+    width: 6,
     height: 6,
-    borderRadius: 1,
+    borderRadius: 3,
     backgroundColor: '#FFFFFF',
-    opacity: 1,
-  },
-  aiSpinnerDot2: {
-    position: 'absolute',
-    top: 6,
-    right: 2,
-    width: 2,
-    height: 6,
-    borderRadius: 1,
-    backgroundColor: '#FFFFFF',
-    opacity: 0.7,
-    transform: [{ rotate: '120deg' }],
-  },
-  aiSpinnerDot3: {
-    position: 'absolute',
-    bottom: 6,
-    left: 2,
-    width: 2,
-    height: 6,
-    borderRadius: 1,
-    backgroundColor: '#FFFFFF',
-    opacity: 0.4,
-    transform: [{ rotate: '240deg' }],
   },
   aiPulse: {
     width: 16,
