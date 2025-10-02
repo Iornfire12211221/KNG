@@ -58,15 +58,58 @@ if (process.env.NODE_ENV === "production") {
     console.error('Error checking dist directory:', error);
   }
   
-  // Serve static assets with proper paths
+  // Serve static assets with proper paths and fallbacks
   app.use("/_expo/*", serveStatic({ root: "./dist" }));
   app.use("/static/*", serveStatic({ root: "./dist" }));
   app.use("/assets/*", serveStatic({ root: "./dist" }));
-  app.use("/favicon.ico", serveStatic({ path: "./dist/favicon.ico" }));
   
-  // Serve index.html for root and all other routes (SPA fallback)
-  app.get("/", serveStatic({ path: "./dist/index.html" }));
-  app.get("*", serveStatic({ path: "./dist/index.html" }));
+  // Serve favicon with fallback
+  app.get("/favicon.ico", async (c) => {
+    try {
+      const faviconPath = path.join(process.cwd(), 'dist', 'favicon.ico');
+      if (fs.existsSync(faviconPath)) {
+        return await serveStatic({ path: "./dist/favicon.ico" })(c, async () => {});
+      } else {
+        console.warn('⚠️ favicon.ico not found, returning 204');
+        return c.body(null, 204);
+      }
+    } catch (error) {
+      console.error('❌ Error serving favicon:', error);
+      return c.body(null, 204);
+    }
+  });
+  
+  // Serve index.html for root
+  app.get("/", async (c) => {
+    try {
+      const indexPath = path.join(process.cwd(), 'dist', 'index.html');
+      if (fs.existsSync(indexPath)) {
+        return await serveStatic({ path: "./dist/index.html" })(c, async () => {});
+      } else {
+        console.error('❌ index.html not found in dist directory');
+        return c.text('Application not built. Please run: bunx expo export --platform web', 500);
+      }
+    } catch (error) {
+      console.error('❌ Error serving index.html:', error);
+      return c.text('Server error', 500);
+    }
+  });
+  
+  // SPA fallback for all other routes
+  app.get("*", async (c) => {
+    try {
+      const indexPath = path.join(process.cwd(), 'dist', 'index.html');
+      if (fs.existsSync(indexPath)) {
+        return await serveStatic({ path: "./dist/index.html" })(c, async () => {});
+      } else {
+        console.error('❌ index.html not found for SPA fallback');
+        return c.text('Application not built. Please run: bunx expo export --platform web', 404);
+      }
+    } catch (error) {
+      console.error('❌ Error in SPA fallback:', error);
+      return c.text('Server error', 500);
+    }
+  });
 } else {
   // Development mode - just serve API
   app.get("/", (c) => {

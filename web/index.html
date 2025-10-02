@@ -6,6 +6,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no" />
   <title>Карта и чат для постов ДПС в реальном времени в Кингисеппе</title>
   
+  <!-- Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' 
+      https://telegram.org 
+      https://api.mapbox.com 
+      https://cdn.jsdelivr.net 
+      https://unpkg.com 
+      blob: data:;
+    style-src 'self' 'unsafe-inline' 
+      https://api.mapbox.com 
+      https://fonts.googleapis.com;
+    font-src 'self' 
+      https://fonts.gstatic.com 
+      data:;
+    img-src 'self' 
+      https: 
+      data: 
+      blob:;
+    connect-src 'self' 
+      https://api.mapbox.com 
+      https://events.mapbox.com 
+      wss: 
+      ws:;
+    worker-src 'self' 
+      blob:;
+    child-src 'self' 
+      blob:;
+  ">
+  
   <!-- Telegram WebApp Script -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   
@@ -201,6 +231,42 @@
     // Prevent context menu
     document.addEventListener('contextmenu', function(e) {
       e.preventDefault();
+    });
+    
+    // Global error handling for Telegram API errors
+    window.addEventListener('error', function(event) {
+      // Ignore Telegram FILE_REFERENCE_EXPIRED errors
+      if (event.error && event.error.message && event.error.message.includes('FILE_REFERENCE_EXPIRED')) {
+        console.warn('⚠️ Ignoring Telegram FILE_REFERENCE_EXPIRED error');
+        event.preventDefault();
+        return false;
+      }
+      
+      // Ignore Telegram RPC errors
+      if (event.error && event.error.message && event.error.message.includes('RPCError')) {
+        console.warn('⚠️ Ignoring Telegram RPC error:', event.error.message);
+        event.preventDefault();
+        return false;
+      }
+      
+      // Ignore Content Security Policy violations for known safe sources
+      if (event.message && event.message.includes('Content Security Policy')) {
+        console.warn('⚠️ CSP violation (may be expected):', event.message);
+        return false;
+      }
+    });
+    
+    // Handle unhandled promise rejections
+    window.addEventListener('unhandledrejection', function(event) {
+      // Ignore Telegram API promise rejections
+      if (event.reason && event.reason.message) {
+        if (event.reason.message.includes('FILE_REFERENCE_EXPIRED') || 
+            event.reason.message.includes('RPCError')) {
+          console.warn('⚠️ Ignoring Telegram promise rejection:', event.reason.message);
+          event.preventDefault();
+          return false;
+        }
+      }
     });
   </script>
 </body>

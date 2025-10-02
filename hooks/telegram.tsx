@@ -120,35 +120,83 @@ export const useTelegram = () => {
 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      const tg = window.Telegram?.WebApp;
-      if (tg) {
-        setWebApp(tg as any);
-        setUser(tg.initDataUnsafe?.user || null);
-        
-        // Готовим WebApp
-        tg.ready();
-        
-        // Расширяем на весь экран
-        tg.expand();
-        
-        // Включаем подтверждение закрытия
-        tg.isClosingConfirmationEnabled = true;
-        
-        setIsReady(true);
-        
-        console.log('Telegram WebApp готов:', {
-          user: tg.initDataUnsafe?.user,
-          platform: tg.platform,
-          version: tg.version,
-          colorScheme: tg.colorScheme
-        });
-      } else {
-        console.log('Не запущено в Telegram WebApp');
+      try {
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+          setWebApp(tg as any);
+          
+          // Безопасно получаем данные пользователя
+          try {
+            const userData = tg.initDataUnsafe?.user || null;
+            setUser(userData);
+          } catch (error) {
+            console.warn('⚠️ Ошибка получения данных пользователя:', error);
+            setUser(null);
+          }
+          
+          // Готовим WebApp
+          try {
+            tg.ready();
+          } catch (error) {
+            console.warn('⚠️ Ошибка инициализации WebApp:', error);
+          }
+          
+          // Расширяем на весь экран
+          try {
+            tg.expand();
+          } catch (error) {
+            console.warn('⚠️ Ошибка расширения WebApp:', error);
+          }
+          
+          // Включаем подтверждение закрытия
+          try {
+            tg.isClosingConfirmationEnabled = true;
+          } catch (error) {
+            console.warn('⚠️ Ошибка настройки подтверждения закрытия:', error);
+          }
+          
+          setIsReady(true);
+          
+          console.log('✅ Telegram WebApp готов:', {
+            user: tg.initDataUnsafe?.user,
+            platform: tg.platform,
+            version: tg.version,
+            colorScheme: tg.colorScheme
+          });
+        } else {
+          console.log('ℹ️ Не запущено в Telegram WebApp');
+          setIsReady(true);
+        }
+      } catch (error) {
+        console.error('❌ Критическая ошибка инициализации Telegram WebApp:', error);
         setIsReady(true);
       }
     } else {
       setIsReady(true);
     }
+    
+    // Глобальная обработка ошибок для Telegram API
+    const handleTelegramError = (event: any) => {
+      if (event.error && event.error.message && event.error.message.includes('FILE_REFERENCE_EXPIRED')) {
+        console.warn('⚠️ Telegram FILE_REFERENCE_EXPIRED - игнорируем');
+        event.preventDefault();
+        return;
+      }
+      
+      if (event.error && event.error.message && event.error.message.includes('RPCError')) {
+        console.warn('⚠️ Telegram RPC Error - игнорируем:', event.error.message);
+        event.preventDefault();
+        return;
+      }
+    };
+    
+    window.addEventListener('error', handleTelegramError);
+    window.addEventListener('unhandledrejection', handleTelegramError);
+    
+    return () => {
+      window.removeEventListener('error', handleTelegramError);
+      window.removeEventListener('unhandledrejection', handleTelegramError);
+    };
   }, []);
 
   const showMainButton = useCallback((text: string, onClick: () => void) => {
