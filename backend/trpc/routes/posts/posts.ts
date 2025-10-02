@@ -30,20 +30,29 @@ const CreatePostSchema = z.object({
 export const postsRouter = createTRPCRouter({
   // Получить все активные посты
   getAll: publicProcedure.query(async () => {
-    const now = Date.now();
-    const posts = await prisma.post.findMany({
-      where: {
-        expiresAt: {
-          gt: now
+    try {
+      const now = Date.now();
+      const posts = await prisma.post.findMany({
+        where: {
+          expiresAt: {
+            gt: now
+          }
+        },
+        orderBy: {
+          timestamp: 'desc'
         }
-      },
-      orderBy: {
-        timestamp: 'desc'
-      }
-    });
-    
-    console.log(`📥 Fetched ${posts.length} active posts from database`);
-    return posts;
+      });
+      
+      console.log(`📥 Fetched ${posts.length} active posts from database`);
+      return posts;
+    } catch (error) {
+      console.error('❌ Error fetching posts from database:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw error;
+    }
   }),
 
   // Создать новый пост

@@ -27,6 +27,10 @@ RUN ls -la ./dist || true
 RUN ls -la ./dist/_expo || true
 RUN head -n 20 ./dist/index.html || true
 
+# Ensure certs directory exists and is readable
+RUN ls -la ./certs || echo "No certs directory"
+
 EXPOSE 8081
 
-CMD ["bun", "run", "backend/hono.ts"]
+# Start with database migration and then run the app
+CMD ["sh", "-c", "bunx prisma db push --skip-generate && bun run backend/hono.ts"]
