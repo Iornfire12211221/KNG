@@ -874,67 +874,63 @@ export const MapView = (props: any) => {
                       </style>
                     `;
                   } else {
-                    // Маркеры событий - скрываются при зуме <= 7 с плавной анимацией
+                    // Маркеры событий - полностью исчезают при зуме <= 11
                     // Находим внутренний элемент для применения transform
                     const innerElement = markerElement.firstElementChild as HTMLElement;
                     
-                    if (z <= 7) {
-                      // При зуме <= 7 - ПЛАВНО СКРЫВАЕМ маркеры
+                    if (z <= 11) {
+                      // При зуме <= 11 - ПОЛНОСТЬЮ СКРЫВАЕМ маркеры
                       markerElement.style.opacity = '0';
                       markerElement.style.pointerEvents = 'none';
+                      markerElement.style.visibility = 'hidden';
                       if (innerElement) {
-                        innerElement.style.transform = 'scale(0.3)';
+                        innerElement.style.transform = 'scale(0)';
                         innerElement.style.transition = 'transform 0.3s ease-out';
                       }
-                      console.log(`📍 Event marker FADING OUT at zoom ${z.toFixed(2)}`);
-                    } else if (z <= 10) {
-                      // Зум 7-10 - появляются и становятся маленькими
+                      console.log(`❌ Event marker HIDDEN at zoom ${z.toFixed(2)}`);
+                    } else if (z <= 13) {
+                      // Зум 11-13 - появляются маленькими
                       markerElement.style.opacity = '1';
                       markerElement.style.pointerEvents = 'auto';
-                      if (innerElement) {
-                        innerElement.style.transform = 'scale(0.6)';
-                        innerElement.style.transition = 'transform 0.3s ease-out';
-                      }
-                      console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 0.6)`);
-                    } else if (z <= 12) {
-                      // При сильном отдалении - маленькие
-                      markerElement.style.opacity = '1';
-                      markerElement.style.pointerEvents = 'auto';
+                      markerElement.style.visibility = 'visible';
                       if (innerElement) {
                         innerElement.style.transform = 'scale(0.7)';
                         innerElement.style.transition = 'transform 0.3s ease-out';
                       }
                       console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 0.7)`);
-                    } else if (z <= 14) {
-                      // При нормальном отдалении - средние
+                    } else if (z <= 15) {
+                      // Зум 13-15 - средние
                       markerElement.style.opacity = '1';
                       markerElement.style.pointerEvents = 'auto';
+                      markerElement.style.visibility = 'visible';
                       if (innerElement) {
                         innerElement.style.transform = 'scale(0.85)';
                         innerElement.style.transition = 'transform 0.3s ease-out';
                       }
                       console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 0.85)`);
-                    } else if (z <= 16) {
-                      // При приближении - большие
+                    } else if (z <= 17) {
+                      // Зум 15-17 - большие
                       markerElement.style.opacity = '1';
                       markerElement.style.pointerEvents = 'auto';
+                      markerElement.style.visibility = 'visible';
                       if (innerElement) {
                         innerElement.style.transform = 'scale(0.95)';
                         innerElement.style.transition = 'transform 0.3s ease-out';
                       }
                       console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 0.95)`);
                     } else {
-                      // При близком приближении - полный размер
+                      // Зум > 17 - полный размер
                       markerElement.style.opacity = '1';
                       markerElement.style.pointerEvents = 'auto';
+                      markerElement.style.visibility = 'visible';
                       if (innerElement) {
                         innerElement.style.transform = 'scale(1)';
                         innerElement.style.transition = 'transform 0.3s ease-out';
                       }
                       console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 1.0)`);
                     }
-                    // Плавный переход для opacity - 0.3 секунды
-                    markerElement.style.transition = 'opacity 0.3s ease-out';
+                    // Плавный переход для opacity и visibility - 0.3 секунды
+                    markerElement.style.transition = 'opacity 0.3s ease-out, visibility 0.3s ease-out';
                   }
                 } catch (error) {
                   // Silently handle errors to avoid performance impact
