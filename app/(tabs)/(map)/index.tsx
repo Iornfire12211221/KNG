@@ -200,25 +200,26 @@ export default function MapScreen() {
   const { requestLocation, isTelegramWebApp, hapticFeedback } = useTelegram();
   const { isLowEndDevice, debounce, throttle } = usePerformanceOptimization();
   
+  // Временно отключаем серверную синхронизацию для отладки
   // Автоматическое обновление постов каждые 10 секунд для реального времени
-  useEffect(() => {
-    const refreshInterval = setInterval(async () => {
-      console.log('🔄 Auto-syncing posts with server for real-time updates');
-      await syncPostsWithServer(); // Синхронизируем с сервером
-    }, 10000); // 10 секунд для быстрого обновления
+  // useEffect(() => {
+  //   const refreshInterval = setInterval(async () => {
+  //     console.log('🔄 Auto-syncing posts with server for real-time updates');
+  //     await syncPostsWithServer(); // Синхронизируем с сервером
+  //   }, 10000); // 10 секунд для быстрого обновления
 
-    return () => clearInterval(refreshInterval);
-  }, [syncPostsWithServer]);
+  //   return () => clearInterval(refreshInterval);
+  // }, [syncPostsWithServer]);
 
-  // Первоначальная загрузка постов с сервера
+  // Первоначальная загрузка постов с локального хранилища
   useEffect(() => {
     const loadInitialPosts = async () => {
-      console.log('🚀 Loading initial posts from server');
-      await syncPostsWithServer();
+      console.log('🚀 Loading initial posts from local storage');
+      await refreshPosts(); // Используем локальное хранилище вместо сервера
     };
     
     loadInitialPosts();
-  }, [syncPostsWithServer]);
+  }, [refreshPosts]);
   const { createOptimizedAnimation } = useOptimizedAnimation();
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
   const [selectedPost, setSelectedPost] = useState<string | null>(null);
