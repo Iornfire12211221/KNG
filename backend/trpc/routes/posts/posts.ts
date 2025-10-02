@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { publicProcedure, createTRPCRouter } from '../../create-context';
-import { prisma } from '../../../lib/prisma';
+import { prisma } from '../../../../lib/prisma';
 
 // Схемы валидации
 const PostTypeSchema = z.enum(['dps', 'patrol', 'accident', 'camera', 'roadwork', 'animals', 'other']);

@@ -879,7 +879,48 @@ ${description ? `Описание от пользователя: "${description}
       };
     }
 
-    setPosts((prev) => [finalPost, ...prev]);
+    try {
+      // Сохраняем пост на сервер
+      console.log('💾 Saving post to server:', finalPost.id);
+      await trpc.posts.create.mutate({
+        description: finalPost.description,
+        latitude: finalPost.latitude,
+        longitude: finalPost.longitude,
+        address: finalPost.address,
+        landmark: finalPost.landmark,
+        timestamp: finalPost.timestamp,
+        expiresAt: finalPost.expiresAt,
+        userId: finalPost.userId,
+        userName: finalPost.userName,
+        type: finalPost.type,
+        severity: finalPost.severity,
+        likes: finalPost.likes,
+        likedBy: finalPost.likedBy,
+        photo: finalPost.photo,
+        photos: finalPost.photos,
+        needsModeration: finalPost.needsModeration,
+        isRelevant: finalPost.isRelevant,
+        relevanceCheckedAt: finalPost.relevanceCheckedAt,
+      });
+      
+      console.log('✅ Post saved to server successfully');
+      
+      // Обновляем локальное состояние
+      setPosts((prev) => [finalPost, ...prev]);
+      
+      // Сохраняем в AsyncStorage как резервную копию
+      const updatedPosts = [finalPost, ...posts];
+      await AsyncStorage.setItem('dps_posts', JSON.stringify(updatedPosts));
+      
+    } catch (error) {
+      console.error('❌ Error saving post to server:', error);
+      
+      // Fallback: сохраняем только локально
+      setPosts((prev) => [finalPost, ...prev]);
+      const updatedPosts = [finalPost, ...posts];
+      await AsyncStorage.setItem('dps_posts', JSON.stringify(updatedPosts));
+    }
+    
     console.log('Post added:', finalPost.id, 'Needs moderation:', finalPost.needsModeration);
     
     if (finalPost.needsModeration) {
