@@ -880,9 +880,10 @@ ${description ? `Описание от пользователя: "${description}
     }
 
     try {
-      // Сохраняем пост на сервер
+      // Сохраняем пост на сервер через прямой fetch
       console.log('💾 Saving post to server:', finalPost.id);
-      await trpc.posts.create.mutate({
+      
+      const postData = {
         description: finalPost.description,
         latitude: finalPost.latitude,
         longitude: finalPost.longitude,
@@ -901,7 +902,19 @@ ${description ? `Описание от пользователя: "${description}
         needsModeration: finalPost.needsModeration,
         isRelevant: finalPost.isRelevant,
         relevanceCheckedAt: finalPost.relevanceCheckedAt,
+      };
+      
+      const response = await fetch(`${process.env.EXPO_PUBLIC_RORK_API_BASE_URL || ''}/api/trpc/posts.create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(postData),
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       
       console.log('✅ Post saved to server successfully');
       
@@ -994,17 +1007,23 @@ ${description ? `Описание от пользователя: "${description}
     try {
       console.log('🌐 Syncing posts with server...');
       
-      // Проверяем, что tRPC клиент доступен
-      if (!trpc?.posts?.getAll) {
-        console.warn('⚠️ tRPC client not available, falling back to local storage');
-        await refreshPosts();
-        return posts;
+      // Используем прямой вызов fetch к API для обхода проблем с минификацией
+      const response = await fetch(`${process.env.EXPO_PUBLIC_RORK_API_BASE_URL || ''}/api/trpc/posts.getAll`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      const serverPosts = await trpc.posts.getAll.query();
+      const data = await response.json();
+      const serverPosts = data.result?.data?.json || [];
       
       // Конвертируем BigInt в number для совместимости
-      const convertedPosts = serverPosts.map(post => ({
+      const convertedPosts = serverPosts.map((post: any) => ({
         ...post,
         timestamp: Number(post.timestamp),
         expiresAt: Number(post.expiresAt),
@@ -1020,7 +1039,6 @@ ${description ? `Описание от пользователя: "${description}
       return convertedPosts;
     } catch (error) {
       console.error('❌ Error syncing with server, falling back to local storage:', error);
-      console.error('Error details:', error);
       // Fallback к локальному хранилищу
       await refreshPosts();
       return posts;

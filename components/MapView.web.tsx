@@ -165,7 +165,6 @@ export const MapView = (props: any) => {
 
     // Добавляем обработчики зума для принудительного обновления маркеров
     const updateAllMarkers = () => {
-      console.log('Updating all markers, count:', markersRef.current.length);
       markersRef.current.forEach((marker, index) => {
         if (marker && marker._onZoom) {
           try {
@@ -799,7 +798,6 @@ export const MapView = (props: any) => {
                     return; // Не обновляем, если зум изменился незначительно
                   }
                   lastZoomLevel = z;
-                  console.log('Zoom level changed to:', z);
                   
                   if (isUserMarker) {
                     // Специальная обработка для маркера пользователя - более агрессивное уменьшение
@@ -887,7 +885,6 @@ export const MapView = (props: any) => {
                         innerElement.style.transform = 'scale(0)';
                         innerElement.style.transition = 'transform 0.3s ease-out';
                       }
-                      console.log(`❌ Event marker HIDDEN at zoom ${z.toFixed(2)}`);
                     } else if (z <= 13) {
                       // Зум 10-13 - появляются маленькими
                       markerElement.style.opacity = '1';
@@ -897,7 +894,6 @@ export const MapView = (props: any) => {
                         innerElement.style.transform = 'scale(0.7)';
                         innerElement.style.transition = 'transform 0.3s ease-out';
                       }
-                      console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 0.7)`);
                     } else if (z <= 15) {
                       // Зум 13-15 - средние
                       markerElement.style.opacity = '1';
@@ -907,7 +903,6 @@ export const MapView = (props: any) => {
                         innerElement.style.transform = 'scale(0.85)';
                         innerElement.style.transition = 'transform 0.3s ease-out';
                       }
-                      console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 0.85)`);
                     } else if (z <= 17) {
                       // Зум 15-17 - большие
                       markerElement.style.opacity = '1';
@@ -917,7 +912,6 @@ export const MapView = (props: any) => {
                         innerElement.style.transform = 'scale(0.95)';
                         innerElement.style.transition = 'transform 0.3s ease-out';
                       }
-                      console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 0.95)`);
                     } else {
                       // Зум > 17 - полный размер
                       markerElement.style.opacity = '1';
@@ -927,7 +921,6 @@ export const MapView = (props: any) => {
                         innerElement.style.transform = 'scale(1)';
                         innerElement.style.transition = 'transform 0.3s ease-out';
                       }
-                      console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 1.0)`);
                     }
                     // Плавный переход для opacity и visibility - 0.3 секунды
                     markerElement.style.transition = 'opacity 0.3s ease-out, visibility 0.3s ease-out';
