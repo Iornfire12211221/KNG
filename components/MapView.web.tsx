@@ -873,7 +873,7 @@ export const MapView = (props: any) => {
                         }
                       </style>
                     `;
-                  } else if (typeof createMarkerHTML === 'function') {
+                  } else {
                     // Маркеры событий - скрываются при зуме <= 10
                     let scale;
                     if (z <= 10) {
@@ -923,7 +923,7 @@ export const MapView = (props: any) => {
                       console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 1.0)`);
                     }
                     markerElement.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out';
-                    markerElement.innerHTML = createMarkerHTML(scale);
+                    // HTML уже создан ранее, просто меняем стили
                   }
                 } catch (error) {
                   // Silently handle errors to avoid performance impact
