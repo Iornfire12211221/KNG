@@ -715,7 +715,9 @@ export default function MapScreen() {
   }, [userLocation]);
 
   // Мемоизированный компонент карточки события
-  const EventCard = memo(({ post, selectedPost, onPress, onLongPress, getTypeColor, getTypeLabel }: any) => (
+  const EventCard = memo(({ post, selectedPost, onPress, onLongPress, getTypeColor, getTypeLabel }: any) => {
+    const isRecent = Date.now() - post.timestamp < 5 * 60 * 1000; // 5 минут
+    return (
     <TouchableOpacity
       style={[
         styles.singlePostCard,
@@ -736,7 +738,7 @@ export default function MapScreen() {
             {post.type === 'camera' && <Camera size={16} color="#FFFFFF" />}
             {post.type === 'roadwork' && <Wrench size={16} color="#FFFFFF" />}
             {post.type === 'animals' && <Heart size={16} color="#FFFFFF" />}
-            {post.type === 'other' && <MapPin size={16} color="#FFFFFF" />}
+            {post.type === 'other' && <MapPinIcon size={16} color="#FFFFFF" />}
           </View>
           <View style={styles.postInfo}>
             <View style={styles.postUserRow}>
@@ -781,7 +783,8 @@ export default function MapScreen() {
         )}
       </View>
     </TouchableOpacity>
-  ));
+    );
+  });
 
   // Вспомогательные функции для карточек
   const getTypeColor = useCallback((type: string) => {
@@ -893,9 +896,6 @@ export default function MapScreen() {
     // Анимация открытия модального окна (снизу вверх как в Telegram)
     console.log('Setting showQuickAdd to true');
     console.log('Current animation values:', {
-      modalTranslateY: modalTranslateY._value,
-      modalOpacity: modalOpacity._value,
-      modalBackdropOpacity: modalBackdropOpacity._value,
       height: height
     });
     setShowQuickAdd(true);
@@ -3084,7 +3084,6 @@ const styles = StyleSheet.create({
     elevation: 2,
     width: width * 0.65,
     height: height * 0.18,
-    backdropFilter: 'blur(10px)',
   },
   compactPostHeader: {
     flexDirection: 'row',
@@ -3275,7 +3274,6 @@ const styles = StyleSheet.create({
     elevation: 2,
     width: (width - 48) * 0.45,
     minHeight: height * 0.25 - 60,
-    backdropFilter: 'blur(10px)',
   },
   singlePostCard: {
     backgroundColor: '#FFFFFF',
@@ -3312,6 +3310,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     flex: 1,
     gap: 8,
+  },
+  postTypeIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   postInfo: {
     flex: 1,
