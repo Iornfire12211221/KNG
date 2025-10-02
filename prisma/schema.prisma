@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Модель для постов ДПС
+model Post {
+  id          String   @id @default(cuid())
+  description String
+  latitude    Float
+  longitude   Float
+  address     String?
+  landmark    String?
+  timestamp   BigInt
+  expiresAt   BigInt
+  userId      String
+  userName    String
+  type        PostType
+  severity    PostSeverity
+  likes       Int      @default(0)
+  likedBy     String[] @default([])
+  photo       String?
+  photos      String[] @default([])
+  needsModeration Boolean @default(true)
+  isRelevant  Boolean  @default(true)
+  relevanceCheckedAt BigInt?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("posts")
+}
+
+// Модель для пользователей
+model User {
+  id          String   @id @default(cuid())
+  telegramId  String?  @unique
+  name        String
+  username    String?
+  photoUrl    String?
+  role        UserRole @default(USER)
+  isMuted     Boolean  @default(false)
+  isBanned    Boolean  @default(false)
+  isKicked    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("users")
+}
+
+// Модель для сообщений чата
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  userId    String
+  userName  String
+  timestamp BigInt
+  createdAt DateTime @default(now())
+
+  @@map("messages")
+}
+
+// Енумы
+enum PostType {
+  dps
+  patrol
+  accident
+  camera
+  roadwork
+  animals
+  other
+}
+
+enum PostSeverity {
+  low
+  medium
+  high
+}
+
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+}

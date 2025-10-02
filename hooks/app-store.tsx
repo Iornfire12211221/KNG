@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { DPSPost, ChatMessage, User, RegisterUserData, TelegramUserData, POST_LIFETIMES, RELEVANCE_CHECK_INTERVALS } from '@/types';
 import * as Location from 'expo-location';
+import { trpc } from '@/lib/trpc';
 import { Platform } from 'react-native';
 
 export const [AppProviderInternal, useAppInternal] = createContextHook(() => {
@@ -922,7 +923,7 @@ ${description ? `Описание от пользователя: "${description}
     setPosts((prev) => prev.filter((p) => p.expiresAt > now));
   }, []);
 
-  // Функция для принудительного обновления постов из AsyncStorage
+  // Функция для принудительного обновления постов из AsyncStorage (fallback)
   const refreshPosts = useCallback(async () => {
     try {
       const storedPosts = await AsyncStorage.getItem('dps_posts');
@@ -946,6 +947,35 @@ ${description ? `Описание от пользователя: "${description}
       console.error('Error refreshing posts:', error);
     }
   }, []);
+
+  // Функция для синхронизации постов с сервером
+  const syncPostsWithServer = useCallback(async () => {
+    try {
+      console.log('🌐 Syncing posts with server...');
+      const serverPosts = await trpc.posts.getAll.query();
+      
+      // Конвертируем BigInt в number для совместимости
+      const convertedPosts = serverPosts.map(post => ({
+        ...post,
+        timestamp: Number(post.timestamp),
+        expiresAt: Number(post.expiresAt),
+        relevanceCheckedAt: post.relevanceCheckedAt ? Number(post.relevanceCheckedAt) : undefined,
+      }));
+      
+      setPosts(convertedPosts);
+      
+      // Сохраняем в AsyncStorage как резервную копию
+      await AsyncStorage.setItem('dps_posts', JSON.stringify(convertedPosts));
+      
+      console.log('✅ Posts synced with server:', convertedPosts.length);
+      return convertedPosts;
+    } catch (error) {
+      console.error('❌ Error syncing with server, falling back to local storage:', error);
+      // Fallback к локальному хранилищу
+      await refreshPosts();
+      return posts;
+    }
+  }, [refreshPosts, posts]);
 
   const updateUser = useCallback(
     async (updates: Partial<Omit<User, 'id'>>) => {
@@ -1287,6 +1317,7 @@ ${description ? `Описание от пользователя: "${description}
       addMessage,
       clearExpiredPosts,
       refreshPosts,
+      syncPostsWithServer,
       updateUser,
       likePost,
       verifyPost,
@@ -1317,6 +1348,7 @@ ${description ? `Описание от пользователя: "${description}
       addMessage,
       clearExpiredPosts,
       refreshPosts,
+      syncPostsWithServer,
       updateUser,
       likePost,
       verifyPost,
