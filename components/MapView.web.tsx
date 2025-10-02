@@ -874,12 +874,12 @@ export const MapView = (props: any) => {
                       </style>
                     `;
                   } else {
-                    // Маркеры событий - полностью исчезают при зуме <= 11
+                    // Маркеры событий - полностью исчезают при зуме <= 10
                     // Находим внутренний элемент для применения transform
                     const innerElement = markerElement.firstElementChild as HTMLElement;
                     
-                    if (z <= 11) {
-                      // При зуме <= 11 - ПОЛНОСТЬЮ СКРЫВАЕМ маркеры
+                    if (z <= 10) {
+                      // При зуме <= 10 - ПОЛНОСТЬЮ СКРЫВАЕМ маркеры
                       markerElement.style.opacity = '0';
                       markerElement.style.pointerEvents = 'none';
                       markerElement.style.visibility = 'hidden';
@@ -889,7 +889,7 @@ export const MapView = (props: any) => {
                       }
                       console.log(`❌ Event marker HIDDEN at zoom ${z.toFixed(2)}`);
                     } else if (z <= 13) {
-                      // Зум 11-13 - появляются маленькими
+                      // Зум 10-13 - появляются маленькими
                       markerElement.style.opacity = '1';
                       markerElement.style.pointerEvents = 'auto';
                       markerElement.style.visibility = 'visible';

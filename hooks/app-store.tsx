@@ -993,6 +993,14 @@ ${description ? `Описание от пользователя: "${description}
   const syncPostsWithServer = useCallback(async () => {
     try {
       console.log('🌐 Syncing posts with server...');
+      
+      // Проверяем, что tRPC клиент доступен
+      if (!trpc?.posts?.getAll) {
+        console.warn('⚠️ tRPC client not available, falling back to local storage');
+        await refreshPosts();
+        return posts;
+      }
+      
       const serverPosts = await trpc.posts.getAll.query();
       
       // Конвертируем BigInt в number для совместимости
@@ -1012,6 +1020,7 @@ ${description ? `Описание от пользователя: "${description}
       return convertedPosts;
     } catch (error) {
       console.error('❌ Error syncing with server, falling back to local storage:', error);
+      console.error('Error details:', error);
       // Fallback к локальному хранилищу
       await refreshPosts();
       return posts;
