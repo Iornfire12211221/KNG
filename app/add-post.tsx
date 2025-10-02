@@ -469,14 +469,28 @@ export default function AddPostScreen() {
 
 
   const handleSubmit = async () => {
+    console.log('🔥 handleSubmit called', { 
+      cooldownSeconds, 
+      isSaving, 
+      description: description.trim(), 
+      selectedImages: selectedImages.length 
+    });
+    
     if (cooldownSeconds > 0) {
+      console.log('❌ Blocked by cooldown:', cooldownSeconds);
+      Alert.alert('Подождите', `Можно создать новый пост через ${cooldownSeconds} секунд`);
       return;
     }
-    if (isSaving) return;
+    if (isSaving) {
+      console.log('❌ Already saving');
+      return;
+    }
     
     // Валидация: пост должен иметь либо описание, либо фото
     const hasDescription = description.trim().length > 0;
     const hasPhoto = selectedImages.length > 0;
+    
+    console.log('📝 Validation:', { hasDescription, hasPhoto });
     
     if (!hasDescription && !hasPhoto) {
       Alert.alert(
@@ -489,9 +503,11 @@ export default function AddPostScreen() {
     
     const submitPost = async () => {
       try {
+        console.log('💾 Starting submitPost');
         setIsSaving(true);
         
         // Запускаем ИИ анализ только при сохранении
+        console.log('🤖 Running AI analysis');
         await analyzeSeverityWithAI(selectedType, description);
         
         const finalAddress = address || await getAddressFromCoords(latitude, longitude);
@@ -525,23 +541,42 @@ export default function AddPostScreen() {
           relevanceCheckedAt: now,
         };
         
+        console.log('📤 Calling addPost with:', post);
         const result = await addPost(post);
+        console.log('📥 addPost result:', result);
+        
         if (result.success) {
+          console.log('✅ Post created successfully, navigating to map');
           router.replace('/(tabs)/(map)');
         } else {
+          console.log('❌ Post creation failed:', result.error);
           Alert.alert('Ошибка', result.error || 'Не удалось создать пост');
         }
+      } catch (error) {
+        console.log('💥 Error in submitPost:', error);
+        Alert.alert('Ошибка', 'Произошла ошибка при создании поста');
       } finally {
+        console.log('🏁 Finishing submitPost');
         setIsSaving(false);
       }
     };
     
     // Check if coordinates are roughly in Kingisepp area (within ~50km)
     const maxDistance = 0.5; // roughly 50km in degrees
-    if (
+    const isNearKingisepp = !(
       Math.abs(latitude - KINGISEPP_CENTER.latitude) > maxDistance ||
       Math.abs(longitude - KINGISEPP_CENTER.longitude) > maxDistance
-    ) {
+    );
+    
+    console.log('📍 Location check:', { 
+      latitude, 
+      longitude, 
+      isNearKingisepp,
+      distance: Math.abs(latitude - KINGISEPP_CENTER.latitude) + Math.abs(longitude - KINGISEPP_CENTER.longitude)
+    });
+    
+    if (!isNearKingisepp) {
+      console.log('⚠️ Location is far from Kingisepp, showing confirmation');
       Alert.alert(
         'Внимание',
         'Местоположение находится далеко от Кингисеппа. Продолжить?',
@@ -551,6 +586,7 @@ export default function AddPostScreen() {
         ]
       );
     } else {
+      console.log('✅ Location is near Kingisepp, proceeding with submitPost');
       await submitPost();
     }
   };
@@ -562,13 +598,20 @@ export default function AddPostScreen() {
           title: '',
           headerRight: () => (
             <TouchableOpacity 
-              onPress={handleSubmit} 
+              onPress={() => {
+                console.log('🔘 Save button pressed');
+                handleSubmit();
+              }}
               disabled={isSaving || cooldownSeconds > 0}
-              style={styles.headerSaveButton}
+              style={[
+                styles.headerSaveButton,
+                (isSaving || cooldownSeconds > 0) && styles.headerSaveButtonDisabled
+              ]}
             >
               {isSaving ? (
                 <View style={styles.saveIndicator}>
-                  <ActivityIndicator size="small" color="#007AFF" />
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text style={styles.savingText}>Сохранение...</Text>
                 </View>
               ) : (
                 <Text style={[
@@ -1225,6 +1268,19 @@ const styles = StyleSheet.create({
   },
   headerSaveButtonTextDisabled: {
     color: '#FFFFFF80',
+  },
+  headerSaveButtonDisabled: {
+    backgroundColor: '#0066FF80',
+  },
+  saveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  savingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   modalBackdrop: {
     flex: 1,
