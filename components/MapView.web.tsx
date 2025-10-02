@@ -874,16 +874,17 @@ export const MapView = (props: any) => {
                       </style>
                     `;
                   } else if (typeof createMarkerHTML === 'function') {
-                    // Минималистичные маркеры событий - всегда видимые, но с разным размером
+                    // Маркеры событий - скрываются при зуме <= 10
                     let scale;
                     if (z <= 10) {
-                      // При очень сильном отдалении - очень маленькие, но видимые
+                      // При зуме <= 10 - СКРЫВАЕМ маркеры
                       scale = 0.3;
-                      markerElement.style.display = 'block';
-                      markerElement.style.opacity = '0.6';
-                      markerElement.style.visibility = 'visible';
-                      markerElement.style.pointerEvents = 'auto';
-                      markerElement.style.transform = 'scale(0.6)';
+                      markerElement.style.display = 'none';
+                      markerElement.style.opacity = '0';
+                      markerElement.style.visibility = 'hidden';
+                      markerElement.style.pointerEvents = 'none';
+                      markerElement.style.transform = 'scale(0)';
+                      console.log(`📍 Event marker HIDDEN at zoom ${z.toFixed(2)}`);
                     } else if (z <= 12) {
                       // При сильном отдалении - маленькие
                       scale = 0.5;
@@ -892,6 +893,7 @@ export const MapView = (props: any) => {
                       markerElement.style.visibility = 'visible';
                       markerElement.style.pointerEvents = 'auto';
                       markerElement.style.transform = 'scale(0.7)';
+                      console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 0.7)`);
                     } else if (z <= 14) {
                       // При нормальном отдалении - средние
                       scale = 0.7;
@@ -900,6 +902,7 @@ export const MapView = (props: any) => {
                       markerElement.style.visibility = 'visible';
                       markerElement.style.pointerEvents = 'auto';
                       markerElement.style.transform = 'scale(0.8)';
+                      console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 0.8)`);
                     } else if (z <= 16) {
                       // При приближении - большие
                       scale = 0.9;
@@ -908,6 +911,7 @@ export const MapView = (props: any) => {
                       markerElement.style.visibility = 'visible';
                       markerElement.style.pointerEvents = 'auto';
                       markerElement.style.transform = 'scale(0.9)';
+                      console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 0.9)`);
                     } else {
                       // При близком приближении - полный размер
                       scale = 1.0;
@@ -916,6 +920,7 @@ export const MapView = (props: any) => {
                       markerElement.style.visibility = 'visible';
                       markerElement.style.pointerEvents = 'auto';
                       markerElement.style.transform = 'scale(1)';
+                      console.log(`✅ Event marker VISIBLE at zoom ${z.toFixed(2)} (scale 1.0)`);
                     }
                     markerElement.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out';
                     markerElement.innerHTML = createMarkerHTML(scale);
