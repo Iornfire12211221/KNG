@@ -922,6 +922,31 @@ ${description ? `Описание от пользователя: "${description}
     setPosts((prev) => prev.filter((p) => p.expiresAt > now));
   }, []);
 
+  // Функция для принудительного обновления постов из AsyncStorage
+  const refreshPosts = useCallback(async () => {
+    try {
+      const storedPosts = await AsyncStorage.getItem('dps_posts');
+      if (storedPosts) {
+        const parsedPosts = JSON.parse(storedPosts);
+        const now = Date.now();
+        
+        // Фильтруем просроченные посты
+        const validPosts = parsedPosts.filter((post: DPSPost) => {
+          if (!post.expiresAt) {
+            const postLifetime = POST_LIFETIMES[post.type] || POST_LIFETIMES.dps;
+            post.expiresAt = post.timestamp + postLifetime;
+          }
+          return post.expiresAt > now;
+        });
+        
+        setPosts(validPosts);
+        console.log('🔄 Posts refreshed from storage:', validPosts.length);
+      }
+    } catch (error) {
+      console.error('Error refreshing posts:', error);
+    }
+  }, []);
+
   const updateUser = useCallback(
     async (updates: Partial<Omit<User, 'id'>>) => {
       if (!currentUser) return;
@@ -1261,6 +1286,7 @@ ${description ? `Описание от пользователя: "${description}
       removePost,
       addMessage,
       clearExpiredPosts,
+      refreshPosts,
       updateUser,
       likePost,
       verifyPost,
@@ -1290,6 +1316,7 @@ ${description ? `Описание от пользователя: "${description}
       removePost,
       addMessage,
       clearExpiredPosts,
+      refreshPosts,
       updateUser,
       likePost,
       verifyPost,

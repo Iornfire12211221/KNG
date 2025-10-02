@@ -196,9 +196,19 @@ const SEVERITY_LEVELS = [
 ];
 
 export default function MapScreen() {
-  const { posts, removePost, currentUser, clearExpiredPosts, likePost, verifyPost, addPost } = useApp();
+  const { posts, removePost, currentUser, clearExpiredPosts, refreshPosts, likePost, verifyPost, addPost } = useApp();
   const { requestLocation, isTelegramWebApp, hapticFeedback } = useTelegram();
   const { isLowEndDevice, debounce, throttle } = usePerformanceOptimization();
+  
+  // Автоматическое обновление постов каждые 15 секунд для реального времени
+  useEffect(() => {
+    const refreshInterval = setInterval(async () => {
+      console.log('🔄 Auto-refreshing posts for real-time updates');
+      await refreshPosts(); // Обновляем посты из AsyncStorage
+    }, 15000); // 15 секунд для более быстрого обновления
+
+    return () => clearInterval(refreshInterval);
+  }, [refreshPosts]);
   const { createOptimizedAnimation } = useOptimizedAnimation();
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
   const [selectedPost, setSelectedPost] = useState<string | null>(null);
@@ -2339,16 +2349,25 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               disabled={isSavingPost || cooldownSeconds > 0}
             >
               {isSavingPost ? (
-                <View style={styles.saveButtonContent}>
+                <View style={styles.aiCheckingContainer}>
                   <Animated.View style={{
-                    transform: [{ scale: savePulseValue }],
-                    opacity: saveOpacityValue
+                    transform: [{ rotate: savePulseValue.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '360deg']
+                    }) }]
                   }}>
-                    <View style={styles.savePulse}>
-                      <View style={styles.savePulseInner} />
+                    <View style={styles.aiSpinner}>
+                      <View style={styles.aiSpinnerDot1} />
+                      <View style={styles.aiSpinnerDot2} />
+                      <View style={styles.aiSpinnerDot3} />
                     </View>
                   </Animated.View>
-                  <Text style={styles.saveButtonText}>AI проверка</Text>
+                  <Animated.View style={{
+                    opacity: saveOpacityValue,
+                    transform: [{ scale: saveOpacityValue }]
+                  }}>
+                    <Zap size={16} color="#FFFFFF" />
+                  </Animated.View>
                 </View>
               ) : (
                 <Text style={[
@@ -3816,24 +3835,48 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     opacity: 0.8,
   },
-  savePulse: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: 'rgba(0, 102, 255, 0.2)',
-    justifyContent: 'center',
+  aiCheckingContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#0066FF',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
-    elevation: 4,
+    justifyContent: 'center',
+    gap: 8,
   },
-  savePulseInner: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#0066FF',
+  aiSpinner: {
+    width: 20,
+    height: 20,
+    position: 'relative',
+  },
+  aiSpinnerDot1: {
+    position: 'absolute',
+    top: 2,
+    left: 9,
+    width: 2,
+    height: 6,
+    borderRadius: 1,
+    backgroundColor: '#FFFFFF',
+    opacity: 1,
+  },
+  aiSpinnerDot2: {
+    position: 'absolute',
+    top: 6,
+    right: 2,
+    width: 2,
+    height: 6,
+    borderRadius: 1,
+    backgroundColor: '#FFFFFF',
+    opacity: 0.7,
+    transform: [{ rotate: '120deg' }],
+  },
+  aiSpinnerDot3: {
+    position: 'absolute',
+    bottom: 6,
+    left: 2,
+    width: 2,
+    height: 6,
+    borderRadius: 1,
+    backgroundColor: '#FFFFFF',
+    opacity: 0.4,
+    transform: [{ rotate: '240deg' }],
   },
   aiPulse: {
     width: 16,
