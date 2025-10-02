@@ -26,6 +26,10 @@ import { Plus, Navigation, AlertCircle, Clock, Trash2, Heart, Shield, Car, Alert
 import { getLandmarkForAddress, getRandomLandmark } from '@/constants/kingisepp-landmarks';
 
 import * as Location from 'expo-location';
+
+// Утилита для определения нативного драйвера анимации
+const useNativeDriverForPlatform = Platform.OS !== 'web';
+
 const MapViewComponent = Platform.select({
   web: () => require('@/components/MapView.web').default,
   default: () => require('@/components/MapView').default,
@@ -200,26 +204,34 @@ export default function MapScreen() {
   const { requestLocation, isTelegramWebApp, hapticFeedback } = useTelegram();
   const { isLowEndDevice, debounce, throttle } = usePerformanceOptimization();
   
-  // Временно отключаем серверную синхронизацию для отладки
-  // Автоматическое обновление постов каждые 10 секунд для реального времени
-  // useEffect(() => {
-  //   const refreshInterval = setInterval(async () => {
-  //     console.log('🔄 Auto-syncing posts with server for real-time updates');
-  //     await syncPostsWithServer(); // Синхронизируем с сервером
-  //   }, 10000); // 10 секунд для быстрого обновления
+  // Автоматическое обновление постов каждые 30 секунд для реального времени
+  useEffect(() => {
+    const refreshInterval = setInterval(async () => {
+      console.log('🔄 Auto-syncing posts with server for real-time updates');
+      try {
+        await syncPostsWithServer(); // Синхронизируем с сервером
+      } catch (error) {
+        console.warn('⚠️ Server sync failed, continuing with local data');
+      }
+    }, 30000); // 30 секунд для стабильности
 
-  //   return () => clearInterval(refreshInterval);
-  // }, [syncPostsWithServer]);
+    return () => clearInterval(refreshInterval);
+  }, [syncPostsWithServer]);
 
-  // Первоначальная загрузка постов с локального хранилища
+  // Первоначальная загрузка постов с сервера, fallback на локальное хранилище
   useEffect(() => {
     const loadInitialPosts = async () => {
-      console.log('🚀 Loading initial posts from local storage');
-      await refreshPosts(); // Используем локальное хранилище вместо сервера
+      console.log('🚀 Loading initial posts from server');
+      try {
+        await syncPostsWithServer();
+      } catch (error) {
+        console.log('⚠️ Server unavailable, loading from local storage');
+        await refreshPosts();
+      }
     };
     
     loadInitialPosts();
-  }, [refreshPosts]);
+  }, [syncPostsWithServer, refreshPosts]);
   const { createOptimizedAnimation } = useOptimizedAnimation();
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
   const [selectedPost, setSelectedPost] = useState<string | null>(null);
@@ -322,24 +334,24 @@ export default function MapScreen() {
             Animated.timing(pulseValue, {
               toValue: 1.3,
               duration: 800,
-              useNativeDriver: true,
+              useNativeDriver: useNativeDriverForPlatform,
             }),
             Animated.timing(opacityValue, {
               toValue: 0.6,
               duration: 800,
-              useNativeDriver: true,
+              useNativeDriver: useNativeDriverForPlatform,
             })
           ]),
           Animated.parallel([
             Animated.timing(pulseValue, {
               toValue: 1,
               duration: 800,
-              useNativeDriver: true,
+              useNativeDriver: useNativeDriverForPlatform,
             }),
             Animated.timing(opacityValue, {
               toValue: 1,
               duration: 800,
-              useNativeDriver: true,
+              useNativeDriver: useNativeDriverForPlatform,
             })
           ])
         ])
@@ -362,24 +374,24 @@ export default function MapScreen() {
             Animated.timing(savePulseValue, {
               toValue: 1.2,
               duration: 600,
-              useNativeDriver: true,
+              useNativeDriver: useNativeDriverForPlatform,
             }),
             Animated.timing(saveOpacityValue, {
               toValue: 0.7,
               duration: 600,
-              useNativeDriver: true,
+              useNativeDriver: useNativeDriverForPlatform,
             })
           ]),
           Animated.parallel([
             Animated.timing(savePulseValue, {
               toValue: 1,
               duration: 600,
-              useNativeDriver: true,
+              useNativeDriver: useNativeDriverForPlatform,
             }),
             Animated.timing(saveOpacityValue, {
               toValue: 1,
               duration: 600,
-              useNativeDriver: true,
+              useNativeDriver: useNativeDriverForPlatform,
             })
           ])
         ])
@@ -855,12 +867,12 @@ export default function MapScreen() {
       Animated.timing(mapPressScale, {
         toValue: 0.95,
         duration: 150,
-        useNativeDriver: true,
+        useNativeDriver: useNativeDriverForPlatform,
       }),
       Animated.timing(mapPressScale, {
         toValue: 1,
         duration: 150,
-        useNativeDriver: true,
+        useNativeDriver: useNativeDriverForPlatform,
       }),
     ]).start();
     
@@ -869,18 +881,18 @@ export default function MapScreen() {
       Animated.timing(rippleScale, {
         toValue: 1,
         duration: 600,
-        useNativeDriver: true,
+        useNativeDriver: useNativeDriverForPlatform,
       }),
       Animated.sequence([
         Animated.timing(rippleOpacity, {
           toValue: 0.6,
           duration: 300,
-          useNativeDriver: true,
+          useNativeDriver: useNativeDriverForPlatform,
         }),
         Animated.timing(rippleOpacity, {
           toValue: 0,
           duration: 300,
-          useNativeDriver: true,
+          useNativeDriver: useNativeDriverForPlatform,
         }),
       ]),
     ]).start(() => {
@@ -913,17 +925,17 @@ export default function MapScreen() {
         Animated.timing(modalBackdropOpacity, {
           toValue: 1,
           duration: 150, // Faster for mobile
-          useNativeDriver: true,
+          useNativeDriver: useNativeDriverForPlatform,
         }),
         Animated.timing(modalOpacity, {
           toValue: 1,
           duration: 150, // Faster for mobile
-          useNativeDriver: true,
+          useNativeDriver: useNativeDriverForPlatform,
         }),
         Animated.timing(modalTranslateY, {
           toValue: 0,
           duration: 150, // Faster for mobile
-          useNativeDriver: true,
+          useNativeDriver: useNativeDriverForPlatform,
         }),
       ]).start();
     }
@@ -1250,17 +1262,17 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
         Animated.timing(modalBackdropOpacity, {
           toValue: 0,
           duration: 100, // Even faster for mobile
-          useNativeDriver: true,
+          useNativeDriver: useNativeDriverForPlatform,
         }),
         Animated.timing(modalOpacity, {
           toValue: 0,
           duration: 100, // Even faster for mobile
-          useNativeDriver: true,
+          useNativeDriver: useNativeDriverForPlatform,
         }),
         Animated.timing(modalTranslateY, {
           toValue: height,
           duration: 100, // Even faster for mobile
-          useNativeDriver: true,
+          useNativeDriver: useNativeDriverForPlatform,
         }),
       ]).start(() => {
         setShowQuickAdd(false);
@@ -1651,12 +1663,12 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                         Animated.timing(longPressScale, {
                           toValue: 0.95,
                           duration: 150,
-                          useNativeDriver: true,
+                          useNativeDriver: useNativeDriverForPlatform,
                         }),
                         Animated.timing(longPressScale, {
                           toValue: 1,
                           duration: 150,
-                          useNativeDriver: true,
+                          useNativeDriver: useNativeDriverForPlatform,
                         })
                       ]).start();
                       
@@ -2024,18 +2036,18 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                 Animated.timing(plusButtonScale, {
                   toValue: 0.9,
                   duration: 100,
-                  useNativeDriver: true,
+                  useNativeDriver: useNativeDriverForPlatform,
                 }),
                 Animated.timing(plusButtonScale, {
                   toValue: 1,
                   duration: 100,
-                  useNativeDriver: true,
+                  useNativeDriver: useNativeDriverForPlatform,
                 }),
               ]),
               Animated.timing(plusButtonRotation, {
                 toValue: 1,
                 duration: 200,
-                useNativeDriver: true,
+                useNativeDriver: useNativeDriverForPlatform,
               }),
             ]).start(() => {
               plusButtonRotation.setValue(0);
@@ -2071,17 +2083,17 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                 Animated.timing(modalBackdropOpacity, {
                   toValue: 1,
                   duration: 150, // Faster for mobile
-                  useNativeDriver: true,
+                  useNativeDriver: useNativeDriverForPlatform,
                 }),
                 Animated.timing(modalOpacity, {
                   toValue: 1,
                   duration: 150, // Faster for mobile
-                  useNativeDriver: true,
+                  useNativeDriver: useNativeDriverForPlatform,
                 }),
                 Animated.timing(modalTranslateY, {
                   toValue: 0,
                   duration: 150, // Faster for mobile
-                  useNativeDriver: true,
+                  useNativeDriver: useNativeDriverForPlatform,
                 }),
               ]).start();
             }
@@ -2175,12 +2187,12 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                       Animated.timing(longPressScale, {
                         toValue: 0.95,
                         duration: 150,
-                        useNativeDriver: true,
+                        useNativeDriver: useNativeDriverForPlatform,
                       }),
                       Animated.timing(longPressScale, {
                         toValue: 1,
                         duration: 150,
-                        useNativeDriver: true,
+                        useNativeDriver: useNativeDriverForPlatform,
                       })
                     ]).start();
                     

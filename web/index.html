@@ -14,26 +14,45 @@
       https://api.mapbox.com 
       https://cdn.jsdelivr.net 
       https://unpkg.com 
-      blob: data:;
+      https://*.telegram.org
+      https://*.telegram.me
+      blob: data: *;
+    script-src-elem 'self' 'unsafe-inline' 
+      https://telegram.org 
+      https://api.mapbox.com 
+      https://cdn.jsdelivr.net 
+      https://unpkg.com 
+      https://*.telegram.org
+      https://*.telegram.me
+      blob: data: *;
     style-src 'self' 'unsafe-inline' 
       https://api.mapbox.com 
-      https://fonts.googleapis.com;
+      https://fonts.googleapis.com
+      https://*.telegram.org
+      *;
     font-src 'self' 
       https://fonts.gstatic.com 
-      data:;
+      https://*.telegram.org
+      data: *;
     img-src 'self' 
       https: 
       data: 
-      blob:;
+      blob: *;
     connect-src 'self' 
       https://api.mapbox.com 
       https://events.mapbox.com 
+      https://*.telegram.org
+      https://*.telegram.me
       wss: 
-      ws:;
+      ws: *;
     worker-src 'self' 
-      blob:;
+      blob: *;
     child-src 'self' 
-      blob:;
+      blob: *;
+    media-src 'self' 
+      https: 
+      blob: 
+      data: *;
   ">
   
   <!-- Telegram WebApp Script -->

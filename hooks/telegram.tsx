@@ -177,25 +177,45 @@ export const useTelegram = () => {
     
     // Глобальная обработка ошибок для Telegram API
     const handleTelegramError = (event: any) => {
-      if (event.error && event.error.message && event.error.message.includes('FILE_REFERENCE_EXPIRED')) {
+      const errorMessage = event.error?.message || event.reason?.message || '';
+      
+      if (errorMessage.includes('FILE_REFERENCE_EXPIRED')) {
         console.warn('⚠️ Telegram FILE_REFERENCE_EXPIRED - игнорируем');
         event.preventDefault();
-        return;
+        return false;
       }
       
-      if (event.error && event.error.message && event.error.message.includes('RPCError')) {
-        console.warn('⚠️ Telegram RPC Error - игнорируем:', event.error.message);
+      if (errorMessage.includes('RPCError')) {
+        console.warn('⚠️ Telegram RPC Error - игнорируем:', errorMessage);
         event.preventDefault();
-        return;
+        return false;
+      }
+      
+      if (errorMessage.includes('The message port closed')) {
+        console.warn('⚠️ Telegram message port closed - игнорируем');
+        event.preventDefault();
+        return false;
+      }
+    };
+    
+    const handlePromiseRejection = (event: any) => {
+      const errorMessage = event.reason?.message || '';
+      
+      if (errorMessage.includes('FILE_REFERENCE_EXPIRED') || 
+          errorMessage.includes('RPCError') ||
+          errorMessage.includes('The message port closed')) {
+        console.warn('⚠️ Ignoring Telegram promise rejection:', errorMessage);
+        event.preventDefault();
+        return false;
       }
     };
     
     window.addEventListener('error', handleTelegramError);
-    window.addEventListener('unhandledrejection', handleTelegramError);
+    window.addEventListener('unhandledrejection', handlePromiseRejection);
     
     return () => {
       window.removeEventListener('error', handleTelegramError);
-      window.removeEventListener('unhandledrejection', handleTelegramError);
+      window.removeEventListener('unhandledrejection', handlePromiseRejection);
     };
   }, []);
 
