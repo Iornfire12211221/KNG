@@ -6,10 +6,13 @@ WORKDIR /app
 
 # Copy package files first for better layer caching
 COPY package.json bun.lock* ./
-RUN bun install --ci --frozen-lockfile
+RUN bun install --ci
 
 # Copy the rest of the source
 COPY . .
+
+# Generate Prisma client
+RUN bunx prisma generate
 
 ENV NODE_ENV=production
 ENV EXPO_USE_FAST_RESOLVER=1

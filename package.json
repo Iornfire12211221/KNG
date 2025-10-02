@@ -6,6 +6,8 @@
     "start": "bunx rork start -p u62nxky3mj5gmcsd0azfa --tunnel",
     "start-web": "bunx rork start -p u62nxky3mj5gmcsd0azfa --web --tunnel",
     "start-web-dev": "DEBUG=expo* bunx rork start -p u62nxky3mj5gmcsd0azfa --web --tunnel",
+    "dev": "bun run backend/hono.ts",
+    "build": "bunx rork build --web",
     "lint": "expo lint"
   },
   "dependencies": {
