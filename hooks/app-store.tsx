@@ -880,7 +880,7 @@ ${description ? `Описание от пользователя: "${description}
     }
 
     try {
-      // Сохраняем пост на сервер через прямой fetch
+      // Сохраняем пост на сервер через прямой fetch с правильным форматом tRPC
       console.log('💾 Saving post to server:', finalPost.id);
       
       const postData = {
@@ -904,15 +904,18 @@ ${description ? `Описание от пользователя: "${description}
         relevanceCheckedAt: finalPost.relevanceCheckedAt,
       };
       
+      // Формат tRPC: POST с JSON в body
       const response = await fetch(`${process.env.EXPO_PUBLIC_RORK_API_BASE_URL || ''}/api/trpc/posts.create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(postData),
+        body: JSON.stringify({ json: postData }),
       });
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server error:', errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
