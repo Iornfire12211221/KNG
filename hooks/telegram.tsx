@@ -202,9 +202,6 @@ export const useTelegram = () => {
           // Fallback: парсим данные из URL
           try {
             console.log('ℹ️ Telegram WebApp не найден, пытаемся парсить из URL');
-          
-          // Fallback: парсим данные из URL
-          try {
             console.log('🔍 Current URL:', window.location.href);
             console.log('🔍 Current hash:', window.location.hash);
             
