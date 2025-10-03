@@ -22,8 +22,9 @@ import { useApp } from '@/hooks/app-store';
 import { useTelegram } from '@/hooks/telegram';
 import { usePerformanceOptimization, useOptimizedAnimation } from '@/hooks/performance';
 import { router } from 'expo-router';
-import { Plus, Navigation, AlertCircle, Clock, Trash2, Heart, Shield, Car, AlertTriangle, Camera, Construction, CheckCircle2, X, Settings, Rabbit, TrendingUp, Filter, MapPin as MapPinIcon, Zap, Target, Users, CarFront, Wrench, MoreHorizontal, CheckCheck } from 'lucide-react-native';
+import { Plus, Navigation, AlertCircle, Clock, Trash2, Heart, Shield, Car, AlertTriangle, Camera, Construction, CheckCircle2, X, Settings, Rabbit, TrendingUp, Filter, MapPin as MapPinIcon, Zap, Target, Users, CarFront, Wrench, MoreHorizontal, CheckCheck, MessageCircle } from 'lucide-react-native';
 import { getLandmarkForAddress, getRandomLandmark } from '@/constants/kingisepp-landmarks';
+import CommentsModal from '@/components/CommentsModal';
 
 import * as Location from 'expo-location';
 
@@ -237,6 +238,8 @@ export default function MapScreen() {
   const [isMapReady, setIsMapReady] = useState(true);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickAddLocation, setQuickAddLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [showComments, setShowComments] = useState(false);
+  const [selectedPostForComments, setSelectedPostForComments] = useState<DPSPost | null>(null);
   const [quickAddType, setQuickAddType] = useState<DPSPost['type']>('dps');
   const [quickAddSeverity, setQuickAddSeverity] = useState<DPSPost['severity']>('medium');
   const [quickAddDescription, setQuickAddDescription] = useState('');
@@ -785,6 +788,14 @@ export default function MapScreen() {
           <Text style={styles.likeText}>0</Text>
         </View>
         
+        <TouchableOpacity 
+          style={styles.commentButton}
+          onPress={() => handleOpenComments(post)}
+        >
+          <MessageCircle size={14} color="#8E8E93" />
+          <Text style={styles.commentText}>Комментарии</Text>
+        </TouchableOpacity>
+        
         {post.needsModeration && (
           <View style={styles.verifyButton}>
             <Shield size={14} color="#FF9500" />
@@ -834,6 +845,11 @@ export default function MapScreen() {
       setUserHasMovedMap(true);
     }
   }, [userHasMovedMap]);
+
+  const handleOpenComments = useCallback((post: DPSPost) => {
+    setSelectedPostForComments(post);
+    setShowComments(true);
+  }, []);
 
   const handleMapLongPress = useCallback((event: any) => {
     // Проверяем кулдаун
@@ -905,23 +921,23 @@ export default function MapScreen() {
       modalTranslateY.setValue(0);
     } else {
       // For mobile devices, use smooth but fast animation
-      Animated.parallel([
-        Animated.timing(modalBackdropOpacity, {
-          toValue: 1,
+    Animated.parallel([
+      Animated.timing(modalBackdropOpacity, {
+        toValue: 1,
           duration: 150, // Faster for mobile
           useNativeDriver: useNativeDriverForPlatform,
-        }),
-        Animated.timing(modalOpacity, {
-          toValue: 1,
+      }),
+      Animated.timing(modalOpacity, {
+        toValue: 1,
           duration: 150, // Faster for mobile
           useNativeDriver: useNativeDriverForPlatform,
-        }),
+      }),
         Animated.timing(modalTranslateY, {
-          toValue: 0,
+        toValue: 0,
           duration: 150, // Faster for mobile
           useNativeDriver: useNativeDriverForPlatform,
-        }),
-      ]).start();
+      }),
+    ]).start();
     }
   }, [cooldownSeconds, hapticFeedback, mapPressScale, rippleScale, rippleOpacity, useNativeDriverForPlatform, isLowEndDevice, modalBackdropOpacity, modalOpacity, modalTranslateY]);
 
@@ -1242,33 +1258,33 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
       modalBackdropOpacity.setValue(0);
     } else {
       // For mobile devices, use smooth but fast animation
-      Animated.parallel([
-        Animated.timing(modalBackdropOpacity, {
-          toValue: 0,
+    Animated.parallel([
+      Animated.timing(modalBackdropOpacity, {
+        toValue: 0,
           duration: 100, // Even faster for mobile
           useNativeDriver: useNativeDriverForPlatform,
-        }),
-        Animated.timing(modalOpacity, {
-          toValue: 0,
+      }),
+      Animated.timing(modalOpacity, {
+        toValue: 0,
           duration: 100, // Even faster for mobile
           useNativeDriver: useNativeDriverForPlatform,
-        }),
-        Animated.timing(modalTranslateY, {
-          toValue: height,
+      }),
+      Animated.timing(modalTranslateY, {
+        toValue: height,
           duration: 100, // Even faster for mobile
           useNativeDriver: useNativeDriverForPlatform,
-        }),
-      ]).start(() => {
-        setShowQuickAdd(false);
-        setQuickAddLocation(null);
-        setQuickAddDescription('');
-        setQuickAddPhotos([]);
-        
-        // Сброс анимационных значений
-        modalTranslateY.setValue(height);
-        modalOpacity.setValue(0);
-        modalBackdropOpacity.setValue(0);
-      });
+      }),
+    ]).start(() => {
+    setShowQuickAdd(false);
+    setQuickAddLocation(null);
+    setQuickAddDescription('');
+    setQuickAddPhotos([]);
+      
+      // Сброс анимационных значений
+      modalTranslateY.setValue(height);
+      modalOpacity.setValue(0);
+      modalBackdropOpacity.setValue(0);
+    });
     }
   };
 
@@ -1750,14 +1766,14 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                 const requestLocationAndCenter = async () => {
                   console.log('📍 Requesting location...');
                   
-                  if (isTelegramWebApp) {
+                if (isTelegramWebApp) {
                     console.log('📱 Using Telegram WebApp location API');
                     try {
-                      const result = await requestLocation();
+                  const result = await requestLocation();
                       console.log('📱 Telegram result:', result);
                       
-                      if (result.granted && result.location) {
-                        const { latitude, longitude } = result.location;
+                  if (result.granted && result.location) {
+                    const { latitude, longitude } = result.location;
                         console.log('✅ Got Telegram location:', latitude, longitude);
                         console.log('📍 Location coordinates:', { lat: latitude, lng: longitude });
                         
@@ -1773,19 +1789,19 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                         }
                       
                       // Сохраняем локацию
-                      const webLoc: Location.LocationObject = {
-                        coords: {
-                          latitude,
-                          longitude,
-                          altitude: null as unknown as number,
+                    const webLoc: Location.LocationObject = {
+                      coords: {
+                        latitude,
+                        longitude,
+                        altitude: null as unknown as number,
                           accuracy: 10,
-                          altitudeAccuracy: null as unknown as number,
-                          heading: 0,
-                          speed: 0,
-                        },
-                        timestamp: Date.now(),
-                      } as unknown as Location.LocationObject;
-                      setUserLocation(webLoc);
+                        altitudeAccuracy: null as unknown as number,
+                        heading: 0,
+                        speed: 0,
+                      },
+                      timestamp: Date.now(),
+                    } as unknown as Location.LocationObject;
+                    setUserLocation(webLoc);
                       
                       // Центрируем карту
                       console.log('🎯 Centering map on Telegram location...');
@@ -1802,24 +1818,24 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                         centerMapOnLocation(latitude, longitude, 0.01, 0.01);
                       }
                       
-                        hapticFeedback('success');
+                    hapticFeedback('success');
                         console.log('✅ Location request completed successfully!');
-                      } else {
+                  } else {
                         console.log('❌ Telegram location denied or no location data');
                         console.log('❌ Result details:', result);
-                        hapticFeedback('error');
-                        setLocationError('Доступ к геолокации запрещен');
+                    hapticFeedback('error');
+                    setLocationError('Доступ к геолокации запрещен');
                       }
                     } catch (error) {
                       console.log('❌ Telegram location request failed:', error);
                       hapticFeedback('error');
                       setLocationError('Ошибка запроса локации через Telegram');
-                    }
-                  } else if (navigator.geolocation) {
+                  }
+                } else if (navigator.geolocation) {
                     console.log('🌐 Using browser geolocation API');
-                    navigator.geolocation.getCurrentPosition(
-                      (pos) => {
-                        const { latitude, longitude } = pos.coords;
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                      const { latitude, longitude } = pos.coords;
                         console.log('✅ Got browser location:', latitude, longitude);
                         console.log('📍 Browser coordinates:', { lat: latitude, lng: longitude });
                         
@@ -1835,19 +1851,19 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                         }
                         
                         // Сохраняем локацию
-                        const webLoc: Location.LocationObject = {
-                          coords: {
-                            latitude,
-                            longitude,
-                            altitude: null as unknown as number,
-                            accuracy: pos.coords.accuracy ?? 0,
-                            altitudeAccuracy: null as unknown as number,
-                            heading: pos.coords.heading ?? 0,
-                            speed: pos.coords.speed ?? 0,
-                          },
-                          timestamp: pos.timestamp,
-                        } as unknown as Location.LocationObject;
-                        setUserLocation(webLoc);
+                      const webLoc: Location.LocationObject = {
+                        coords: {
+                          latitude,
+                          longitude,
+                          altitude: null as unknown as number,
+                          accuracy: pos.coords.accuracy ?? 0,
+                          altitudeAccuracy: null as unknown as number,
+                          heading: pos.coords.heading ?? 0,
+                          speed: pos.coords.speed ?? 0,
+                        },
+                        timestamp: pos.timestamp,
+                      } as unknown as Location.LocationObject;
+                      setUserLocation(webLoc);
                         
                         // Центрируем карту
                         console.log('🎯 Centering map on browser location...');
@@ -1866,14 +1882,14 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                         
                         hapticFeedback('success');
                         console.log('✅ Browser location request completed successfully!');
-                      },
-                      (error) => {
+                    },
+                    (error) => {
                         console.log('❌ Browser geolocation error:', error);
-                        hapticFeedback('error');
-                        setLocationError('Ошибка определения местоположения');
-                      },
-                      { enableHighAccuracy: true, maximumAge: 60000, timeout: 8000 }
-                    );
+                      hapticFeedback('error');
+                      setLocationError('Ошибка определения местоположения');
+                    },
+                    { enableHighAccuracy: true, maximumAge: 60000, timeout: 8000 }
+                  );
                   } else {
                     console.log('❌ No geolocation available');
                     hapticFeedback('error');
@@ -2063,23 +2079,23 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               modalTranslateY.setValue(0);
             } else {
               // For mobile devices, use smooth but fast animation
-              Animated.parallel([
-                Animated.timing(modalBackdropOpacity, {
-                  toValue: 1,
+            Animated.parallel([
+              Animated.timing(modalBackdropOpacity, {
+                toValue: 1,
                   duration: 150, // Faster for mobile
                   useNativeDriver: useNativeDriverForPlatform,
-                }),
-                Animated.timing(modalOpacity, {
-                  toValue: 1,
+              }),
+              Animated.timing(modalOpacity, {
+                toValue: 1,
                   duration: 150, // Faster for mobile
                   useNativeDriver: useNativeDriverForPlatform,
-                }),
+              }),
                 Animated.timing(modalTranslateY, {
-                  toValue: 0,
+                toValue: 0,
                   duration: 150, // Faster for mobile
                   useNativeDriver: useNativeDriverForPlatform,
-                }),
-              ]).start();
+              }),
+            ]).start();
             }
           }}
           activeOpacity={0.8}
@@ -2824,6 +2840,18 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Comments Modal */}
+      <CommentsModal
+        visible={showComments}
+        onClose={() => {
+          setShowComments(false);
+          setSelectedPostForComments(null);
+        }}
+        postId={selectedPostForComments?.id || ''}
+        postTitle={selectedPostForComments ? `${getTypeLabel(selectedPostForComments.type)} - ${selectedPostForComments.description.substring(0, 50)}...` : ''}
+      />
+      
       {/* Убрали глобальный лоадер, чтобы не перекрывал карту */}
     </View>
   );
@@ -3373,6 +3401,20 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   likeText: {
+    fontSize: 12,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  commentButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#F0F0F0',
+  },
+  commentText: {
     fontSize: 12,
     color: '#8E8E93',
     fontWeight: '500',
@@ -4490,3 +4532,4 @@ const styles = StyleSheet.create({
 
 
 });
+
