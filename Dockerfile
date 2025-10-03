@@ -18,6 +18,7 @@ ENV NODE_ENV=production
 ENV EXPO_USE_FAST_RESOLVER=1
 ENV EXPO_NO_TELEMETRY=1
 ENV EXPO_NON_INTERACTIVE=1
+ENV DATABASE_URL="postgresql://gen_user:Dima122111@5b185a49c11b0959c8173153.twc1.net:5432/default_db"
 
 # Build static web app (Expo exports to ./dist)
 RUN bunx expo export --platform web
