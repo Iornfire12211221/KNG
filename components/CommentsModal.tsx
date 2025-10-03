@@ -48,8 +48,18 @@ export default function CommentsModal({ visible, onClose, postId, postTitle }: C
 
   const loadComments = async () => {
     try {
-      const commentsData = await trpc.comments.getByPostId.query({ postId });
-      setComments(commentsData);
+      // Пробуем через tRPC
+      if (trpc?.comments?.getByPostId) {
+        const commentsData = await trpc.comments.getByPostId.query({ postId });
+        setComments(commentsData);
+      } else {
+        // Fallback через прямой fetch
+        const response = await fetch(`${process.env.EXPO_PUBLIC_RORK_API_BASE_URL || ''}/api/trpc/comments.getByPostId?input=${encodeURIComponent(JSON.stringify({ json: { postId } }))}`);
+        if (response.ok) {
+          const data = await response.json();
+          setComments(data.result?.data?.json || []);
+        }
+      }
     } catch (error) {
       console.error('Error loading comments:', error);
     }
@@ -69,7 +79,24 @@ export default function CommentsModal({ visible, onClose, postId, postTitle }: C
         timestamp: Date.now(),
       };
 
-      await trpc.comments.create.mutate(commentData);
+      // Пробуем через tRPC
+      if (trpc?.comments?.create) {
+        await trpc.comments.create.mutate(commentData);
+      } else {
+        // Fallback через прямой fetch
+        const response = await fetch(`${process.env.EXPO_PUBLIC_RORK_API_BASE_URL || ''}/api/trpc/comments.create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ json: commentData }),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+      }
+      
       setNewComment('');
       loadComments(); // Перезагружаем комментарии
     } catch (error) {

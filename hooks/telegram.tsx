@@ -124,6 +124,7 @@ export const useTelegram = () => {
         const tg = window.Telegram?.WebApp;
         if (tg) {
           setWebApp(tg as any);
+          console.log('✅ Telegram WebApp detected');
           
           // Безопасно получаем данные пользователя
           try {
@@ -164,7 +165,91 @@ export const useTelegram = () => {
             colorScheme: tg.colorScheme
           });
         } else {
-          console.log('ℹ️ Не запущено в Telegram WebApp');
+          console.log('ℹ️ Telegram WebApp не найден, пытаемся парсить из URL');
+          
+          // Fallback: парсим данные из URL
+          try {
+            const urlParams = new URLSearchParams(window.location.hash.substring(1));
+            const tgWebAppData = urlParams.get('tgWebAppData');
+            
+            if (tgWebAppData) {
+              console.log('📱 Найдены данные Telegram в URL');
+              
+              // Парсим данные пользователя из URL
+              const userMatch = tgWebAppData.match(/user%3D([^&]+)/);
+              if (userMatch) {
+                const userDataStr = decodeURIComponent(userMatch[1]);
+                const userData = JSON.parse(userDataStr);
+                
+                console.log('👤 Данные пользователя из URL:', userData);
+                setUser(userData);
+                
+                // Создаем mock WebApp объект
+                const mockWebApp = {
+                  initData: tgWebAppData,
+                  initDataUnsafe: { user: userData },
+                  version: '9.1',
+                  platform: 'weba',
+                  colorScheme: 'light' as const,
+                  themeParams: {},
+                  isExpanded: true,
+                  viewportHeight: window.innerHeight,
+                  viewportStableHeight: window.innerHeight,
+                  headerColor: '#ffffff',
+                  backgroundColor: '#ffffff',
+                  isClosingConfirmationEnabled: false,
+                  MainButton: {
+                    text: '',
+                    color: '#3390ec',
+                    textColor: '#ffffff',
+                    isVisible: false,
+                    isActive: true,
+                    isProgressVisible: false,
+                    setText: () => {},
+                    onClick: () => {},
+                    show: () => {},
+                    hide: () => {},
+                    enable: () => {},
+                    disable: () => {},
+                    showProgress: () => {},
+                    hideProgress: () => {},
+                    setParams: () => {},
+                  },
+                  BackButton: {
+                    isVisible: false,
+                    onClick: () => {},
+                    show: () => {},
+                    hide: () => {},
+                  },
+                  HapticFeedback: {
+                    impactOccurred: () => {},
+                    notificationOccurred: () => {},
+                    selectionChanged: () => {},
+                  },
+                  ready: () => {},
+                  sendData: () => {},
+                  openLink: () => {},
+                  openTelegramLink: () => {},
+                  showPopup: () => {},
+                  showAlert: () => {},
+                  showConfirm: () => {},
+                  showScanQrPopup: () => {},
+                  closeScanQrPopup: () => {},
+                  readTextFromClipboard: () => {},
+                  requestWriteAccess: () => {},
+                  requestContact: () => {},
+                  requestLocation: () => {},
+                  invokeCustomMethod: () => {},
+                };
+                
+                setWebApp(mockWebApp as any);
+                console.log('✅ Mock Telegram WebApp создан');
+              }
+            }
+          } catch (error) {
+            console.warn('⚠️ Ошибка парсинга данных Telegram из URL:', error);
+          }
+          
           setIsReady(true);
         }
       } catch (error) {
