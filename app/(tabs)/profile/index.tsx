@@ -38,9 +38,16 @@ export default function ProfileScreen() {
 
   // Загружаем данные Telegram при монтировании
   useEffect(() => {
+    console.log('🔍 Profile useEffect - telegramUser:', telegramUser);
+    console.log('🔍 Profile useEffect - isTelegramWebApp:', isTelegramWebApp);
+    console.log('🔍 Profile useEffect - currentUser:', currentUser);
+    
     if (telegramUser && isTelegramWebApp) {
+      console.log('✅ Setting Telegram data in profile');
       setEditName(telegramUser.first_name || currentUser?.name || '');
       setEditTelegram(telegramUser.username || currentUser?.telegramUsername || '');
+    } else {
+      console.log('⚠️ Telegram data not available, using current user data');
     }
   }, [telegramUser, isTelegramWebApp, currentUser]);
   const handleLogout = () => {
@@ -103,6 +110,10 @@ export default function ProfileScreen() {
     : currentUser?.avatar 
     ? { uri: currentUser.avatar }
     : null;
+
+  console.log('🖼️ Avatar source:', avatarSource);
+  console.log('🖼️ Telegram photo_url:', telegramUser?.photo_url);
+  console.log('🖼️ Current user photoUrl:', currentUser?.photoUrl);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>

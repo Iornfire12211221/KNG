@@ -792,7 +792,7 @@ export default function MapScreen() {
           style={styles.commentButton}
           onPress={() => handleOpenComments(post)}
         >
-          <MessageCircle size={14} color="#8E8E93" />
+          <MessageCircle size={14} color="#FFFFFF" />
           <Text style={styles.commentText}>Комментарии</Text>
         </TouchableOpacity>
         
@@ -3408,16 +3408,17 @@ const styles = StyleSheet.create({
   commentButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: '#F0F0F0',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#007AFF',
+    minWidth: 100,
   },
   commentText: {
     fontSize: 12,
-    color: '#8E8E93',
-    fontWeight: '500',
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
   verifyButton: {
     flexDirection: 'row',

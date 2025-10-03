@@ -169,6 +169,9 @@ export const useTelegram = () => {
           
           // Fallback: парсим данные из URL
           try {
+            console.log('🔍 Current URL:', window.location.href);
+            console.log('🔍 Current hash:', window.location.hash);
+            
             const urlParams = new URLSearchParams(window.location.hash.substring(1));
             const tgWebAppData = urlParams.get('tgWebAppData');
             
@@ -176,9 +179,13 @@ export const useTelegram = () => {
               console.log('📱 Найдены данные Telegram в URL');
               
               // Парсим данные пользователя из URL
+              console.log('🔍 Parsing tgWebAppData:', tgWebAppData);
               const userMatch = tgWebAppData.match(/user%3D([^&]+)/);
+              console.log('🔍 User match:', userMatch);
+              
               if (userMatch) {
                 const userDataStr = decodeURIComponent(userMatch[1]);
+                console.log('🔍 Decoded user data string:', userDataStr);
                 const userData = JSON.parse(userDataStr);
                 
                 console.log('👤 Данные пользователя из URL:', userData);
