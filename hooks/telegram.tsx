@@ -120,6 +120,7 @@ export const useTelegram = () => {
 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      try {
       // Функция для инициализации Telegram WebApp
       const initTelegramWebApp = () => {
         console.log('🔍 Checking for Telegram WebApp...');
@@ -297,10 +298,7 @@ export const useTelegram = () => {
           
           setIsReady(true);
         }
-      } catch (error) {
-        console.error('❌ Критическая ошибка инициализации Telegram WebApp:', error);
-        setIsReady(true);
-      }
+      }, 100);
       
       // Очищаем интервал при размонтировании
       return () => {
@@ -308,6 +306,10 @@ export const useTelegram = () => {
           clearInterval(checkInterval);
         }
       };
+      } catch (error) {
+        console.error('❌ Критическая ошибка инициализации Telegram WebApp:', error);
+        setIsReady(true);
+      }
     } else {
       setIsReady(true);
     }
