@@ -117,246 +117,135 @@ export const useTelegram = () => {
   const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
   const [user, setUser] = useState<TelegramWebApp['initDataUnsafe']['user'] | null>(null);
   const [isReady, setIsReady] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      try {
-      // Функция для инициализации Telegram WebApp
-      const initTelegramWebApp = () => {
-        console.log('🔍 Checking for Telegram WebApp...');
+      const tg = window.Telegram?.WebApp;
+      if (tg) {
+        setWebApp(tg as any);
+        setUser(tg.initDataUnsafe?.user || null);
         
-        const tg = window.Telegram?.WebApp;
-        if (tg) {
-          setWebApp(tg as any);
-          console.log('✅ Telegram WebApp detected');
-          
-          // Безопасно получаем данные пользователя
-          try {
-            const userData = tg.initDataUnsafe?.user || null;
-            setUser(userData);
-            console.log('👤 Telegram user data:', userData);
-          } catch (error) {
-            console.warn('⚠️ Ошибка получения данных пользователя:', error);
-            setUser(null);
-          }
-          
-          // Готовим WebApp
-          try {
-            tg.ready();
-          } catch (error) {
-            console.warn('⚠️ Ошибка инициализации WebApp:', error);
-          }
-          
-          // Расширяем на весь экран
-          try {
-            tg.expand();
-          } catch (error) {
-            console.warn('⚠️ Ошибка расширения WebApp:', error);
-          }
-          
-          // Включаем подтверждение закрытия
-          try {
-            tg.isClosingConfirmationEnabled = true;
-          } catch (error) {
-            console.warn('⚠️ Ошибка настройки подтверждения закрытия:', error);
-          }
-          
-          setIsReady(true);
-          
-          console.log('✅ Telegram WebApp готов:', {
-            user: tg.initDataUnsafe?.user,
-            platform: tg.platform,
-            version: tg.version,
-            colorScheme: tg.colorScheme
-          });
-          
-          return true;
-        }
+        // Готовим WebApp
+        tg.ready();
         
-        return false;
-      };
-
-      // Пробуем инициализировать сразу
-      if (initTelegramWebApp()) {
-        return;
-      }
-
-      // Если не получилось, ждем загрузки скрипта Telegram
-      console.log('⏳ Telegram WebApp not ready, waiting for script...');
-      
-      // Проверяем каждые 100мс в течение 5 секунд
-      let attempts = 0;
-      const maxAttempts = 50;
-      
-      const checkInterval = setInterval(() => {
-        attempts++;
+        // Расширяем на весь экран
+        tg.expand();
         
-        if (initTelegramWebApp()) {
-          clearInterval(checkInterval);
-          return;
-        }
+        // Включаем подтверждение закрытия
+        tg.isClosingConfirmationEnabled = true;
         
-        if (attempts >= maxAttempts) {
-          console.log('⚠️ Telegram WebApp not found after 5 seconds, trying URL parsing...');
-          clearInterval(checkInterval);
+        setIsReady(true);
+        
+        console.log('Telegram WebApp готов:', {
+          user: tg.initDataUnsafe?.user,
+          platform: tg.platform,
+          version: tg.version,
+          colorScheme: tg.colorScheme
+        });
+      } else {
+        console.log('Не запущено в Telegram WebApp');
+        
+        // Fallback: парсим данные из URL
+        try {
+          console.log('ℹ️ Telegram WebApp не найден, пытаемся парсить из URL');
+          console.log('🔍 Current URL:', window.location.href);
+          console.log('🔍 Current hash:', window.location.hash);
           
-          // Fallback: парсим данные из URL
-          try {
-            console.log('ℹ️ Telegram WebApp не найден, пытаемся парсить из URL');
-            console.log('🔍 Current URL:', window.location.href);
-            console.log('🔍 Current hash:', window.location.hash);
+          const urlParams = new URLSearchParams(window.location.hash.substring(1));
+          const tgWebAppData = urlParams.get('tgWebAppData');
+          
+          if (tgWebAppData) {
+            console.log('📱 Найдены данные Telegram в URL');
             
-            const urlParams = new URLSearchParams(window.location.hash.substring(1));
-            const tgWebAppData = urlParams.get('tgWebAppData');
+            // Парсим данные пользователя из URL
+            console.log('🔍 Parsing tgWebAppData:', tgWebAppData);
             
-            if (tgWebAppData) {
-              console.log('📱 Найдены данные Telegram в URL');
-              
-              // Парсим данные пользователя из URL
-              console.log('🔍 Parsing tgWebAppData:', tgWebAppData);
-              
-              // Пробуем разные форматы URL
-              let userMatch = tgWebAppData.match(/user%3D([^&]+)/); // Старый формат
-              if (!userMatch) {
-                userMatch = tgWebAppData.match(/user=([^&]+)/); // Новый формат
-              }
-              console.log('🔍 User match:', userMatch);
-              
-              if (userMatch) {
-                const userDataStr = decodeURIComponent(userMatch[1]);
-                console.log('🔍 Decoded user data string:', userDataStr);
-                const userData = JSON.parse(userDataStr);
-                
-                console.log('👤 Данные пользователя из URL:', userData);
-                setUser(userData);
-                
-                // Создаем mock WebApp объект
-                const mockWebApp = {
-                  initData: tgWebAppData,
-                  initDataUnsafe: { user: userData },
-                  version: '9.1',
-                  platform: 'weba',
-                  colorScheme: 'light' as const,
-                  themeParams: {},
-                  isExpanded: true,
-                  viewportHeight: window.innerHeight,
-                  viewportStableHeight: window.innerHeight,
-                  headerColor: '#ffffff',
-                  backgroundColor: '#ffffff',
-                  isClosingConfirmationEnabled: false,
-                  MainButton: {
-                    text: '',
-                    color: '#3390ec',
-                    textColor: '#ffffff',
-                    isVisible: false,
-                    isActive: true,
-                    isProgressVisible: false,
-                    setText: () => {},
-                    onClick: () => {},
-                    show: () => {},
-                    hide: () => {},
-                    enable: () => {},
-                    disable: () => {},
-                    showProgress: () => {},
-                    hideProgress: () => {},
-                    setParams: () => {},
-                  },
-                  BackButton: {
-                    isVisible: false,
-                    onClick: () => {},
-                    show: () => {},
-                    hide: () => {},
-                  },
-                  HapticFeedback: {
-                    impactOccurred: () => {},
-                    notificationOccurred: () => {},
-                    selectionChanged: () => {},
-                  },
-                  ready: () => {},
-                  sendData: () => {},
-                  openLink: () => {},
-                  openTelegramLink: () => {},
-                  showPopup: () => {},
-                  showAlert: () => {},
-                  showConfirm: () => {},
-                  showScanQrPopup: () => {},
-                  closeScanQrPopup: () => {},
-                  readTextFromClipboard: () => {},
-                  requestWriteAccess: () => {},
-                  requestContact: () => {},
-                  requestLocation: () => {},
-                  invokeCustomMethod: () => {},
-                };
-                
-                setWebApp(mockWebApp as any);
-                console.log('✅ Mock Telegram WebApp создан');
-              }
+            // Пробуем разные форматы URL
+            let userMatch = tgWebAppData.match(/user%3D([^&]+)/); // Старый формат
+            if (!userMatch) {
+              userMatch = tgWebAppData.match(/user=([^&]+)/); // Новый формат
             }
-          } catch (error) {
-            console.warn('⚠️ Ошибка парсинга данных Telegram из URL:', error);
+            console.log('🔍 User match:', userMatch);
+            
+            if (userMatch) {
+              const userDataStr = decodeURIComponent(userMatch[1]);
+              console.log('🔍 Decoded user data string:', userDataStr);
+              const userData = JSON.parse(userDataStr);
+              
+              console.log('👤 Данные пользователя из URL:', userData);
+              setUser(userData);
+              
+              // Создаем mock WebApp объект
+              const mockWebApp = {
+                initData: tgWebAppData,
+                initDataUnsafe: { user: userData },
+                version: '9.1',
+                platform: 'weba',
+                colorScheme: 'light' as const,
+                themeParams: {},
+                isExpanded: true,
+                viewportHeight: window.innerHeight,
+                viewportStableHeight: window.innerHeight,
+                headerColor: '#ffffff',
+                backgroundColor: '#ffffff',
+                isClosingConfirmationEnabled: false,
+                MainButton: {
+                  text: '',
+                  color: '#3390ec',
+                  textColor: '#ffffff',
+                  isVisible: false,
+                  isActive: true,
+                  isProgressVisible: false,
+                  setText: () => {},
+                  onClick: () => {},
+                  show: () => {},
+                  hide: () => {},
+                  enable: () => {},
+                  disable: () => {},
+                  showProgress: () => {},
+                  hideProgress: () => {},
+                  setParams: () => {},
+                },
+                BackButton: {
+                  isVisible: false,
+                  onClick: () => {},
+                  show: () => {},
+                  hide: () => {},
+                },
+                HapticFeedback: {
+                  impactOccurred: () => {},
+                  notificationOccurred: () => {},
+                  selectionChanged: () => {},
+                },
+                ready: () => {},
+                sendData: () => {},
+                openLink: () => {},
+                openTelegramLink: () => {},
+                showPopup: () => {},
+                showAlert: () => {},
+                showConfirm: () => {},
+                showScanQrPopup: () => {},
+                closeScanQrPopup: () => {},
+                readTextFromClipboard: () => {},
+                requestWriteAccess: () => {},
+                requestContact: () => {},
+                requestLocation: () => {},
+                invokeCustomMethod: () => {},
+              };
+              
+              setWebApp(mockWebApp as any);
+              console.log('✅ Mock Telegram WebApp создан');
+            }
           }
-          
-          setIsReady(true);
+        } catch (error) {
+          console.warn('⚠️ Ошибка парсинга данных Telegram из URL:', error);
         }
-      }, 100);
-      
-      // Очищаем интервал при размонтировании
-      return () => {
-        if (checkInterval) {
-          clearInterval(checkInterval);
-        }
-      };
-      } catch (error) {
-        console.error('❌ Критическая ошибка инициализации Telegram WebApp:', error);
+        
         setIsReady(true);
       }
     } else {
       setIsReady(true);
     }
-    
-    // Глобальная обработка ошибок для Telegram API
-    const handleTelegramError = (event: any) => {
-      const errorMessage = event.error?.message || event.reason?.message || '';
-      
-      if (errorMessage.includes('FILE_REFERENCE_EXPIRED')) {
-        console.warn('⚠️ Telegram FILE_REFERENCE_EXPIRED - игнорируем');
-        event.preventDefault();
-        return false;
-      }
-      
-      if (errorMessage.includes('RPCError')) {
-        console.warn('⚠️ Telegram RPC Error - игнорируем:', errorMessage);
-        event.preventDefault();
-        return false;
-      }
-      
-      if (errorMessage.includes('The message port closed')) {
-        console.warn('⚠️ Telegram message port closed - игнорируем');
-        event.preventDefault();
-        return false;
-      }
-    };
-    
-    const handlePromiseRejection = (event: any) => {
-      const errorMessage = event.reason?.message || '';
-      
-      if (errorMessage.includes('FILE_REFERENCE_EXPIRED') || 
-          errorMessage.includes('RPCError') ||
-          errorMessage.includes('The message port closed')) {
-        console.warn('⚠️ Ignoring Telegram promise rejection:', errorMessage);
-        event.preventDefault();
-        return false;
-      }
-    };
-    
-    window.addEventListener('error', handleTelegramError);
-    window.addEventListener('unhandledrejection', handlePromiseRejection);
-    
-    return () => {
-      window.removeEventListener('error', handleTelegramError);
-      window.removeEventListener('unhandledrejection', handlePromiseRejection);
-    };
   }, []);
 
   const showMainButton = useCallback((text: string, onClick: () => void) => {
@@ -449,24 +338,15 @@ export const useTelegram = () => {
 
   const requestLocation = useCallback(() => {
     return new Promise<{ granted: boolean; location?: { latitude: number; longitude: number } }>((resolve) => {
-      console.log('🔍 requestLocation called');
-      console.log('🔍 webApp available:', !!webApp);
-      console.log('🔍 webApp.requestLocation available:', !!webApp?.requestLocation);
-      
       if (webApp?.requestLocation) {
-        console.log('📱 Using Telegram WebApp requestLocation');
         webApp.requestLocation((granted, location) => {
-          console.log('📱 Telegram requestLocation callback:', { granted, location });
           resolve({ granted, location });
         });
       } else {
-        console.log('🌐 Using browser geolocation fallback');
         // Fallback для обычного браузера
         if (navigator.geolocation) {
-          console.log('🌐 Browser geolocation available, requesting position...');
           navigator.geolocation.getCurrentPosition(
             (position) => {
-              console.log('🌐 Browser geolocation success:', position.coords);
               resolve({
                 granted: true,
                 location: {
@@ -475,14 +355,12 @@ export const useTelegram = () => {
                 }
               });
             },
-            (error) => {
-              console.log('🌐 Browser geolocation error:', error);
+            () => {
               resolve({ granted: false });
             },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } // Изменили maximumAge на 0 для получения свежих данных
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
           );
         } else {
-          console.log('❌ No geolocation available');
           resolve({ granted: false });
         }
       }
