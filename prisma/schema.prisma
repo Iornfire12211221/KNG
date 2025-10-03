@@ -43,31 +43,35 @@ model Post {
 
 // Модель для пользователей
 model User {
-  id          String   @id @default(cuid())
-  telegramId  String?  @unique
-  name        String
-  username    String?
-  photoUrl    String?
-  role        UserRole @default(USER)
-  isMuted     Boolean  @default(false)
-  isBanned    Boolean  @default(false)
-  isKicked    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(cuid())
+  telegramId      String?  @unique
+  name            String
+  username        String?
+  photoUrl        String?
+  role            UserRole @default(USER)
+  isMuted         Boolean  @default(false)
+  isBanned        Boolean  @default(false)
+  isKicked        Boolean  @default(false)
+  locationPermission Boolean @default(false)
+  lastPostTime    BigInt?  // Время последнего поста для индивидуального таймера
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@map("users")
 }
 
-// Модель для сообщений чата
-model Message {
+// Модель для комментариев к постам
+model Comment {
   id        String   @id @default(cuid())
   content   String
+  postId    String
   userId    String
   userName  String
+  userPhotoUrl String?
   timestamp BigInt
   createdAt DateTime @default(now())
 
-  @@map("messages")
+  @@map("comments")
 }
 
 // Енумы

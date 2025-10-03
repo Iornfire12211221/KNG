@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -12,6 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { useApp } from '@/hooks/app-store';
+import { useTelegram } from '@/hooks/telegram';
 import { 
   Edit2, 
   X, 
@@ -22,15 +23,26 @@ import {
   Shield,
   LogOut,
   User,
-  Check
+  Check,
+  Camera
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 
 export default function ProfileScreen() {
   const { currentUser, updateUser, posts, messages, logoutUser, makeAdmin } = useApp();
+  const { telegramUser, isTelegramWebApp } = useTelegram();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(currentUser?.name || '');
   const [editTelegram, setEditTelegram] = useState(currentUser?.telegramUsername || '');
+  const [locationPermission, setLocationPermission] = useState(false);
+
+  // Загружаем данные Telegram при монтировании
+  useEffect(() => {
+    if (telegramUser && isTelegramWebApp) {
+      setEditName(telegramUser.first_name || currentUser?.name || '');
+      setEditTelegram(telegramUser.username || currentUser?.telegramUsername || '');
+    }
+  }, [telegramUser, isTelegramWebApp, currentUser]);
   const handleLogout = () => {
     Alert.alert(
       'Выход',
@@ -84,7 +96,9 @@ export default function ProfileScreen() {
   const userMessages = messages.filter(msg => msg.userId === currentUser?.id);
   
   // Фото из Telegram или аватар по умолчанию
-  const avatarSource = currentUser?.photoUrl 
+  const avatarSource = telegramUser?.photo_url 
+    ? { uri: telegramUser.photo_url }
+    : currentUser?.photoUrl 
     ? { uri: currentUser.photoUrl }
     : currentUser?.avatar 
     ? { uri: currentUser.avatar }
@@ -156,19 +170,19 @@ export default function ProfileScreen() {
         </View>
         <View style={styles.stat}>
           <View style={styles.statIconContainer}>
-            <MessageSquare size={18} color="#34C759" strokeWidth={2} />
+            <Camera size={18} color="#34C759" strokeWidth={2} />
           </View>
-          <Text style={styles.statValue}>{userMessages.length}</Text>
-          <Text style={styles.statLabel}>Сообщения</Text>
+          <Text style={styles.statValue}>{telegramUser?.id || 'N/A'}</Text>
+          <Text style={styles.statLabel}>Telegram ID</Text>
         </View>
         <View style={styles.stat}>
           <View style={styles.statIconContainer}>
-            <Calendar size={18} color="#FF9500" strokeWidth={2} />
+            <Shield size={18} color={locationPermission ? "#34C759" : "#FF3B30"} strokeWidth={2} />
           </View>
           <Text style={styles.statValue}>
-            {Math.floor((Date.now() - parseInt(currentUser?.id || '0')) / (1000 * 60 * 60 * 24))}
+            {locationPermission ? "Да" : "Нет"}
           </Text>
-          <Text style={styles.statLabel}>Дней</Text>
+          <Text style={styles.statLabel}>Геолокация</Text>
         </View>
       </View>
 

@@ -762,19 +762,31 @@ ${description ? `Описание от пользователя: "${description}
       return { success: false, error: 'Необходимо войти в систему' };
     }
 
-    const oneMinuteAgo = Date.now() - 1 * 60 * 1000;
-    const recentUserPosts = posts.filter(
-      (p) => p.userId === currentUser.id && p.timestamp > oneMinuteAgo,
-    );
-
-    if (recentUserPosts.length >= 1) {
-      const timeLeft = Math.ceil(
-        (recentUserPosts[0].timestamp + 1 * 60 * 1000 - Date.now()) / 1000,
+    // Проверяем индивидуальный таймер через API
+    try {
+      const canCreateResult = await trpc.users.canCreatePost.query({ userId: currentUser.id });
+      if (!canCreateResult.canCreate) {
+        return {
+          success: false,
+          error: `Можно создавать только 1 пост в минуту. Подождите еще ${canCreateResult.timeLeft} сек.`,
+        };
+      }
+    } catch (error) {
+      // Fallback к локальной проверке если API недоступен
+      const oneMinuteAgo = Date.now() - 1 * 60 * 1000;
+      const recentUserPosts = posts.filter(
+        (p) => p.userId === currentUser.id && p.timestamp > oneMinuteAgo,
       );
-      return {
-        success: false,
-        error: `Можно создавать только 1 пост в минуту. Подождите еще ${timeLeft} сек.`,
-      };
+
+      if (recentUserPosts.length >= 1) {
+        const timeLeft = Math.ceil(
+          (recentUserPosts[0].timestamp + 1 * 60 * 1000 - Date.now()) / 1000,
+        );
+        return {
+          success: false,
+          error: `Можно создавать только 1 пост в минуту. Подождите еще ${timeLeft} сек.`,
+        };
+      }
     }
 
     const now = Date.now();
@@ -920,6 +932,17 @@ ${description ? `Описание от пользователя: "${description}
       }
       
       console.log('✅ Post saved to server successfully');
+      
+      // Обновляем время последнего поста пользователя в БД
+      try {
+        await trpc.users.updateLastPostTime.mutate({
+          userId: currentUser.id,
+          lastPostTime: now
+        });
+        console.log('⏰ User last post time updated in database');
+      } catch (error) {
+        console.warn('⚠️ Failed to update user last post time:', error);
+      }
       
       // Обновляем локальное состояние
       setPosts((prev) => [finalPost, ...prev]);
