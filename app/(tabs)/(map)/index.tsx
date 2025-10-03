@@ -205,7 +205,7 @@ export default function MapScreen() {
   const { requestLocation, isTelegramWebApp, hapticFeedback } = useTelegram();
   const { isLowEndDevice, debounce, throttle } = usePerformanceOptimization();
   
-  // Автоматическое обновление постов каждые 30 секунд для реального времени
+  // Автоматическое обновление постов каждые 10 секунд для реального времени
   useEffect(() => {
     const refreshInterval = setInterval(async () => {
       try {
@@ -213,7 +213,7 @@ export default function MapScreen() {
       } catch (error) {
         // Тихо игнорируем ошибки для производительности
       }
-    }, 30000); // 30 секунд для стабильности
+    }, 10000); // 10 секунд для быстрого обновления
 
     return () => clearInterval(refreshInterval);
   }, []); // Убираем syncPostsWithServer из зависимостей
