@@ -207,31 +207,28 @@ export default function MapScreen() {
   // Автоматическое обновление постов каждые 30 секунд для реального времени
   useEffect(() => {
     const refreshInterval = setInterval(async () => {
-      console.log('🔄 Auto-syncing posts with server for real-time updates');
       try {
-        await syncPostsWithServer(); // Синхронизируем с сервером
+        await syncPostsWithServer();
       } catch (error) {
-        console.warn('⚠️ Server sync failed, continuing with local data');
+        // Тихо игнорируем ошибки для производительности
       }
     }, 30000); // 30 секунд для стабильности
 
     return () => clearInterval(refreshInterval);
-  }, [syncPostsWithServer]);
+  }, []); // Убираем syncPostsWithServer из зависимостей
 
   // Первоначальная загрузка постов с сервера, fallback на локальное хранилище
   useEffect(() => {
     const loadInitialPosts = async () => {
-      console.log('🚀 Loading initial posts from server');
       try {
         await syncPostsWithServer();
       } catch (error) {
-        console.log('⚠️ Server unavailable, loading from local storage');
         await refreshPosts();
       }
     };
     
     loadInitialPosts();
-  }, [syncPostsWithServer, refreshPosts]);
+  }, []); // Убираем зависимости чтобы выполнилось только один раз
   const { createOptimizedAnimation } = useOptimizedAnimation();
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
   const [selectedPost, setSelectedPost] = useState<string | null>(null);
@@ -827,27 +824,20 @@ export default function MapScreen() {
   }, []);
 
 
-  const handleMapPress = (event: any) => {
+  const handleMapPress = useCallback((event: any) => {
     // Обычное нажатие - ничего не делаем
-  };
+  }, []);
 
-  const handleRegionChange = () => {
+  const handleRegionChange = useCallback(() => {
     // Отмечаем, что пользователь переместил карту
-    console.log('handleRegionChange called, userHasMovedMap:', userHasMovedMap);
     if (!userHasMovedMap) {
-      console.log('Setting userHasMovedMap to true');
       setUserHasMovedMap(true);
     }
-  };
+  }, [userHasMovedMap]);
 
-  const handleMapLongPress = (event: any) => {
-    console.log('Map long press triggered', event);
-    console.log('Current cooldown seconds:', cooldownSeconds);
-    console.log('Current showQuickAdd state:', showQuickAdd);
-    
+  const handleMapLongPress = useCallback((event: any) => {
     // Проверяем кулдаун
     if (cooldownSeconds > 0) {
-      console.log('Long press blocked by cooldown');
       Alert.alert(
         'Подождите',
         `Можно создать новый пост через ${cooldownSeconds} секунд`,
@@ -857,7 +847,6 @@ export default function MapScreen() {
     }
     
     const { latitude, longitude } = event.nativeEvent.coordinate;
-    console.log('Setting temp pin location:', { latitude, longitude });
     
     // Анимация нажатия на карту
     hapticFeedback('medium');
@@ -907,12 +896,7 @@ export default function MapScreen() {
     setQuickAddPhotos([]);
     
     // Анимация открытия модального окна (снизу вверх как в Telegram)
-    console.log('Setting showQuickAdd to true');
-    console.log('Current animation values:', {
-      height: height
-    });
     setShowQuickAdd(true);
-    console.log('Starting modal animation');
     // Optimized animation for better performance
     if (isLowEndDevice || Platform.OS === 'web') {
       // For low-end devices and web, use instant animation
@@ -939,7 +923,7 @@ export default function MapScreen() {
         }),
       ]).start();
     }
-  };
+  }, [cooldownSeconds, hapticFeedback, mapPressScale, rippleScale, rippleOpacity, useNativeDriverForPlatform, isLowEndDevice, modalBackdropOpacity, modalOpacity, modalTranslateY]);
 
   const getAddressFromCoords = async (lat: number, lng: number) => {
     if (Platform.OS === 'web') {
