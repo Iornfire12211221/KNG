@@ -180,7 +180,12 @@ export const useTelegram = () => {
               
               // Парсим данные пользователя из URL
               console.log('🔍 Parsing tgWebAppData:', tgWebAppData);
-              const userMatch = tgWebAppData.match(/user%3D([^&]+)/);
+              
+              // Пробуем разные форматы URL
+              let userMatch = tgWebAppData.match(/user%3D([^&]+)/); // Старый формат
+              if (!userMatch) {
+                userMatch = tgWebAppData.match(/user=([^&]+)/); // Новый формат
+              }
               console.log('🔍 User match:', userMatch);
               
               if (userMatch) {

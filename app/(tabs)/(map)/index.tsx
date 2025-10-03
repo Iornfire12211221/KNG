@@ -2298,6 +2298,13 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                         </TouchableOpacity>
                       )}
                       
+                      <TouchableOpacity 
+                        style={styles.compactActionButton}
+                        onPress={() => handleOpenComments(post)}
+                      >
+                        <MessageCircle size={14} color="#007AFF" />
+                      </TouchableOpacity>
+                      
                       {(post.userId === currentUser?.id || currentUser?.isAdmin) && (
                         <TouchableOpacity 
                           style={styles.compactActionButton}
