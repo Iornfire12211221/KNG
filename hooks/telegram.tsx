@@ -117,6 +117,7 @@ export const useTelegram = () => {
   const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
   const [user, setUser] = useState<TelegramWebApp['initDataUnsafe']['user'] | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -491,6 +492,7 @@ export const useTelegram = () => {
   return {
     webApp,
     user,
+    telegramUser: user, // Добавляем алиас для совместимости
     isReady,
     isTelegramWebApp: !!webApp,
     colorScheme: webApp?.colorScheme || 'light',
