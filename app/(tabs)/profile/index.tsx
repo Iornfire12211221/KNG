@@ -99,7 +99,12 @@ export default function ProfileScreen() {
     });
   };
 
-  const userPosts = posts.filter(post => post.userId === currentUser?.id);
+  // Подсчитываем только активные посты текущего пользователя
+  const userPosts = posts.filter(post => 
+    post.userId === currentUser?.id && 
+    post.expiresAt > Date.now() &&
+    !post.needsModeration // Только одобренные посты
+  );
   const userMessages = messages.filter(msg => msg.userId === currentUser?.id);
   
   // Фото из Telegram или аватар по умолчанию
@@ -185,15 +190,6 @@ export default function ProfileScreen() {
           </View>
           <Text style={styles.statValue}>{telegramUser?.id || 'N/A'}</Text>
           <Text style={styles.statLabel}>Telegram ID</Text>
-        </View>
-        <View style={styles.stat}>
-          <View style={styles.statIconContainer}>
-            <Shield size={18} color={locationPermission ? "#34C759" : "#FF3B30"} strokeWidth={2} />
-          </View>
-          <Text style={styles.statValue}>
-            {locationPermission ? "Да" : "Нет"}
-          </Text>
-          <Text style={styles.statLabel}>Геолокация</Text>
         </View>
       </View>
 
@@ -345,9 +341,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#FFF',
     paddingVertical: 24,
-    paddingHorizontal: 16,
-    gap: 16,
+    paddingHorizontal: 32,
+    gap: 32,
     marginBottom: 1,
+    justifyContent: 'space-around',
   },
   stat: {
     flex: 1,

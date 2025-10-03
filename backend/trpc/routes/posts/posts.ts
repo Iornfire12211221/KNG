@@ -28,7 +28,7 @@ const CreatePostSchema = z.object({
 });
 
 export const postsRouter = createTRPCRouter({
-  // Получить все активные посты
+  // Получить все активные посты (только одобренные для обычных пользователей)
   getAll: publicProcedure.query(async () => {
     try {
       const now = Date.now();
@@ -36,14 +36,15 @@ export const postsRouter = createTRPCRouter({
         where: {
           expiresAt: {
             gt: now
-          }
+          },
+          needsModeration: false // Показываем только одобренные посты
         },
         orderBy: {
           timestamp: 'desc'
         }
       });
       
-      console.log(`📥 Fetched ${posts.length} active posts from database`);
+      console.log(`📥 Fetched ${posts.length} approved posts from database`);
       return posts;
     } catch (error) {
       console.error('❌ Error fetching posts from database:', error);
@@ -147,6 +148,56 @@ export const postsRouter = createTRPCRouter({
     return { deletedCount: result.count };
   }),
 
+  // Получить все посты для админов (включая на модерации)
+  getAllForAdmin: publicProcedure.query(async () => {
+    try {
+      const now = Date.now();
+      const posts = await prisma.post.findMany({
+        where: {
+          expiresAt: {
+            gt: now
+          }
+          // Показываем все посты, включая на модерации
+        },
+        orderBy: {
+          timestamp: 'desc'
+        }
+      });
+      
+      console.log(`📥 Fetched ${posts.length} posts for admin (including moderation)`);
+      return posts;
+    } catch (error) {
+      console.error('❌ Error fetching posts for admin:', error);
+      throw error;
+    }
+  }),
+
+  // Получить посты конкретного пользователя
+  getByUserId: publicProcedure
+    .input(z.object({ userId: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        const now = Date.now();
+        const posts = await prisma.post.findMany({
+          where: {
+            userId: input.userId,
+            expiresAt: {
+              gt: now
+            }
+          },
+          orderBy: {
+            timestamp: 'desc'
+          }
+        });
+        
+        console.log(`📥 Fetched ${posts.length} posts for user ${input.userId}`);
+        return posts;
+      } catch (error) {
+        console.error('❌ Error fetching posts for user:', error);
+        throw error;
+      }
+    }),
+
   // Получить посты в определенной области (для оптимизации)
   getInBounds: publicProcedure
     .input(z.object({
@@ -165,6 +216,7 @@ export const postsRouter = createTRPCRouter({
         where: {
           AND: [
             { expiresAt: { gt: now } },
+            { needsModeration: false }, // Только одобренные посты
             { latitude: { gte: input.southWest.latitude, lte: input.northEast.latitude } },
             { longitude: { gte: input.southWest.longitude, lte: input.northEast.longitude } },
           ]
@@ -174,7 +226,7 @@ export const postsRouter = createTRPCRouter({
         }
       });
 
-      console.log(`🗺️ Fetched ${posts.length} posts in bounds`);
+      console.log(`🗺️ Fetched ${posts.length} approved posts in bounds`);
       return posts;
     }),
 });
