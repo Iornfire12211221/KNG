@@ -9,6 +9,7 @@ import {
   ScrollView,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { X, Send, User } from 'lucide-react-native';
 import { trpc } from '@/lib/trpc';
@@ -111,11 +112,11 @@ export default function CommentsModal({ visible, onClose, postId, postTitle }: C
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
-    
-    if (diff < 60000) return 'только что';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)} мин назад`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)} ч назад`;
-    return date.toLocaleDateString('ru-RU');
+
+    if (diff < 60 * 1000) return 'только что';
+    if (diff < 60 * 60 * 1000) return `${Math.floor(diff / (60 * 1000))} мин. назад`;
+    if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / (60 * 60 * 1000))} ч. назад`;
+    return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
   return (
@@ -128,17 +129,22 @@ export default function CommentsModal({ visible, onClose, postId, postTitle }: C
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Комментарии</Text>
-          <Text style={styles.subtitle}>{postTitle}</Text>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <X size={24} color="#666" />
-          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={styles.title}>Комментарии</Text>
+            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+              <X size={24} color="#1C1C1E" strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.subtitle} numberOfLines={2}>{postTitle}</Text>
         </View>
 
         {/* Comments List */}
         <ScrollView style={styles.commentsList} showsVerticalScrollIndicator={false}>
           {comments.length === 0 ? (
             <View style={styles.emptyState}>
+              <View style={styles.emptyIcon}>
+                <Send size={32} color="#E1E5E9" strokeWidth={1.5} />
+              </View>
               <Text style={styles.emptyText}>Пока нет комментариев</Text>
               <Text style={styles.emptySubtext}>Будьте первым, кто оставит комментарий!</Text>
             </View>
@@ -150,7 +156,7 @@ export default function CommentsModal({ visible, onClose, postId, postTitle }: C
                     <Image source={{ uri: comment.userPhotoUrl }} style={styles.avatar} />
                   ) : (
                     <View style={styles.avatarPlaceholder}>
-                      <User size={16} color="#666" />
+                      <User size={16} color="#8E8E93" strokeWidth={2} />
                     </View>
                   )}
                   <View style={styles.commentInfo}>
@@ -166,21 +172,32 @@ export default function CommentsModal({ visible, onClose, postId, postTitle }: C
 
         {/* Input */}
         <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Написать комментарий..."
-            value={newComment}
-            onChangeText={setNewComment}
-            multiline
-            maxLength={500}
-          />
-          <TouchableOpacity
-            style={[styles.sendButton, (!newComment.trim() || isLoading) && styles.sendButtonDisabled]}
-            onPress={handleSendComment}
-            disabled={!newComment.trim() || isLoading}
-          >
-            <Send size={20} color={newComment.trim() ? "#007AFF" : "#999"} />
-          </TouchableOpacity>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.input}
+              placeholder="Написать комментарий..."
+              placeholderTextColor="#8E8E93"
+              value={newComment}
+              onChangeText={setNewComment}
+              multiline
+              maxLength={500}
+              textAlignVertical="top"
+            />
+            <TouchableOpacity
+              style={[
+                styles.sendButton,
+                newComment.trim() ? styles.sendButtonActive : styles.sendButtonInactive
+              ]}
+              onPress={handleSendComment}
+              disabled={!newComment.trim() || isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Send size={18} color="#FFFFFF" strokeWidth={2} />
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
@@ -195,74 +212,97 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#FFFFFF',
     paddingTop: 60,
-    paddingBottom: 20,
     paddingHorizontal: 20,
+    paddingBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#E1E5E9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
     color: '#1C1C1E',
-    marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
-    marginBottom: 20,
+    color: '#8E8E93',
+    lineHeight: 22,
   },
   closeButton: {
-    position: 'absolute',
-    top: 60,
-    right: 20,
-    padding: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F2F2F7',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   commentsList: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
+    paddingVertical: 80,
+  },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#F2F2F7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   emptyText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
-    color: '#666',
+    color: '#1C1C1E',
     marginBottom: 8,
   },
   emptySubtext: {
-    fontSize: 14,
-    color: '#999',
+    fontSize: 16,
+    color: '#8E8E93',
     textAlign: 'center',
+    lineHeight: 22,
   },
   comment: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   commentHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     marginRight: 12,
   },
   avatarPlaceholder: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#E1E5E9',
     alignItems: 'center',
     justifyContent: 'center',
@@ -272,48 +312,60 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   commentAuthor: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: '#1C1C1E',
   },
   commentTime: {
-    fontSize: 12,
-    color: '#999',
+    fontSize: 13,
+    color: '#8E8E93',
     marginTop: 2,
   },
   commentContent: {
-    fontSize: 15,
+    fontSize: 16,
     color: '#1C1C1E',
-    lineHeight: 20,
+    lineHeight: 22,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
     backgroundColor: '#FFFFFF',
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderTopWidth: 1,
     borderTopColor: '#E1E5E9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    backgroundColor: '#F2F2F7',
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   input: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#E1E5E9',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
+    fontSize: 16,
+    color: '#1C1C1E',
     maxHeight: 100,
-    marginRight: 12,
+    paddingVertical: 8,
+    paddingRight: 8,
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F0F0F0',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: 8,
   },
-  sendButtonDisabled: {
-    backgroundColor: '#F5F5F5',
+  sendButtonActive: {
+    backgroundColor: '#007AFF',
+  },
+  sendButtonInactive: {
+    backgroundColor: '#C7C7CC',
   },
 });
