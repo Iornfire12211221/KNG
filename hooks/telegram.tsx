@@ -120,7 +120,10 @@ export const useTelegram = () => {
 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      try {
+      // Функция для инициализации Telegram WebApp
+      const initTelegramWebApp = () => {
+        console.log('🔍 Checking for Telegram WebApp...');
+        
         const tg = window.Telegram?.WebApp;
         if (tg) {
           setWebApp(tg as any);
@@ -130,6 +133,7 @@ export const useTelegram = () => {
           try {
             const userData = tg.initDataUnsafe?.user || null;
             setUser(userData);
+            console.log('👤 Telegram user data:', userData);
           } catch (error) {
             console.warn('⚠️ Ошибка получения данных пользователя:', error);
             setUser(null);
@@ -164,8 +168,40 @@ export const useTelegram = () => {
             version: tg.version,
             colorScheme: tg.colorScheme
           });
-        } else {
-          console.log('ℹ️ Telegram WebApp не найден, пытаемся парсить из URL');
+          
+          return true;
+        }
+        
+        return false;
+      };
+
+      // Пробуем инициализировать сразу
+      if (initTelegramWebApp()) {
+        return;
+      }
+
+      // Если не получилось, ждем загрузки скрипта Telegram
+      console.log('⏳ Telegram WebApp not ready, waiting for script...');
+      
+      // Проверяем каждые 100мс в течение 5 секунд
+      let attempts = 0;
+      const maxAttempts = 50;
+      
+      const checkInterval = setInterval(() => {
+        attempts++;
+        
+        if (initTelegramWebApp()) {
+          clearInterval(checkInterval);
+          return;
+        }
+        
+        if (attempts >= maxAttempts) {
+          console.log('⚠️ Telegram WebApp not found after 5 seconds, trying URL parsing...');
+          clearInterval(checkInterval);
+          
+          // Fallback: парсим данные из URL
+          try {
+            console.log('ℹ️ Telegram WebApp не найден, пытаемся парсить из URL');
           
           // Fallback: парсим данные из URL
           try {
@@ -268,6 +304,13 @@ export const useTelegram = () => {
         console.error('❌ Критическая ошибка инициализации Telegram WebApp:', error);
         setIsReady(true);
       }
+      
+      // Очищаем интервал при размонтировании
+      return () => {
+        if (checkInterval) {
+          clearInterval(checkInterval);
+        }
+      };
     } else {
       setIsReady(true);
     }
