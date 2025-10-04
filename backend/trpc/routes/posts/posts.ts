@@ -25,6 +25,13 @@ const CreatePostSchema = z.object({
   needsModeration: z.boolean().default(true),
   isRelevant: z.boolean().default(true),
   relevanceCheckedAt: z.number().optional(),
+  // Новые поля для улучшенной модерации
+  roadType: z.enum(['HIGHWAY', 'CITY_ROAD', 'RESIDENTIAL', 'RURAL', 'BRIDGE', 'TUNNEL', 'INTERSECTION']).optional(),
+  weather: z.enum(['CLEAR', 'CLOUDY', 'RAIN', 'SNOW', 'FOG', 'ICE', 'WIND', 'STORM']).optional(),
+  trafficImpact: z.enum(['NONE', 'MINOR', 'MODERATE', 'MAJOR', 'SEVERE']).default('MINOR'),
+  emergencyServices: z.boolean().default(false),
+  casualties: z.number().min(0).default(0),
+  accuracy: z.number().optional(),
 });
 
 export const postsRouter = createTRPCRouter({
@@ -211,22 +218,122 @@ export const postsRouter = createTRPCRouter({
       }),
     }))
     .query(async ({ input }) => {
-      const now = Date.now();
+      // Используем оптимизатор для маленького города
+      const { SmallCityOptimizer } = await import('../../../../lib/small-city-optimizer');
+      return await SmallCityOptimizer.getOptimizedPosts(input);
+    }),
+
+  // Получить посты на модерации
+  getPendingModeration: publicProcedure.query(async () => {
+    try {
       const posts = await prisma.post.findMany({
         where: {
-          AND: [
-            { expiresAt: { gt: now } },
-            { needsModeration: false }, // Только одобренные посты
-            { latitude: { gte: input.southWest.latitude, lte: input.northEast.latitude } },
-            { longitude: { gte: input.southWest.longitude, lte: input.northEast.longitude } },
-          ]
+          moderationStatus: 'PENDING',
+          needsModeration: true
         },
-        orderBy: {
-          timestamp: 'desc'
+        orderBy: { timestamp: 'desc' },
+        take: 20
+      });
+      
+      console.log(`📥 Fetched ${posts.length} posts pending moderation`);
+      return posts;
+    } catch (error) {
+      console.error('❌ Error fetching pending posts:', error);
+      throw error;
+    }
+  }),
+
+  // Ручная модерация (для админов)
+  moderate: publicProcedure
+    .input(z.object({
+      postId: z.string(),
+      decision: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'FLAGGED']),
+      reason: z.string().optional(),
+      moderatorId: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const post = await prisma.post.update({
+        where: { id: input.postId },
+        data: {
+          moderationStatus: input.decision as any,
+          moderationReason: input.reason,
+          moderatedAt: BigInt(Date.now()),
+          moderatedBy: input.moderatorId,
+          needsModeration: input.decision === 'FLAGGED'
         }
       });
 
-      console.log(`🗺️ Fetched ${posts.length} approved posts in bounds`);
-      return posts;
+      console.log(`👮 Manual moderation: ${input.postId} -> ${input.decision} by ${input.moderatorId}`);
+      return post;
     }),
+
+  // Запустить ИИ-модерацию для всех ожидающих
+  runAIModeration: publicProcedure.mutation(async () => {
+    try {
+      const { EnhancedAIModeration } = await import('../../../../lib/enhanced-ai-moderation');
+      await EnhancedAIModeration.moderatePendingPosts();
+      return { success: true, message: 'AI moderation started' };
+    } catch (error) {
+      console.error('Error running AI moderation:', error);
+      throw error;
+    }
+  }),
+
+  // Получить статистику модерации
+  getModerationStats: publicProcedure.query(async () => {
+    try {
+      const { EnhancedAIModeration } = await import('../../../../lib/enhanced-ai-moderation');
+      const stats = await EnhancedAIModeration.getModerationStats();
+      return stats;
+    } catch (error) {
+      console.error('Error getting moderation stats:', error);
+      throw error;
+    }
+  }),
+
+  // Получить оптимизированную статистику
+  getOptimizedStats: publicProcedure.query(async () => {
+    try {
+      const { SmallCityOptimizer } = await import('../../../../lib/small-city-optimizer');
+      return await SmallCityOptimizer.getOptimizedStats();
+    } catch (error) {
+      console.error('Error getting optimized stats:', error);
+      throw error;
+    }
+  }),
+
+  // Очистка данных для маленького города
+  cleanupForSmallCity: publicProcedure.mutation(async () => {
+    try {
+      const { SmallCityOptimizer } = await import('../../../../lib/small-city-optimizer');
+      const result = await SmallCityOptimizer.cleanupForSmallCity();
+      return result;
+    } catch (error) {
+      console.error('Error cleaning up for small city:', error);
+      throw error;
+    }
+  }),
+
+  // Кластеризация постов
+  clusterPosts: publicProcedure.mutation(async () => {
+    try {
+      const { SmallCityOptimizer } = await import('../../../../lib/small-city-optimizer');
+      const clusters = await SmallCityOptimizer.clusterPostsForSmallCity();
+      return { success: true, clusters };
+    } catch (error) {
+      console.error('Error clustering posts:', error);
+      throw error;
+    }
+  }),
+
+  // Получить рекомендации по оптимизации
+  getOptimizationRecommendations: publicProcedure.query(async () => {
+    try {
+      const { SmallCityOptimizer } = await import('../../../../lib/small-city-optimizer');
+      return SmallCityOptimizer.getOptimizationRecommendations();
+    } catch (error) {
+      console.error('Error getting optimization recommendations:', error);
+      throw error;
+    }
+  }),
 });

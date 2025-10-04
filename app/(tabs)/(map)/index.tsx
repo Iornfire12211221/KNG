@@ -1010,60 +1010,43 @@ export default function MapScreen() {
 
   const moderatePostWithAI = async (post: DPSPost): Promise<{ approved: boolean; reason?: string }> => {
     try {
-      const prompt = `Проанализируй пост для модерации:
+      // Используем улучшенную ИИ-модерацию
+      const { EnhancedAIModeration } = await import('../../lib/enhanced-ai-moderation');
+      
+      const analysis = {
+        type: post.type,
+        description: post.description,
+        severity: post.severity,
+        hasPhoto: !!post.photo,
+        location: post.address || post.landmark
+      };
 
-Тип события: ${POST_TYPES.find(t => t.id === post.type)?.label || post.type}
-Описание: ${post.description}
-Важность: ${SEVERITY_LEVELS.find(s => s.id === post.severity)?.label || post.severity}
-Есть фото: ${post.photo ? 'Да' : 'Нет'}
-
-Определи, можно ли опубликовать этот пост. Отклони если:
-- Содержит нецензурную лексику
-- Содержит спам или рекламу
-- Не относится к дорожной ситуации
-- Содержит ложную информацию
-- Нарушает правила сообщества
-
-Ответь в формате JSON:
-{"approved": true/false, "reason": "причина отклонения если approved=false"}`;
-
-      const response = await fetch('https://toolkit.rork.com/text/llm/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: 'user',
-              content: prompt
-            }
-          ]
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Ошибка сети');
-      }
-
-      const data = await response.json();
-      try {
-        const result = JSON.parse(data.completion);
-        return {
-          approved: result.approved === true,
-          reason: result.reason || undefined
-        };
-      } catch {
-        // Fallback if JSON parsing fails
-        const approved = data.completion.toLowerCase().includes('true') || 
-                        data.completion.toLowerCase().includes('одобрен') ||
-                        data.completion.toLowerCase().includes('разрешен');
-        return { approved };
-      }
+      const result = await EnhancedAIModeration.moderatePost(analysis);
+      
+      return {
+        approved: result.decision === 'APPROVED',
+        reason: result.reasoning
+      };
     } catch (error) {
       console.error('AI moderation error:', error);
-      // Default to approved if AI fails
-      return { approved: true };
+      
+      // Fallback: простая проверка
+      const roadKeywords = [
+        'дпс', 'дтп', 'камера', 'ремонт', 'дорог', 'патруль', 'пробк', 'светофор', 'объезд', 'знак', 'машин', 'авто',
+        'гайц', 'мусор', 'мент', 'гибдд', 'полиц', 'радар', 'пушка',
+        'куст', 'слева', 'справа', 'поворот', 'засад', 'засел', 'скрыт',
+        'стоят', 'сидят', 'дежур', 'провер', 'тормоз', 'останавл', 'объезж',
+        'трасс', 'шоссе', 'мост', 'перекресток', 'разворот', 'въезд', 'выезд'
+      ];
+      
+      const hasRoadKeywords = roadKeywords.some(keyword => 
+        post.description.toLowerCase().includes(keyword)
+      );
+      
+      return { 
+        approved: hasRoadKeywords,
+        reason: hasRoadKeywords ? 'Содержит дорожную информацию' : 'Не содержит дорожной информации'
+      };
     }
   };
 

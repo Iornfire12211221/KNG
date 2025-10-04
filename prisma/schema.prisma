@@ -14,7 +14,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Модель для постов ДПС
+// Модель для дорожных происшествий
 model Post {
   id          String   @id @default(cuid())
   description String
@@ -32,13 +32,44 @@ model Post {
   likedBy     String[] @default([])
   photo       String?
   photos      String[] @default([])
+  
+  // Улучшенная модерация
   needsModeration Boolean @default(true)
+  moderationStatus ModerationStatus @default(PENDING)
+  moderationScore Float? // Оценка ИИ от 0 до 1
+  moderationReason String? // Причина решения ИИ
+  moderatedAt BigInt?
+  moderatedBy String? // ID модератора или "AI"
+  
+  // Качество контента
   isRelevant  Boolean  @default(true)
+  relevanceScore Float? // Оценка релевантности ИИ
   relevanceCheckedAt BigInt?
+  
+  // Дополнительные поля для дорожных происшествий
+  roadType    RoadType?
+  weather     WeatherCondition?
+  trafficImpact TrafficImpact @default(MINOR)
+  emergencyServices Boolean @default(false)
+  casualties  Int @default(0)
+  
+  // Геолокация и кластеризация
+  clusterId   String? // Для группировки близких происшествий
+  accuracy    Float? // Точность GPS в метрах
+  
+  // Статистика и аналитика
+  viewCount   Int @default(0) // Количество просмотров
+  reportCount Int @default(0) // Количество жалоб
+  verifiedBy  String[] @default([]) // ID пользователей, подтвердивших
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@map("posts")
+  @@index([latitude, longitude]) // Индекс для быстрого поиска по координатам
+  @@index([expiresAt]) // Индекс для очистки просроченных
+  @@index([moderationStatus]) // Индекс для модерации
+  @@index([clusterId]) // Индекс для кластеризации
 }
 
 // Модель для пользователей
@@ -74,6 +105,85 @@ model Comment {
   @@map("comments")
 }
 
+// Модель для ИИ-модерации
+model AIModeration {
+  id          String   @id @default(cuid())
+  postId      String
+  content     String   // Текст для анализа
+  imageUrl    String?  // URL изображения для анализа
+  
+  // Результаты анализа
+  toxicityScore    Float?   // Оценка токсичности (0-1)
+  relevanceScore   Float?   // Оценка релевантности (0-1)
+  severityScore    Float?   // Оценка серьезности (0-1)
+  categoryScore    Float?   // Оценка категоризации (0-1)
+  
+  // Детализация
+  detectedLanguage String?  // Определенный язык
+  keyPhrases       String[] @default([]) // Ключевые фразы
+  entities         String[] @default([]) // Сущности (места, люди, события)
+  
+  // Решение ИИ
+  decision         ModerationStatus
+  confidence       Float   // Уверенность в решении (0-1)
+  reasoning        String? // Объяснение решения
+  
+  processedAt      DateTime @default(now())
+  
+  @@map("ai_moderation")
+  @@index([postId])
+  @@index([processedAt])
+}
+
+// Модель для статистики и аналитики
+model PostStats {
+  id          String   @id @default(cuid())
+  date        DateTime @default(now())
+  
+  // Статистика по типам
+  totalPosts     Int @default(0)
+  dpsPosts       Int @default(0)
+  patrolPosts    Int @default(0)
+  accidentPosts  Int @default(0)
+  cameraPosts    Int @default(0)
+  roadworkPosts  Int @default(0)
+  animalPosts    Int @default(0)
+  
+  // Статистика по серьезности
+  lowSeverity    Int @default(0)
+  mediumSeverity Int @default(0)
+  highSeverity   Int @default(0)
+  
+  // Статистика модерации
+  pendingModeration Int @default(0)
+  approvedPosts     Int @default(0)
+  rejectedPosts     Int @default(0)
+  aiModerationTime  Float @default(0) // Среднее время модерации в секундах
+  
+  // Географическая статистика
+  activeUsers      Int @default(0)
+  uniqueLocations  Int @default(0)
+  
+  @@map("post_stats")
+  @@index([date])
+}
+
+// Модель для кластеров постов
+model PostCluster {
+  id          String   @id @default(cuid())
+  centerLat   Float
+  centerLng   Float
+  radius      Float    // Радиус кластера в метрах
+  postCount   Int      @default(0)
+  severity    PostSeverity
+  type        PostType
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("post_clusters")
+  @@index([centerLat, centerLng])
+}
+
 // Енумы
 enum PostType {
   dps
@@ -89,6 +199,42 @@ enum PostSeverity {
   low
   medium
   high
+}
+
+enum ModerationStatus {
+  PENDING   // На рассмотрении
+  APPROVED  // Одобрено
+  REJECTED  // Отклонено
+  FLAGGED   // Помечено для проверки
+}
+
+enum RoadType {
+  HIGHWAY     // Автомагистраль
+  CITY_ROAD   // Городская дорога
+  RESIDENTIAL // Жилая зона
+  RURAL       // Загородная дорога
+  BRIDGE      // Мост
+  TUNNEL      // Тоннель
+  INTERSECTION // Перекресток
+}
+
+enum WeatherCondition {
+  CLEAR       // Ясно
+  CLOUDY      // Облачно
+  RAIN        // Дождь
+  SNOW        // Снег
+  FOG         // Туман
+  ICE         // Гололед
+  WIND        // Ветер
+  STORM       // Шторм
+}
+
+enum TrafficImpact {
+  NONE        // Нет влияния
+  MINOR       // Незначительное
+  MODERATE    // Умеренное
+  MAJOR       // Значительное
+  SEVERE      // Серьезное
 }
 
 enum UserRole {

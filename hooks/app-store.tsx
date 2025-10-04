@@ -252,100 +252,26 @@ export const [AppProviderInternal, useAppInternal] = createContextHook(() => {
 
   const analyzeTextContent = async (text: string): Promise<{ isAppropriate: boolean; reason?: string }> => {
     try {
-      const txtLower = text.toLowerCase();
-      const roadKeywords = [
-        // Основные термины
-        'дпс', 'дтп', 'камера', 'ремонт', 'дорог', 'патруль', 'пробк', 'светофор', 'объезд', 'знак', 'машин', 'авто',
-        // Сленговые названия
-        'гайц', 'мусор', 'мент', 'гибдд', 'полиц', 'радар', 'пушка',
-        // Местоположение
-        'куст', 'слева', 'справа', 'поворот', 'засад', 'засел', 'скрыт',
-        // Действия
-        'стоят', 'сидят', 'дежур', 'провер', 'тормоз', 'останавл', 'объезж',
-        // Общие дорожные термины
-        'трасс', 'шоссе', 'мост', 'перекресток', 'разворот', 'въезд', 'выезд'
-      ];
-      const response = await fetch('https://toolkit.rork.com/text/llm/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: 'system',
-              content: `Ты модератор текстов для приложения дорожной информации в Кингисеппе. Цель — пропускать полезные сообщения о дороге.
+      // Используем улучшенную ИИ-модерацию
+      const { EnhancedAIModeration } = await import('../lib/enhanced-ai-moderation');
+      
+      const analysis = {
+        type: 'other', // Базовый тип для текстового анализа
+        description: text,
+        severity: 'medium',
+        hasPhoto: false
+      };
 
-ПРАВИЛА МОДЕРАЦИИ:
-1) Допускается ненормативная лексика, если она не направлена на конкретных людей/группы и используется как междометие по теме дороги. Недопустимы персональные оскорбления, травля, угрозы, разжигание ненависти.
-
-2) ПОНИМАЙ НЕФОРМАЛЬНЫЕ ОПИСАНИЯ МЕСТОПОЛОЖЕНИЙ:
-   - "за кустами", "в кустах" = скрытое расположение
-   - "слева", "справа", "за поворотом" = указания направления
-   - "гайцы" = сленговое название ДПС/ГИБДД
-   - "мусора", "менты" = сленговые названия полиции (допустимо в контексте дороги)
-   - "стоят", "сидят", "дежурят" = указание на присутствие
-   - "проверяют", "тормозят", "останавливают" = действия ДПС
-   - "засада", "засели" = скрытый пост контроля
-   - "радар", "пушка" = камера/радар скорости
-   - "объезжайте", "в объезд" = рекомендация маршрута
-
-3) ОДОБРЯЙ ПОСТЫ С ДОРОЖНОЙ ИНФОРМАЦИЕЙ:
-   - Посты ДПС, патруль, камеры, ДТП, ремонт дорог
-   - Предупреждения о пробках, объездах
-   - Информация о животных на дороге
-   - Сообщения о знаках, светофорах
-   - Неформальные описания местоположения постов
-
-4) ОТКЛОНЯЙ:
-   - Рекламу, спам, оффтоп
-   - Персональные оскорбления, угрозы
-   - Разжигание ненависти
-
-Ответ строго в JSON: {"decision":"approve"|"reject","reason":"..."}
-Если текст содержит дорожную информацию (даже в неформальном виде) и нет оскорблений/угроз — approve.`
-            },
-            {
-              role: 'user',
-              content: `Проанализируй комментарий: "${text}"`
-            }
-          ]
-        })
-      });
-
-      if (!response.ok) {
-        const hasRoad = roadKeywords.some(k => txtLower.includes(k));
-        if (hasRoad) return { isAppropriate: true };
-        return { isAppropriate: false, reason: 'Ошибка проверки контента' };
-      }
-
-      const data = await response.json();
-      const raw = (data?.completion ?? '').trim();
-      const cleaned = raw.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
-      let parsed: { decision?: string; reason?: string } = {};
-      try {
-        parsed = JSON.parse(cleaned);
-      } catch {
-        // JSON parse failed, continue with fallback
-      }
-
-      const decision = (parsed.decision ?? '').toLowerCase();
-      if (decision === 'approve') {
-        return { isAppropriate: true };
-      }
-
-      if (decision === 'reject') {
-        const reason = parsed.reason || 'Неподходящий контент';
-        return { isAppropriate: false, reason };
-      }
-
-      const hasRoad = roadKeywords.some(k => txtLower.includes(k));
-      if (hasRoad) {
-        return { isAppropriate: true };
-      }
-      return { isAppropriate: false, reason: 'Не связано с дорожной тематикой' };
+      const result = await EnhancedAIModeration.moderatePost(analysis);
+      
+      return {
+        isAppropriate: result.decision === 'APPROVED',
+        reason: result.reasoning
+      };
     } catch (error) {
       console.error('Error analyzing text content:', error);
+      
+      // Fallback: простая проверка по ключевым словам
       const txtLower = text.toLowerCase();
       const roadKeywords = [
         // Основные термины
