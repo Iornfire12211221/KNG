@@ -114,6 +114,7 @@ export default function AuthScreen() {
               setTelegramUser(userData);
               setAuthStatus('telegram');
               
+              console.log('🔄 Вызываем loginWithTelegram...');
               // Автоматически авторизуем пользователя
               const success = await loginWithTelegram({
                 telegramId: userData.id,
@@ -125,10 +126,14 @@ export default function AuthScreen() {
                 photoUrl: userData.photo_url,
               });
               
+              console.log('🔄 Результат loginWithTelegram:', success);
+              
               if (success) {
+                console.log('✅ Авторизация успешна, перенаправляем...');
                 router.replace('/');
                 return;
               } else {
+                console.log('❌ Ошибка авторизации');
                 setErrorMessage('Ошибка авторизации через Telegram');
                 setAuthStatus('error');
               }
