@@ -607,7 +607,48 @@ ${description ? `Описание от пользователя: "${description}
     try {
       console.log('Logging in with Telegram data:', telegramData);
       
-      // Проверяем, существует ли пользователь с таким Telegram ID
+      // Сначала пытаемся загрузить пользователя из базы данных
+      try {
+        const dbUser = await trpc.users.getByTelegramId.query({ 
+          telegramId: telegramData.telegramId.toString() 
+        });
+        
+        if (dbUser) {
+          console.log('✅ Found user in database:', dbUser);
+          
+          // Преобразуем данные из базы в формат приложения
+          const appUser: User = {
+            id: dbUser.id,
+            telegramId: dbUser.telegramId,
+            name: dbUser.name,
+            firstName: telegramData.firstName,
+            lastName: telegramData.lastName,
+            telegramUsername: telegramData.username,
+            languageCode: telegramData.languageCode,
+            isPremium: telegramData.isPremium,
+            photoUrl: telegramData.photoUrl,
+            isAdmin: dbUser.role === 'ADMIN' || dbUser.role === 'FOUNDER',
+            isModerator: dbUser.role === 'MODERATOR' || dbUser.role === 'ADMIN' || dbUser.role === 'FOUNDER',
+            role: dbUser.role,
+            isMuted: dbUser.isMuted,
+            isBanned: dbUser.isBanned,
+            isKicked: dbUser.isKicked,
+            locationPermission: dbUser.locationPermission,
+            createdAt: dbUser.createdAt.toISOString(),
+            updatedAt: dbUser.updatedAt.toISOString(),
+          };
+          
+          setCurrentUser(appUser);
+          await AsyncStorage.setItem('current_user', JSON.stringify(appUser));
+          
+          console.log('✅ Logged in user from database:', appUser);
+          return true;
+        }
+      } catch (error) {
+        console.error('❌ Error loading user from database:', error);
+      }
+      
+      // Если пользователь не найден в базе, проверяем локальные данные
       let existingUser = users.find(u => u.telegramId === telegramData.telegramId);
       
       if (existingUser) {
@@ -639,34 +680,78 @@ ${description ? `Описание от пользователя: "${description}
         console.log('Updated existing Telegram user:', updatedUser);
         return true;
       } else {
-        // Создаем нового пользователя
-        const isOwner = (telegramData.username ?? '').toLowerCase() === 'herlabsn';
-        const newUser: User = {
-          id: `tg_${telegramData.telegramId}`,
-          name: `${telegramData.firstName} ${telegramData.lastName || ''}`.trim(),
-          telegramId: telegramData.telegramId,
-          firstName: telegramData.firstName,
-          lastName: telegramData.lastName,
-          telegramUsername: telegramData.username,
-          languageCode: telegramData.languageCode,
-          isPremium: telegramData.isPremium,
-          photoUrl: telegramData.photoUrl,
-          isAdmin: isOwner,
-          isModerator: isOwner,
-          registeredAt: Date.now(),
-        };
-        
-        const updatedUsers = [...users, newUser];
-        setUsers(updatedUsers);
-        setCurrentUser(newUser);
-        
-        await Promise.all([
-          AsyncStorage.setItem('all_users', JSON.stringify(updatedUsers)),
-          AsyncStorage.setItem('current_user', JSON.stringify(newUser)),
-        ]);
-        
-        console.log('Created new Telegram user:', newUser);
-        return true;
+        // Создаем нового пользователя в базе данных
+        try {
+          const isOwner = (telegramData.username ?? '').toLowerCase() === 'herlabsn';
+          const dbUser = await trpc.users.upsert.mutate({
+            telegramId: telegramData.telegramId.toString(),
+            name: `${telegramData.firstName} ${telegramData.lastName || ''}`.trim(),
+            username: telegramData.username,
+            photoUrl: telegramData.photoUrl,
+          });
+          
+          console.log('✅ Created user in database:', dbUser);
+          
+          // Преобразуем данные из базы в формат приложения
+          const appUser: User = {
+            id: dbUser.id,
+            telegramId: dbUser.telegramId,
+            name: dbUser.name,
+            firstName: telegramData.firstName,
+            lastName: telegramData.lastName,
+            telegramUsername: telegramData.username,
+            languageCode: telegramData.languageCode,
+            isPremium: telegramData.isPremium,
+            photoUrl: telegramData.photoUrl,
+            isAdmin: dbUser.role === 'ADMIN' || dbUser.role === 'FOUNDER',
+            isModerator: dbUser.role === 'MODERATOR' || dbUser.role === 'ADMIN' || dbUser.role === 'FOUNDER',
+            role: dbUser.role,
+            isMuted: dbUser.isMuted,
+            isBanned: dbUser.isBanned,
+            isKicked: dbUser.isKicked,
+            locationPermission: dbUser.locationPermission,
+            createdAt: dbUser.createdAt.toISOString(),
+            updatedAt: dbUser.updatedAt.toISOString(),
+          };
+          
+          setCurrentUser(appUser);
+          await AsyncStorage.setItem('current_user', JSON.stringify(appUser));
+          
+          console.log('✅ Created and logged in new user:', appUser);
+          return true;
+          
+        } catch (error) {
+          console.error('❌ Error creating user in database:', error);
+          
+          // Fallback: создаем локального пользователя
+          const isOwner = (telegramData.username ?? '').toLowerCase() === 'herlabsn';
+          const newUser: User = {
+            id: `tg_${telegramData.telegramId}`,
+            name: `${telegramData.firstName} ${telegramData.lastName || ''}`.trim(),
+            telegramId: telegramData.telegramId,
+            firstName: telegramData.firstName,
+            lastName: telegramData.lastName,
+            telegramUsername: telegramData.username,
+            languageCode: telegramData.languageCode,
+            isPremium: telegramData.isPremium,
+            photoUrl: telegramData.photoUrl,
+            isAdmin: isOwner,
+            isModerator: isOwner,
+            registeredAt: Date.now(),
+          };
+          
+          const updatedUsers = [...users, newUser];
+          setUsers(updatedUsers);
+          setCurrentUser(newUser);
+          
+          await Promise.all([
+            AsyncStorage.setItem('all_users', JSON.stringify(updatedUsers)),
+            AsyncStorage.setItem('current_user', JSON.stringify(newUser)),
+          ]);
+          
+          console.log('Created new Telegram user (fallback):', newUser);
+          return true;
+        }
       }
     } catch (error) {
       console.error('Error logging in with Telegram:', error);
