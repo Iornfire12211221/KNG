@@ -1018,6 +1018,7 @@ export default function MapScreen() {
         description: post.description,
         severity: post.severity,
         hasPhoto: !!post.photo,
+        photo: post.photo || undefined,
         location: post.address || post.landmark
       };
 
