@@ -94,8 +94,6 @@ export default function AuthScreen() {
           
           if (tgWebAppData) {
             console.log('📱 Найдены данные Telegram в URL');
-            
-            // Парсим данные пользователя из URL
             console.log('🔍 Parsing tgWebAppData:', tgWebAppData);
             
             // Пробуем разные форматы URL
@@ -124,41 +122,47 @@ export default function AuthScreen() {
                 setAuthStatus('telegram');
                 
                 console.log('🔄 Вызываем loginWithTelegram...');
+                
+                // Автоматически авторизуем пользователя
+                const success = await loginWithTelegram({
+                  telegramId: userData.id,
+                  firstName: userData.first_name,
+                  lastName: userData.last_name,
+                  username: userData.username,
+                  languageCode: userData.language_code,
+                  isPremium: userData.is_premium,
+                  photoUrl: userData.photo_url,
+                });
+                
+                console.log('🔄 Результат loginWithTelegram:', success);
+                
+                if (success) {
+                  console.log('✅ Авторизация успешна, перенаправляем...');
+                  router.replace('/');
+                  return;
+                } else {
+                  console.log('❌ Ошибка авторизации');
+                  setErrorMessage('Ошибка авторизации через Telegram');
+                  setAuthStatus('error');
+                }
               } catch (parseError) {
                 console.error('❌ Ошибка парсинга JSON:', parseError);
                 console.log('🔍 Проблемная строка:', userDataStr);
+                setErrorMessage('Ошибка парсинга данных пользователя');
+                setAuthStatus('error');
                 return;
               }
-              
-              // Автоматически авторизуем пользователя
-              const success = await loginWithTelegram({
-                telegramId: userData.id,
-                firstName: userData.first_name,
-                lastName: userData.last_name,
-                username: userData.username,
-                languageCode: userData.language_code,
-                isPremium: userData.is_premium,
-                photoUrl: userData.photo_url,
-              });
-              
-                   console.log('🔄 Результат loginWithTelegram:', success);
-                   
-                   if (success) {
-                     console.log('✅ Авторизация успешна, перенаправляем...');
-                     router.replace('/');
-                     return;
-                   } else {
-                     console.log('❌ Ошибка авторизации');
-                     setErrorMessage('Ошибка авторизации через Telegram');
-                     setAuthStatus('error');
-                   }
-                 } else {
-                   console.log('❌ UserMatch не найден или пустой');
-                 }
-               } else {
-                 console.log('❌ tgWebAppData не найден в URL');
-               }
-             }
+            } else {
+              console.log('❌ UserMatch не найден или пустой');
+              setErrorMessage('Не удалось найти данные пользователя в URL');
+              setAuthStatus('error');
+            }
+          } else {
+            console.log('❌ tgWebAppData не найден в URL');
+            setErrorMessage('Данные Telegram не найдены в URL');
+            setAuthStatus('error');
+          }
+        }
         
         // Если данных в URL нет, проверяем Telegram WebApp
         if (Platform.OS === 'web' && window.Telegram?.WebApp) {
