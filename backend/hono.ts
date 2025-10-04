@@ -117,13 +117,5 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-// Start server
-const port = process.env.PORT || 8081;
-console.log(`Server running on port ${port}`);
-
-serve({
-  fetch: app.fetch,
-  port: Number(port),
-});
-
+// Export app for Bun to use
 export default app;
