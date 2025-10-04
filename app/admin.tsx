@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useApp } from '@/hooks/app-store';
 import { useAILearning } from '@/hooks/ai-learning';
+import { useAISettings } from '@/hooks/ai-settings';
 import { router } from 'expo-router';
 import { 
   ArrowLeft, 
@@ -56,6 +57,17 @@ export default function AdminScreen() {
   
   const [activeTab, setActiveTab] = useState<'posts' | 'messages' | 'users' | 'ai'>('ai');
   const { modelStats, trainingData, trainModel, recordModeratorDecision, recordAIDecision, isTraining } = useAILearning();
+  const { 
+    settings: aiSettings, 
+    updateConfidenceThreshold, 
+    toggleAutoModeration, 
+    toggleFallbackSystem, 
+    updateMaxPosts, 
+    updateCacheTime, 
+    testAI, 
+    resetToDefaults,
+    getRecommendations 
+  } = useAISettings();
   
   // Синхронизируем данные обучения с постами
   React.useEffect(() => {
@@ -642,6 +654,7 @@ export default function AdminScreen() {
               <Text style={styles.aiVersion}>Версия модели: {modelStats.modelVersion}</Text>
             </View>
             
+            {/* Статистика ИИ */}
             <View style={styles.aiStatsRow}>
               <View style={styles.aiStatCard}>
                 <TrendingUp size={20} color="#000" />
@@ -683,16 +696,152 @@ export default function AdminScreen() {
               Последнее обучение: {new Date(modelStats.lastTrainingDate).toLocaleString('ru-RU')}
             </Text>
             
-            <TouchableOpacity
-              style={[styles.aiTrainButton, isTraining && styles.aiTrainButtonDisabled]}
-              onPress={trainModel}
-              disabled={isTraining}
-            >
-              <RefreshCw size={18} color="#FFFFFF" />
-              <Text style={styles.aiTrainButtonText}>
-                {isTraining ? 'Обучение...' : 'Запустить обучение'}
-              </Text>
-            </TouchableOpacity>
+            {/* Настройки ИИ */}
+            <View style={styles.aiSettingsContainer}>
+              <Text style={styles.aiSettingsTitle}>Настройки ИИ</Text>
+              
+              {/* Порог уверенности */}
+              <View style={styles.settingItem}>
+                <Text style={styles.settingLabel}>Порог уверенности для автоодобрения</Text>
+                <View style={styles.sliderContainer}>
+                  <Text style={styles.sliderValue}>{aiSettings.confidenceThreshold}%</Text>
+                  <View style={styles.slider}>
+                    <View style={[styles.sliderTrack, { width: `${aiSettings.confidenceThreshold}%` }]} />
+                    <View style={[styles.sliderThumb, { left: `${aiSettings.confidenceThreshold}%` }]} />
+                  </View>
+                </View>
+              </View>
+              
+              {/* Автоматическая модерация */}
+              <View style={styles.settingItem}>
+                <Text style={styles.settingLabel}>Автоматическая модерация</Text>
+                <TouchableOpacity 
+                  style={styles.toggleButton}
+                  onPress={toggleAutoModeration}
+                >
+                  <View style={[styles.toggle, aiSettings.autoModeration && styles.toggleActive]} />
+                </TouchableOpacity>
+              </View>
+              
+              {/* Fallback система */}
+              <View style={styles.settingItem}>
+                <Text style={styles.settingLabel}>Fallback система</Text>
+                <TouchableOpacity 
+                  style={styles.toggleButton}
+                  onPress={toggleFallbackSystem}
+                >
+                  <View style={[styles.toggle, aiSettings.fallbackSystem && styles.toggleActive]} />
+                </TouchableOpacity>
+              </View>
+              
+              {/* Ограничение постов */}
+              <View style={styles.settingItem}>
+                <Text style={styles.settingLabel}>Максимум постов на карте</Text>
+                <View style={styles.numberInputContainer}>
+                  <TouchableOpacity 
+                    style={styles.numberButton}
+                    onPress={() => updateMaxPosts(aiSettings.maxPostsOnMap - 5)}
+                  >
+                    <Text style={styles.numberButtonText}>-</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.numberValue}>{aiSettings.maxPostsOnMap}</Text>
+                  <TouchableOpacity 
+                    style={styles.numberButton}
+                    onPress={() => updateMaxPosts(aiSettings.maxPostsOnMap + 5)}
+                  >
+                    <Text style={styles.numberButtonText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              
+              {/* Кэширование */}
+              <View style={styles.settingItem}>
+                <Text style={styles.settingLabel}>Время кэширования (минуты)</Text>
+                <View style={styles.numberInputContainer}>
+                  <TouchableOpacity 
+                    style={styles.numberButton}
+                    onPress={() => updateCacheTime(aiSettings.cacheTimeMinutes - 1)}
+                  >
+                    <Text style={styles.numberButtonText}>-</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.numberValue}>{aiSettings.cacheTimeMinutes}</Text>
+                  <TouchableOpacity 
+                    style={styles.numberButton}
+                    onPress={() => updateCacheTime(aiSettings.cacheTimeMinutes + 1)}
+                  >
+                    <Text style={styles.numberButtonText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+            
+            {/* Действия */}
+            <View style={styles.aiActionsContainer}>
+              <TouchableOpacity
+                style={[styles.aiTrainButton, isTraining && styles.aiTrainButtonDisabled]}
+                onPress={trainModel}
+                disabled={isTraining}
+              >
+                <RefreshCw size={18} color="#FFFFFF" />
+                <Text style={styles.aiTrainButtonText}>
+                  {isTraining ? 'Обучение...' : 'Запустить обучение'}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.aiTestButton}
+                onPress={async () => {
+                  const result = await testAI("ДПС стоит на трассе");
+                  Alert.alert(
+                    'Тест ИИ',
+                    `Решение: ${result.result?.decision}\nУверенность: ${result.result?.confidence}%\nПричина: ${result.result?.reasoning}`,
+                    [{ text: 'OK' }]
+                  );
+                }}
+              >
+                <Brain size={18} color="#0066FF" />
+                <Text style={styles.aiTestButtonText}>Тестировать ИИ</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.aiResetButton}
+                onPress={() => {
+                  Alert.alert(
+                    'Сбросить настройки ИИ?',
+                    'Все настройки будут возвращены к значениям по умолчанию',
+                    [
+                      { text: 'Отмена', style: 'cancel' },
+                      { text: 'Сбросить', style: 'destructive', onPress: resetToDefaults }
+                    ]
+                  );
+                }}
+              >
+                <Settings size={18} color="#FF9500" />
+                <Text style={styles.aiResetButtonText}>Сбросить настройки</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {/* Логи ИИ */}
+            <View style={styles.aiLogsContainer}>
+              <Text style={styles.aiLogsTitle}>Последние действия ИИ</Text>
+              <ScrollView style={styles.aiLogsList} showsVerticalScrollIndicator={false}>
+                <View style={styles.aiLogItem}>
+                  <Text style={styles.aiLogTime}>15:30</Text>
+                  <Text style={styles.aiLogAction}>Одобрен пост "ДПС на трассе"</Text>
+                  <Text style={styles.aiLogConfidence}>95%</Text>
+                </View>
+                <View style={styles.aiLogItem}>
+                  <Text style={styles.aiLogTime}>15:28</Text>
+                  <Text style={styles.aiLogAction}>Отклонен пост "Спам"</Text>
+                  <Text style={styles.aiLogConfidence}>88%</Text>
+                </View>
+                <View style={styles.aiLogItem}>
+                  <Text style={styles.aiLogTime}>15:25</Text>
+                  <Text style={styles.aiLogAction}>Одобрен пост "Ремонт дороги"</Text>
+                  <Text style={styles.aiLogConfidence}>92%</Text>
+                </View>
+              </ScrollView>
+            </View>
           </View>
         )}
       </ScrollView>
@@ -1522,6 +1671,196 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  
+  // Новые стили для настроек ИИ
+  aiSettingsContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  aiSettingsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 16,
+  },
+  settingItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
+  },
+  settingLabel: {
+    fontSize: 14,
+    color: '#333',
+    flex: 1,
+    marginRight: 16,
+  },
+  sliderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  sliderValue: {
+    fontSize: 12,
+    color: '#0066FF',
+    fontWeight: '600',
+    minWidth: 30,
+  },
+  slider: {
+    width: 100,
+    height: 4,
+    backgroundColor: '#E5E5E5',
+    borderRadius: 2,
+    position: 'relative',
+  },
+  sliderTrack: {
+    height: 4,
+    backgroundColor: '#0066FF',
+    borderRadius: 2,
+  },
+  sliderThumb: {
+    position: 'absolute',
+    top: -6,
+    width: 16,
+    height: 16,
+    backgroundColor: '#0066FF',
+    borderRadius: 8,
+    transform: [{ translateX: -8 }],
+  },
+  toggleButton: {
+    width: 50,
+    height: 30,
+    backgroundColor: '#E5E5E5',
+    borderRadius: 15,
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  toggle: {
+    width: 26,
+    height: 26,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 13,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  toggleActive: {
+    transform: [{ translateX: 20 }],
+    backgroundColor: '#0066FF',
+  },
+  numberInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  numberButton: {
+    width: 32,
+    height: 32,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  numberButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  numberValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    minWidth: 30,
+    textAlign: 'center',
+  },
+  aiActionsContainer: {
+    gap: 12,
+    marginTop: 20,
+  },
+  aiTestButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#0066FF',
+  },
+  aiTestButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0066FF',
+  },
+  aiResetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#FF9500',
+  },
+  aiResetButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FF9500',
+  },
+  aiLogsContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  aiLogsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 12,
+  },
+  aiLogsList: {
+    maxHeight: 200,
+  },
+  aiLogItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
+    gap: 12,
+  },
+  aiLogTime: {
+    fontSize: 11,
+    color: '#999',
+    minWidth: 40,
+  },
+  aiLogAction: {
+    fontSize: 13,
+    color: '#333',
+    flex: 1,
+  },
+  aiLogConfidence: {
+    fontSize: 11,
+    color: '#0066FF',
+    fontWeight: '600',
+    minWidth: 35,
+    textAlign: 'right',
   },
 
 });
