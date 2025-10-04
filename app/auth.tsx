@@ -106,9 +106,13 @@ export default function AuthScreen() {
             console.log('🔍 User match:', userMatch);
             console.log('🔍 UserMatch length:', userMatch?.length);
             console.log('🔍 UserMatch truthy:', !!userMatch);
+            console.log('🔍 UserMatch type:', typeof userMatch);
+            console.log('🔍 UserMatch isArray:', Array.isArray(userMatch));
             
             if (userMatch && userMatch.length > 0) {
               console.log('✅ UserMatch найден, обрабатываем...');
+              console.log('🔍 UserMatch[0]:', userMatch[0]);
+              console.log('🔍 UserMatch[1]:', userMatch[1]);
               const userDataStr = decodeURIComponent(userMatch[1]);
               console.log('🔍 Decoded user data string:', userDataStr);
               
@@ -137,20 +141,24 @@ export default function AuthScreen() {
                 photoUrl: userData.photo_url,
               });
               
-              console.log('🔄 Результат loginWithTelegram:', success);
-              
-              if (success) {
-                console.log('✅ Авторизация успешна, перенаправляем...');
-                router.replace('/');
-                return;
-              } else {
-                console.log('❌ Ошибка авторизации');
-                setErrorMessage('Ошибка авторизации через Telegram');
-                setAuthStatus('error');
-              }
-            }
-          }
-        }
+                   console.log('🔄 Результат loginWithTelegram:', success);
+                   
+                   if (success) {
+                     console.log('✅ Авторизация успешна, перенаправляем...');
+                     router.replace('/');
+                     return;
+                   } else {
+                     console.log('❌ Ошибка авторизации');
+                     setErrorMessage('Ошибка авторизации через Telegram');
+                     setAuthStatus('error');
+                   }
+                 } else {
+                   console.log('❌ UserMatch не найден или пустой');
+                 }
+               } else {
+                 console.log('❌ tgWebAppData не найден в URL');
+               }
+             }
         
         // Если данных в URL нет, проверяем Telegram WebApp
         if (Platform.OS === 'web' && window.Telegram?.WebApp) {
