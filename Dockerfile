@@ -15,7 +15,6 @@ COPY . .
 RUN bunx prisma generate
 
 ENV NODE_ENV=production
-ENV PORT=3000
 ENV EXPO_USE_FAST_RESOLVER=1
 ENV EXPO_NO_TELEMETRY=1
 ENV EXPO_NON_INTERACTIVE=1
@@ -32,7 +31,7 @@ RUN head -n 20 ./dist/index.html || true
 # Ensure certs directory exists and is readable
 RUN ls -la ./certs || echo "No certs directory"
 
-EXPOSE 3000
+EXPOSE 8081
 
 # Start with database migration and then run the app
 CMD ["sh", "-c", "bunx prisma db push --skip-generate && bun run backend/hono.ts"]

@@ -29,23 +29,7 @@ api.use(
 
 // Simple health check endpoint
 api.get("/", (c) => {
-  return c.json({ 
-    status: "ok", 
-    message: "API is running",
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    port: process.env.PORT || 8081
-  });
-});
-
-// Health check for production
-api.get("/health", (c) => {
-  return c.json({ 
-    status: "healthy", 
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    database: process.env.DATABASE_URL ? "connected" : "not configured"
-  });
+  return c.json({ status: "ok", message: "API is running" });
 });
 
 // Mount API at /api
@@ -133,5 +117,13 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-// Export app for Bun to use
+// Start server
+const port = process.env.PORT || 8081;
+console.log(`Server running on port ${port}`);
+
+serve({
+  fetch: app.fetch,
+  port: Number(port),
+});
+
 export default app;
