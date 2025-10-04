@@ -83,7 +83,60 @@ export default function AuthScreen() {
   useEffect(() => {
     const initTelegramAuth = async () => {
       try {
-        // Проверяем, запущено ли приложение в Telegram
+        // Сначала проверяем данные в URL (для случаев, когда WebApp не доступен)
+        if (Platform.OS === 'web') {
+          console.log('🔍 Checking for Telegram data in URL...');
+          console.log('🔍 Current URL:', window.location.href);
+          console.log('🔍 Current hash:', window.location.hash);
+          
+          const urlParams = new URLSearchParams(window.location.hash.substring(1));
+          const tgWebAppData = urlParams.get('tgWebAppData');
+          
+          if (tgWebAppData) {
+            console.log('📱 Найдены данные Telegram в URL');
+            
+            // Парсим данные пользователя из URL
+            console.log('🔍 Parsing tgWebAppData:', tgWebAppData);
+            
+            // Пробуем разные форматы URL
+            let userMatch = tgWebAppData.match(/user%3D([^&]+)/); // Старый формат
+            if (!userMatch) {
+              userMatch = tgWebAppData.match(/user=([^&]+)/); // Новый формат
+            }
+            console.log('🔍 User match:', userMatch);
+            
+            if (userMatch) {
+              const userDataStr = decodeURIComponent(userMatch[1]);
+              console.log('🔍 Decoded user data string:', userDataStr);
+              const userData = JSON.parse(userDataStr);
+              
+              console.log('👤 Данные пользователя из URL:', userData);
+              setTelegramUser(userData);
+              setAuthStatus('telegram');
+              
+              // Автоматически авторизуем пользователя
+              const success = await loginWithTelegram({
+                telegramId: userData.id,
+                firstName: userData.first_name,
+                lastName: userData.last_name,
+                username: userData.username,
+                languageCode: userData.language_code,
+                isPremium: userData.is_premium,
+                photoUrl: userData.photo_url,
+              });
+              
+              if (success) {
+                router.replace('/');
+                return;
+              } else {
+                setErrorMessage('Ошибка авторизации через Telegram');
+                setAuthStatus('error');
+              }
+            }
+          }
+        }
+        
+        // Если данных в URL нет, проверяем Telegram WebApp
         if (Platform.OS === 'web' && window.Telegram?.WebApp) {
           const tg = window.Telegram.WebApp;
           
@@ -126,7 +179,7 @@ export default function AuthScreen() {
             setAuthStatus('fallback');
           }
         } else {
-          console.log('Not running in Telegram WebApp');
+          console.log('Not running in Telegram WebApp and no URL data found');
           setAuthStatus('fallback');
         }
       } catch (error) {
