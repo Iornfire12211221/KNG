@@ -104,8 +104,10 @@ export default function AuthScreen() {
               userMatch = tgWebAppData.match(/user=([^&]+)/); // Новый формат
             }
             console.log('🔍 User match:', userMatch);
+            console.log('🔍 UserMatch length:', userMatch?.length);
+            console.log('🔍 UserMatch truthy:', !!userMatch);
             
-            if (userMatch) {
+            if (userMatch && userMatch.length > 0) {
               console.log('✅ UserMatch найден, обрабатываем...');
               const userDataStr = decodeURIComponent(userMatch[1]);
               console.log('🔍 Decoded user data string:', userDataStr);
