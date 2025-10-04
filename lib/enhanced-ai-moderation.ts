@@ -34,7 +34,7 @@ export class EnhancedAIModeration {
   private static cache = new Map<string, { result: ModerationResult; timestamp: number }>();
 
   /**
-   * Основная функция модерации поста
+   * Основная функция УМНОЙ модерации поста с самообучением
    */
   static async moderatePost(post: PostAnalysis): Promise<ModerationResult> {
     const startTime = Date.now();
@@ -51,21 +51,24 @@ export class EnhancedAIModeration {
       // Выполняем многоуровневый анализ
       const result = await this.performMultiLevelAnalysis(post);
       
+      // 🧠 УМНОЕ САМООБУЧЕНИЕ - применяем обученную модель
+      const smartResult = await this.applySmartLearning(post, result);
+      
       // Сохраняем в кэш
-      this.setCache(cacheKey, result);
+      this.setCache(cacheKey, smartResult);
       
       // Сохраняем результат в базу данных
-      await this.saveModerationResult(post, result);
+      await this.saveModerationResult(post, smartResult);
       
       const processingTime = Date.now() - startTime;
-      result.processingTime = processingTime;
+      smartResult.processingTime = processingTime;
       
-      console.log(`✅ Post moderated: ${result.decision} (${processingTime}ms, confidence: ${result.confidence})`);
+      console.log(`🧠 SMART Post moderated: ${smartResult.decision} (${processingTime}ms, confidence: ${smartResult.confidence})`);
       
-      return result;
+      return smartResult;
       
     } catch (error) {
-      console.error('❌ AI moderation error:', error);
+      console.error('❌ SMART AI moderation error:', error);
       
       // Fallback: простая эвристическая модерация
       return this.fallbackModeration(post);
@@ -858,6 +861,161 @@ ${description ? `Описание от пользователя: "${description}
       }
     } catch (error) {
       console.error('Error analyzing image:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Применение умного самообучения к результату модерации
+   */
+  private static async applySmartLearning(post: PostAnalysis, baseResult: ModerationResult): Promise<ModerationResult> {
+    try {
+      // Получаем умное решение
+      const smartDecision = await this.getSmartDecision(
+        baseResult.decision === 'APPROVED' ? 'approve' : 'reject',
+        baseResult.confidence,
+        post.type,
+        post.hasPhoto,
+        post.description
+      );
+
+      // Обновляем результат с умными данными
+      const smartResult: ModerationResult = {
+        ...baseResult,
+        decision: smartDecision.decision === 'approve' ? 'APPROVED' : 'REJECTED',
+        confidence: smartDecision.confidence,
+        reasoning: smartDecision.reasoning || baseResult.reasoning
+      };
+
+      console.log('🧠 Applied smart learning:', {
+        original: baseResult.decision,
+        smart: smartResult.decision,
+        confidence: (smartResult.confidence * 100).toFixed(1) + '%',
+        reasoning: smartDecision.reasoning
+      });
+
+      return smartResult;
+    } catch (error) {
+      console.error('❌ Error applying smart learning:', error);
+      return baseResult; // Возвращаем исходный результат при ошибке
+    }
+  }
+
+  /**
+   * Получение умного решения через систему обучения
+   */
+  private static async getSmartDecision(
+    baseDecision: 'approve' | 'reject',
+    confidence: number,
+    postType: string,
+    hasPhoto: boolean,
+    description?: string
+  ): Promise<{ decision: 'approve' | 'reject'; confidence: number; reasoning?: string }> {
+    try {
+      // Загружаем умную модель
+      const [smartModelStr, patternsStr] = await Promise.all([
+        this.getFromStorage('ai_smart_model'),
+        this.getFromStorage('ai_smart_patterns')
+      ]);
+
+      if (!smartModelStr || !patternsStr) {
+        return { decision: baseDecision, confidence, reasoning: 'No smart model available' };
+      }
+
+      const smartModel = JSON.parse(smartModelStr);
+      const patterns = JSON.parse(patternsStr);
+      const now = new Date();
+      
+      // Определяем время суток и сезон
+      const hour = now.getHours();
+      const timeOfDay = hour >= 6 && hour < 12 ? 'morning' : 
+                       hour >= 12 && hour < 18 ? 'day' : 
+                       hour >= 18 && hour < 22 ? 'evening' : 'night';
+      
+      const month = now.getMonth() + 1;
+      const season = month >= 3 && month <= 5 ? 'spring' : 
+                    month >= 6 && month <= 8 ? 'summer' : 
+                    month >= 9 && month <= 11 ? 'autumn' : 'winter';
+
+      console.log('🧠 Using SMART AI decision making...');
+
+      // УМНЫЙ АНАЛИЗ с весами
+      let smartScore = 0;
+      let totalWeight = 0;
+      const reasoning: string[] = [];
+
+      // 1. Анализ по времени суток (вес 0.2)
+      if (patterns.timePatterns[timeOfDay]) {
+        const timeConfidence = patterns.timePatterns[timeOfDay].confidence || 0.5;
+        smartScore += timeConfidence * smartModel.weights.timeWeight;
+        totalWeight += smartModel.weights.timeWeight;
+        reasoning.push(`Time: ${(timeConfidence * 100).toFixed(1)}%`);
+      }
+
+      // 2. Анализ по типу поста (вес 0.3)
+      if (patterns.typePatterns[postType]) {
+        const typeConfidence = patterns.typePatterns[postType].confidence || 0.5;
+        smartScore += typeConfidence * smartModel.weights.typeWeight;
+        totalWeight += smartModel.weights.typeWeight;
+        reasoning.push(`Type: ${(typeConfidence * 100).toFixed(1)}%`);
+      }
+
+      // 3. Анализ по наличию фото (вес 0.2)
+      const photoKey = hasPhoto ? 'withPhoto' : 'withoutPhoto';
+      if (patterns.photoPatterns[photoKey].total > 0) {
+        const photoConfidence = patterns.photoPatterns[photoKey].confidence || 0.5;
+        smartScore += photoConfidence * smartModel.weights.photoWeight;
+        totalWeight += smartModel.weights.photoWeight;
+        reasoning.push(`Photo: ${(photoConfidence * 100).toFixed(1)}%`);
+      }
+
+      // 4. Анализ контекста (вес 0.15)
+      const context = `${timeOfDay}_${postType}_${hasPhoto ? 'photo' : 'no_photo'}`;
+      if (patterns.contextPatterns[context]) {
+        const contextConfidence = patterns.contextPatterns[context].correct / patterns.contextPatterns[context].total;
+        smartScore += contextConfidence * smartModel.weights.contextWeight;
+        totalWeight += smartModel.weights.contextWeight;
+        reasoning.push(`Context: ${(contextConfidence * 100).toFixed(1)}%`);
+      }
+
+      // Вычисляем финальную умную уверенность
+      const smartConfidence = totalWeight > 0 ? smartScore / totalWeight : confidence;
+      
+      // Применяем умные пороги
+      let finalDecision = baseDecision;
+      let finalConfidence = smartConfidence;
+
+      if (smartConfidence >= smartModel.thresholds.approveThreshold) {
+        finalDecision = 'approve';
+        finalConfidence = Math.min(smartConfidence, 0.95);
+      } else if (smartConfidence <= smartModel.thresholds.rejectThreshold) {
+        finalDecision = 'reject';
+        finalConfidence = Math.max(1 - smartConfidence, 0.05);
+      }
+
+      return { 
+        decision: finalDecision, 
+        confidence: finalConfidence,
+        reasoning: `Smart: ${reasoning.join(', ')}`
+      };
+    } catch (error) {
+      console.error('❌ Error getting smart decision:', error);
+      return { decision: baseDecision, confidence, reasoning: 'Smart analysis failed' };
+    }
+  }
+
+  /**
+   * Получение данных из хранилища
+   */
+  private static async getFromStorage(key: string): Promise<string | null> {
+    try {
+      // В браузере используем localStorage, в React Native - AsyncStorage
+      if (typeof window !== 'undefined' && window.localStorage) {
+        return window.localStorage.getItem(key);
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting from storage:', error);
       return null;
     }
   }
