@@ -241,4 +241,5 @@ enum UserRole {
   USER
   MODERATOR
   ADMIN
+  FOUNDER
 }

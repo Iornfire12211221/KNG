@@ -15,6 +15,7 @@ import { useApp } from '@/hooks/app-store';
 import { useAILearning } from '@/hooks/ai-learning';
 import { useAISettings } from '@/hooks/ai-settings';
 import { useSmartAI } from '@/hooks/smart-ai';
+import { useUserManagement } from '@/hooks/user-management';
 import { router } from 'expo-router';
 import { 
   ArrowLeft, 
@@ -32,7 +33,11 @@ import {
   FileText,
   Brain,
   TrendingUp,
-  RefreshCw
+  RefreshCw,
+  Zap,
+  UserCog,
+  UserShield,
+  Crown
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -56,7 +61,7 @@ export default function AdminScreen() {
     unkickUser
   } = useApp();
   
-  const [activeTab, setActiveTab] = useState<'posts' | 'messages' | 'users' | 'ai' | 'smart-ai'>('smart-ai');
+  const [activeTab, setActiveTab] = useState<'posts' | 'messages' | 'users' | 'ai' | 'smart-ai' | 'user-management'>('user-management');
   const { modelStats, trainingData, trainModel, recordModeratorDecision, recordAIDecision, isTraining } = useAILearning();
   const { 
     settings: aiSettings, 
@@ -83,6 +88,25 @@ export default function AdminScreen() {
     isAccurate,
     isLearning
   } = useSmartAI();
+
+  // 👥 УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ
+  const {
+    users,
+    userStats,
+    selectedRole,
+    isLoading: usersLoading,
+    error: usersError,
+    loadUsers,
+    loadStats,
+    updateUserRole,
+    promoteToModerator,
+    demoteFromModerator,
+    setSelectedRole,
+    setError: setUsersError,
+    getRoleColor,
+    getRoleIcon,
+    getRoleName
+  } = useUserManagement();
   
   // Синхронизируем данные обучения с постами
   React.useEffect(() => {
@@ -328,6 +352,18 @@ export default function AdminScreen() {
           </View>
           <Text style={[styles.tabText, activeTab === 'smart-ai' && styles.tabTextActive]}>
             🧠 Умная ИИ
+          </Text>
+        </Pressable>
+
+        <Pressable
+          style={[styles.tab, activeTab === 'user-management' && styles.tabActive]}
+          onPress={() => setActiveTab('user-management')}
+        >
+          <View style={[styles.tabIconContainer, activeTab === 'user-management' && styles.tabIconActive]}>
+            <Users size={20} color={activeTab === 'user-management' ? '#000' : '#999'} />
+          </View>
+          <Text style={[styles.tabText, activeTab === 'user-management' && styles.tabTextActive]}>
+            👥 Управление
           </Text>
         </Pressable>
       </View>
@@ -994,6 +1030,172 @@ export default function AdminScreen() {
                 <View style={[styles.statusBar, { width: `${Math.min(smartStats.patternsCount * 5, 100)}%` }]} />
                 <Text style={styles.statusValue}>{smartStats.patternsCount}</Text>
               </View>
+            </View>
+          </View>
+        )}
+
+        {/* 👥 УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ */}
+        {activeTab === 'user-management' && (
+          <View style={styles.userManagementContainer}>
+            {/* Заголовок */}
+            <View style={styles.userManagementHeader}>
+              <Text style={styles.userManagementTitle}>👥 Управление пользователями</Text>
+              <View style={styles.userStatsRow}>
+                <View style={styles.userStatCard}>
+                  <Crown size={16} color="#FFD700" />
+                  <Text style={styles.userStatValue}>{userStats.founders}</Text>
+                  <Text style={styles.userStatLabel}>Основатели</Text>
+                </View>
+                <View style={styles.userStatCard}>
+                  <UserShield size={16} color="#FF6B6B" />
+                  <Text style={styles.userStatValue}>{userStats.admins}</Text>
+                  <Text style={styles.userStatLabel}>Админы</Text>
+                </View>
+                <View style={styles.userStatCard}>
+                  <UserCog size={16} color="#4ECDC4" />
+                  <Text style={styles.userStatValue}>{userStats.moderators}</Text>
+                  <Text style={styles.userStatLabel}>Модераторы</Text>
+                </View>
+                <View style={styles.userStatCard}>
+                  <Users size={16} color="#95A5A6" />
+                  <Text style={styles.userStatValue}>{userStats.users}</Text>
+                  <Text style={styles.userStatLabel}>Пользователи</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Фильтры по ролям */}
+            <View style={styles.roleFiltersContainer}>
+              <Text style={styles.roleFiltersTitle}>Фильтр по ролям:</Text>
+              <View style={styles.roleFiltersRow}>
+                <Pressable
+                  style={[styles.roleFilterButton, !selectedRole && styles.roleFilterActive]}
+                  onPress={() => setSelectedRole(undefined)}
+                >
+                  <Text style={[styles.roleFilterText, !selectedRole && styles.roleFilterTextActive]}>
+                    Все ({userStats.total})
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.roleFilterButton, selectedRole === 'FOUNDER' && styles.roleFilterActive]}
+                  onPress={() => setSelectedRole('FOUNDER')}
+                >
+                  <Text style={[styles.roleFilterText, selectedRole === 'FOUNDER' && styles.roleFilterTextActive]}>
+                    👑 Основатели ({userStats.founders})
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.roleFilterButton, selectedRole === 'ADMIN' && styles.roleFilterActive]}
+                  onPress={() => setSelectedRole('ADMIN')}
+                >
+                  <Text style={[styles.roleFilterText, selectedRole === 'ADMIN' && styles.roleFilterTextActive]}>
+                    🛡️ Админы ({userStats.admins})
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.roleFilterButton, selectedRole === 'MODERATOR' && styles.roleFilterActive]}
+                  onPress={() => setSelectedRole('MODERATOR')}
+                >
+                  <Text style={[styles.roleFilterText, selectedRole === 'MODERATOR' && styles.roleFilterTextActive]}>
+                    👮 Модераторы ({userStats.moderators})
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Список пользователей */}
+            <View style={styles.usersListContainer}>
+              <Text style={styles.usersListTitle}>
+                Пользователи {selectedRole ? `(${getRoleName(selectedRole)})` : '(все)'}
+              </Text>
+              
+              {usersLoading ? (
+                <View style={styles.loadingContainer}>
+                  <Text style={styles.loadingText}>Загрузка пользователей...</Text>
+                </View>
+              ) : usersError ? (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>{usersError}</Text>
+                  <TouchableOpacity 
+                    style={styles.retryButton}
+                    onPress={() => loadUsers(selectedRole)}
+                  >
+                    <Text style={styles.retryButtonText}>Повторить</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : users.length === 0 ? (
+                <View style={styles.emptyUsersContainer}>
+                  <Users size={48} color="#C7C7CC" />
+                  <Text style={styles.emptyUsersText}>Пользователи не найдены</Text>
+                </View>
+              ) : (
+                <ScrollView style={styles.usersList} showsVerticalScrollIndicator={false}>
+                  {users.map((user) => (
+                    <View key={user.id} style={styles.userCard}>
+                      <View style={styles.userInfo}>
+                        <View style={styles.userAvatar}>
+                          <Text style={styles.userAvatarText}>
+                            {user.name.charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                        <View style={styles.userDetails}>
+                          <Text style={styles.userName}>{user.name}</Text>
+                          <Text style={styles.userTelegramId}>@{user.username || user.telegramId}</Text>
+                          <View style={styles.userRoleContainer}>
+                            <Text style={styles.userRoleIcon}>{getRoleIcon(user.role)}</Text>
+                            <Text style={[styles.userRole, { color: getRoleColor(user.role) }]}>
+                              {getRoleName(user.role)}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.userActions}>
+                        {user.role === 'USER' && (
+                          <TouchableOpacity
+                            style={styles.promoteButton}
+                            onPress={async () => {
+                              try {
+                                await promoteToModerator(user.id, 'current_admin_id');
+                                Alert.alert('Успех', `${user.name} назначен модератором`);
+                              } catch (error) {
+                                Alert.alert('Ошибка', 'Не удалось назначить модератора');
+                              }
+                            }}
+                          >
+                            <UserCog size={16} color="#4ECDC4" />
+                            <Text style={styles.promoteButtonText}>Модератор</Text>
+                          </TouchableOpacity>
+                        )}
+                        
+                        {user.role === 'MODERATOR' && (
+                          <TouchableOpacity
+                            style={styles.demoteButton}
+                            onPress={async () => {
+                              try {
+                                await demoteFromModerator(user.id, 'current_admin_id');
+                                Alert.alert('Успех', `${user.name} снят с модератора`);
+                              } catch (error) {
+                                Alert.alert('Ошибка', 'Не удалось снять с модератора');
+                              }
+                            }}
+                          >
+                            <UserX size={16} color="#FF6B6B" />
+                            <Text style={styles.demoteButtonText}>Снять</Text>
+                          </TouchableOpacity>
+                        )}
+                        
+                        {user.role === 'FOUNDER' && (
+                          <View style={styles.founderBadge}>
+                            <Crown size={16} color="#FFD700" />
+                            <Text style={styles.founderText}>Основатель</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  ))}
+                </ScrollView>
+              )}
             </View>
           </View>
         )}
@@ -2079,6 +2281,247 @@ const styles = StyleSheet.create({
     color: '#000',
     minWidth: 40,
     textAlign: 'right',
+  },
+
+  // Стили для управления пользователями
+  userManagementContainer: {
+    flex: 1,
+    paddingBottom: 20,
+  },
+  userManagementHeader: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  userManagementTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 16,
+  },
+  userStatsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  userStatCard: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
+  },
+  userStatValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000',
+    marginTop: 4,
+  },
+  userStatLabel: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  roleFiltersContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  roleFiltersTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 12,
+  },
+  roleFiltersRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  roleFilterButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  roleFilterActive: {
+    backgroundColor: '#0066FF',
+    borderColor: '#0066FF',
+  },
+  roleFilterText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#666',
+  },
+  roleFilterTextActive: {
+    color: '#FFFFFF',
+  },
+  usersListContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  usersListTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 16,
+  },
+  usersList: {
+    maxHeight: 400,
+  },
+  userCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  userAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#0066FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  userAvatarText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  userDetails: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+  },
+  userTelegramId: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  userRoleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  userRoleIcon: {
+    fontSize: 12,
+    marginRight: 4,
+  },
+  userRole: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  userActions: {
+    alignItems: 'flex-end',
+  },
+  promoteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4ECDC4',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  promoteButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  demoteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF6B6B',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  demoteButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  founderBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3CD',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#FFD700',
+  },
+  founderText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#856404',
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  errorContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#FF6B6B',
+    marginBottom: 12,
+  },
+  retryButton: {
+    backgroundColor: '#0066FF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  emptyUsersContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyUsersText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 12,
   },
 
 });
