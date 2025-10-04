@@ -68,7 +68,7 @@ export class SmallCityOptimizer {
         ]
       },
       orderBy: { timestamp: 'desc' },
-      take: 30, // Ограничиваем для маленького города
+      take: 55, // Ограничиваем для маленького города
       select: {
         id: true,
         description: true,
@@ -332,9 +332,9 @@ export class SmallCityOptimizer {
       cacheSize: this.cache.size,
       maxCacheSize: 50, // Меньше для маленького города
       cityType: 'small',
-      recommendations: [
+        recommendations: [
         'Используйте короткие интервалы кэширования (1 минута)',
-        'Ограничивайте количество постов на карте (30 максимум)',
+        'Ограничивайте количество постов на карте (55 максимум)',
         'Частая очистка данных (каждые 6 часов)',
         'Кластеризация с радиусом 200 метров',
         'Мониторинг активности пользователей',
