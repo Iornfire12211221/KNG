@@ -106,15 +106,24 @@ export default function AuthScreen() {
             console.log('🔍 User match:', userMatch);
             
             if (userMatch) {
+              console.log('✅ UserMatch найден, обрабатываем...');
               const userDataStr = decodeURIComponent(userMatch[1]);
               console.log('🔍 Decoded user data string:', userDataStr);
-              const userData = JSON.parse(userDataStr);
               
-              console.log('👤 Данные пользователя из URL:', userData);
-              setTelegramUser(userData);
-              setAuthStatus('telegram');
+              let userData;
+              try {
+                userData = JSON.parse(userDataStr);
+                console.log('👤 Данные пользователя из URL:', userData);
+                setTelegramUser(userData);
+                setAuthStatus('telegram');
+                
+                console.log('🔄 Вызываем loginWithTelegram...');
+              } catch (parseError) {
+                console.error('❌ Ошибка парсинга JSON:', parseError);
+                console.log('🔍 Проблемная строка:', userDataStr);
+                return;
+              }
               
-              console.log('🔄 Вызываем loginWithTelegram...');
               // Автоматически авторизуем пользователя
               const success = await loginWithTelegram({
                 telegramId: userData.id,
