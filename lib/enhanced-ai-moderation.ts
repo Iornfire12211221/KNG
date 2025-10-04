@@ -354,31 +354,74 @@ export class EnhancedAIModeration {
    * Вызов ИИ API
    */
   private static async callAI(prompt: string): Promise<string> {
-    const response = await fetch(this.API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messages: [
-          {
-            role: 'system',
-            content: 'Ты эксперт по модерации контента дорожных происшествий в Кингисеппе. Отвечай только в формате JSON.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ]
-      })
-    });
+    try {
+      const response = await fetch(this.API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'system',
+              content: 'Ты эксперт по модерации контента дорожных происшествий в Кингисеппе. Отвечай только в формате JSON без дополнительного текста.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ]
+        })
+      });
 
-    if (!response.ok) {
-      throw new Error(`AI API error: ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`AI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      let content = data.completion || data.content || data.message || '';
+      
+      // Очищаем ответ от лишних символов и форматируем JSON
+      content = content.trim();
+      
+      // Убираем markdown код блоки если есть
+      if (content.startsWith('```json')) {
+        content = content.replace(/```json\s*/, '').replace(/```\s*$/, '');
+      } else if (content.startsWith('```')) {
+        content = content.replace(/```\s*/, '').replace(/```\s*$/, '');
+      }
+      
+      // Убираем лишние символы и пробелы
+      content = content.replace(/^[^{]*/, '').replace(/[^}]*$/, '');
+      
+      // Ищем JSON объект в тексте
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        content = jsonMatch[0];
+      }
+      
+      // Проверяем, что это валидный JSON
+      try {
+        JSON.parse(content);
+        return content;
+      } catch (parseError) {
+        console.warn('AI returned invalid JSON, using fallback:', content);
+        // Возвращаем fallback JSON вместо ошибки
+        return JSON.stringify({
+          toxicityScore: 0.1,
+          language: 'ru',
+          isRelevant: true,
+          relevanceScore: 0.8,
+          severityScore: 0.5,
+          categoryScore: 0.7,
+          keyPhrases: [],
+          entities: []
+        });
+      }
+    } catch (error) {
+      console.error('AI API call failed:', error);
+      throw error;
     }
-
-    const data = await response.json();
-    return data.completion || data.content || '';
   }
 
   /**
