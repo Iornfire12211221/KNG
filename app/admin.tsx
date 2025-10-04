@@ -91,7 +91,7 @@ export default function AdminScreen() {
 
   // 👥 УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ
   const {
-    users,
+    users: managedUsers,
     userStats,
     selectedRole,
     isLoading: usersLoading,
@@ -1123,14 +1123,14 @@ export default function AdminScreen() {
                     <Text style={styles.retryButtonText}>Повторить</Text>
                   </TouchableOpacity>
                 </View>
-              ) : users.length === 0 ? (
+              ) : managedUsers.length === 0 ? (
                 <View style={styles.emptyUsersContainer}>
                   <Users size={48} color="#C7C7CC" />
                   <Text style={styles.emptyUsersText}>Пользователи не найдены</Text>
                 </View>
               ) : (
                 <ScrollView style={styles.usersList} showsVerticalScrollIndicator={false}>
-                  {users.map((user) => (
+                  {managedUsers.map((user) => (
                     <View key={user.id} style={styles.userCard}>
                       <View style={styles.userInfo}>
                         <View style={styles.userAvatar}>
