@@ -609,9 +609,12 @@ ${description ? `Описание от пользователя: "${description}
       
       // Сначала пытаемся загрузить пользователя из базы данных
       try {
+        console.log('🔍 Attempting to load user from database with telegramId:', telegramData.telegramId.toString());
         const dbUser = await trpc.users.getByTelegramId.query({ 
           telegramId: telegramData.telegramId.toString() 
         });
+        
+        console.log('🔍 Database query result:', dbUser);
         
         if (dbUser) {
           console.log('✅ Found user in database:', dbUser);
@@ -643,6 +646,8 @@ ${description ? `Описание от пользователя: "${description}
           
           console.log('✅ Logged in user from database:', appUser);
           return true;
+        } else {
+          console.log('❌ User not found in database for telegramId:', telegramData.telegramId.toString());
         }
       } catch (error) {
         console.error('❌ Error loading user from database:', error);
