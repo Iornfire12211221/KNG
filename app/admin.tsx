@@ -14,6 +14,7 @@ import {
 import { useApp } from '@/hooks/app-store';
 import { useAILearning } from '@/hooks/ai-learning';
 import { useAISettings } from '@/hooks/ai-settings';
+import { useSmartAI } from '@/hooks/smart-ai';
 import { router } from 'expo-router';
 import { 
   ArrowLeft, 
@@ -55,7 +56,7 @@ export default function AdminScreen() {
     unkickUser
   } = useApp();
   
-  const [activeTab, setActiveTab] = useState<'posts' | 'messages' | 'users' | 'ai'>('ai');
+  const [activeTab, setActiveTab] = useState<'posts' | 'messages' | 'users' | 'ai' | 'smart-ai'>('smart-ai');
   const { modelStats, trainingData, trainModel, recordModeratorDecision, recordAIDecision, isTraining } = useAILearning();
   const { 
     settings: aiSettings, 
@@ -68,6 +69,20 @@ export default function AdminScreen() {
     resetToDefaults,
     getRecommendations 
   } = useAISettings();
+
+  // 🧠 НОВАЯ УМНАЯ ИИ-СИСТЕМА
+  const {
+    isAnalyzing,
+    modelStats: smartStats,
+    analyzePost,
+    learnFromModerator,
+    testAI: testSmartAI,
+    getRecommendations: getSmartRecommendations,
+    forceLearning,
+    isSmart,
+    isAccurate,
+    isLearning
+  } = useSmartAI();
   
   // Синхронизируем данные обучения с постами
   React.useEffect(() => {
@@ -301,6 +316,18 @@ export default function AdminScreen() {
           </View>
           <Text style={[styles.tabText, activeTab === 'ai' && styles.tabTextActive]}>
             ИИ
+          </Text>
+        </Pressable>
+
+        <Pressable
+          style={[styles.tab, activeTab === 'smart-ai' && styles.tabActive]}
+          onPress={() => setActiveTab('smart-ai')}
+        >
+          <View style={[styles.tabIconContainer, activeTab === 'smart-ai' && styles.tabIconActive]}>
+            <Zap size={20} color={activeTab === 'smart-ai' ? '#000' : '#999'} />
+          </View>
+          <Text style={[styles.tabText, activeTab === 'smart-ai' && styles.tabTextActive]}>
+            🧠 Умная ИИ
           </Text>
         </Pressable>
       </View>
@@ -841,6 +868,132 @@ export default function AdminScreen() {
                   <Text style={styles.aiLogConfidence}>92%</Text>
                 </View>
               </ScrollView>
+            </View>
+          </View>
+        )}
+
+        {/* 🧠 НОВАЯ УМНАЯ ИИ-СИСТЕМА */}
+        {activeTab === 'smart-ai' && (
+          <View style={styles.aiContainer}>
+            <View style={styles.aiHeader}>
+              <Text style={styles.aiVersion}>🧠 Умная ИИ v{smartStats.version}</Text>
+              <View style={[styles.statusBadge, isSmart ? styles.statusGood : styles.statusWarning]}>
+                <Text style={styles.statusText}>
+                  {isSmart ? 'УМНАЯ' : 'ОБУЧАЕТСЯ'}
+                </Text>
+              </View>
+            </View>
+            
+            {/* Статистика умной ИИ */}
+            <View style={styles.aiStatsRow}>
+              <View style={styles.aiStatCard}>
+                <Zap size={20} color="#000" />
+                <Text style={styles.aiStatValue}>{smartStats.intelligence.toFixed(1)}%</Text>
+                <Text style={styles.aiStatLabel}>Интеллект</Text>
+              </View>
+              
+              <View style={styles.aiStatCard}>
+                <TrendingUp size={20} color="#000" />
+                <Text style={styles.aiStatValue}>{smartStats.accuracy.toFixed(1)}%</Text>
+                <Text style={styles.aiStatLabel}>Точность</Text>
+              </View>
+            </View>
+            
+            <View style={styles.aiStatsRow}>
+              <View style={styles.aiStatCard}>
+                <Text style={styles.aiStatValue}>{smartStats.totalDecisions}</Text>
+                <Text style={styles.aiStatLabel}>Всего решений</Text>
+              </View>
+              
+              <View style={styles.aiStatCard}>
+                <Text style={styles.aiStatValue}>{smartStats.correctDecisions}</Text>
+                <Text style={styles.aiStatLabel}>Правильных</Text>
+              </View>
+            </View>
+            
+            <View style={styles.aiStatsRow}>
+              <View style={styles.aiStatCard}>
+                <Text style={styles.aiStatValue}>{smartStats.patternsCount}</Text>
+                <Text style={styles.aiStatLabel}>Паттернов</Text>
+              </View>
+              
+              <View style={styles.aiStatCard}>
+                <Text style={styles.aiStatValue}>
+                  {isLearning ? 'ДА' : 'НЕТ'}
+                </Text>
+                <Text style={styles.aiStatLabel}>Обучение</Text>
+              </View>
+            </View>
+            
+            <Text style={styles.aiLastTrained}>
+              Последнее обучение: {new Date(smartStats.lastTraining).toLocaleString('ru-RU')}
+            </Text>
+            
+            {/* Рекомендации умной ИИ */}
+            <View style={styles.aiSettingsContainer}>
+              <Text style={styles.aiSettingsTitle}>Рекомендации умной ИИ</Text>
+              {getSmartRecommendations().map((rec, index) => (
+                <View key={index} style={styles.recommendationItem}>
+                  <Text style={styles.recommendationText}>• {rec}</Text>
+                </View>
+              ))}
+            </View>
+            
+            {/* Действия умной ИИ */}
+            <View style={styles.aiActionsContainer}>
+              <TouchableOpacity
+                style={[styles.aiTrainButton, isAnalyzing && styles.aiTrainButtonDisabled]}
+                onPress={forceLearning}
+                disabled={isAnalyzing}
+              >
+                <Zap size={18} color="#FFFFFF" />
+                <Text style={styles.aiTrainButtonText}>
+                  {isAnalyzing ? 'Анализ...' : 'Принудительное обучение'}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.aiTestButton}
+                onPress={async () => {
+                  try {
+                    const result = await testSmartAI({
+                      type: 'dps',
+                      description: 'ДПС стоит на трассе, будьте осторожны',
+                      hasPhoto: true
+                    });
+                    Alert.alert(
+                      'Тест умной ИИ',
+                      `Решение: ${result.decision}\nУверенность: ${(result.confidence * 100).toFixed(1)}%\nПричина: ${result.reasoning}\nПаттерны: ${result.patterns.join(', ')}`,
+                      [{ text: 'OK' }]
+                    );
+                  } catch (error) {
+                    Alert.alert('Ошибка', 'Не удалось протестировать умную ИИ');
+                  }
+                }}
+              >
+                <Brain size={18} color="#0066FF" />
+                <Text style={styles.aiTestButtonText}>Тестировать умную ИИ</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {/* Статус системы */}
+            <View style={styles.systemStatusContainer}>
+              <Text style={styles.systemStatusTitle}>Статус системы</Text>
+              <View style={styles.statusRow}>
+                <Text style={styles.statusLabel}>Интеллект:</Text>
+                <View style={[styles.statusBar, { width: `${smartStats.intelligence}%` }]} />
+                <Text style={styles.statusValue}>{smartStats.intelligence.toFixed(1)}%</Text>
+              </View>
+              <View style={styles.statusRow}>
+                <Text style={styles.statusLabel}>Точность:</Text>
+                <View style={[styles.statusBar, { width: `${smartStats.accuracy}%` }]} />
+                <Text style={styles.statusValue}>{smartStats.accuracy.toFixed(1)}%</Text>
+              </View>
+              <View style={styles.statusRow}>
+                <Text style={styles.statusLabel}>Паттерны:</Text>
+                <View style={[styles.statusBar, { width: `${Math.min(smartStats.patternsCount * 5, 100)}%` }]} />
+                <Text style={styles.statusValue}>{smartStats.patternsCount}</Text>
+              </View>
             </View>
           </View>
         )}
@@ -1860,6 +2013,71 @@ const styles = StyleSheet.create({
     color: '#0066FF',
     fontWeight: '600',
     minWidth: 35,
+    textAlign: 'right',
+  },
+  
+  // Стили для умной ИИ
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  statusGood: {
+    backgroundColor: '#4CAF50',
+  },
+  statusWarning: {
+    backgroundColor: '#FF9800',
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  recommendationItem: {
+    paddingVertical: 4,
+  },
+  recommendationText: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
+  },
+  systemStatusContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  systemStatusTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 12,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  statusLabel: {
+    fontSize: 13,
+    color: '#666',
+    minWidth: 80,
+  },
+  statusBar: {
+    height: 6,
+    backgroundColor: '#0066FF',
+    borderRadius: 3,
+    flex: 1,
+  },
+  statusValue: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#000',
+    minWidth: 40,
     textAlign: 'right',
   },
 

@@ -34,7 +34,7 @@ export class EnhancedAIModeration {
   private static cache = new Map<string, { result: ModerationResult; timestamp: number }>();
 
   /**
-   * Основная функция УМНОЙ модерации поста с самообучением
+   * Основная функция УМНОЙ модерации поста с новой ИИ-системой
    */
   static async moderatePost(post: PostAnalysis): Promise<ModerationResult> {
     const startTime = Date.now();
@@ -48,11 +48,8 @@ export class EnhancedAIModeration {
         return cached;
       }
 
-      // Выполняем многоуровневый анализ
-      const result = await this.performMultiLevelAnalysis(post);
-      
-      // 🧠 УМНОЕ САМООБУЧЕНИЕ - применяем обученную модель
-      const smartResult = await this.applySmartLearning(post, result);
+      // 🧠 ИСПОЛЬЗУЕМ НОВУЮ УМНУЮ ИИ-СИСТЕМУ
+      const smartResult = await this.useNewSmartAI(post);
       
       // Сохраняем в кэш
       this.setCache(cacheKey, smartResult);
@@ -63,15 +60,16 @@ export class EnhancedAIModeration {
       const processingTime = Date.now() - startTime;
       smartResult.processingTime = processingTime;
       
-      console.log(`🧠 SMART Post moderated: ${smartResult.decision} (${processingTime}ms, confidence: ${smartResult.confidence})`);
+      console.log(`🧠 NEW SMART AI moderated: ${smartResult.decision} (${processingTime}ms, confidence: ${smartResult.confidence})`);
       
       return smartResult;
       
     } catch (error) {
-      console.error('❌ SMART AI moderation error:', error);
+      console.error('❌ NEW SMART AI moderation error:', error);
       
-      // Fallback: простая эвристическая модерация
-      return this.fallbackModeration(post);
+      // Fallback: старая система
+      const result = await this.performMultiLevelAnalysis(post);
+      return result;
     }
   }
 
@@ -862,6 +860,61 @@ ${description ? `Описание от пользователя: "${description}
     } catch (error) {
       console.error('Error analyzing image:', error);
       return null;
+    }
+  }
+
+  /**
+   * Использование новой умной ИИ-системы
+   */
+  private static async useNewSmartAI(post: PostAnalysis): Promise<ModerationResult> {
+    try {
+      // Импортируем новую умную ИИ-систему
+      const { smartAI } = await import('./smart-ai-system');
+      
+      // Преобразуем PostAnalysis в SmartPost
+      const smartPost = {
+        id: `post_${Date.now()}_${Math.random()}`,
+        type: post.type,
+        description: post.description,
+        severity: post.severity,
+        hasPhoto: post.hasPhoto,
+        photo: post.photo,
+        location: post.location,
+        userId: 'current_user', // Можно получить из контекста
+        userName: 'Пользователь',
+        timestamp: Date.now()
+      };
+      
+      // Получаем решение от новой умной ИИ
+      const smartDecision = await smartAI.moderatePost(smartPost);
+      
+      // Преобразуем SmartDecision в ModerationResult
+      const result: ModerationResult = {
+        decision: smartDecision.decision,
+        confidence: smartDecision.confidence,
+        reasoning: smartDecision.reasoning,
+        toxicityScore: smartDecision.factors.toxicity,
+        relevanceScore: smartDecision.factors.relevance,
+        severityScore: smartDecision.factors.quality,
+        categoryScore: smartDecision.factors.context,
+        detectedLanguage: 'ru',
+        keyPhrases: smartDecision.learningData.keywords,
+        entities: [],
+        processingTime: 0
+      };
+      
+      console.log('🧠 New Smart AI result:', {
+        decision: result.decision,
+        confidence: (result.confidence * 100).toFixed(1) + '%',
+        factors: smartDecision.factors,
+        patterns: smartDecision.patterns
+      });
+      
+      return result;
+      
+    } catch (error) {
+      console.error('❌ Error using new Smart AI:', error);
+      throw error;
     }
   }
 
