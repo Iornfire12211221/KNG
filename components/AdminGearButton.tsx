@@ -26,7 +26,12 @@ export default function AdminGearButton({ style }: AdminGearButtonProps) {
   console.log('🔧 AdminGearButton - кнопка показана!');
 
   const handlePress = () => {
-    router.push('/admin');
+    try {
+      console.log('🔧 AdminGearButton - нажатие на кнопку админа');
+      router.push('/admin');
+    } catch (error) {
+      console.error('🔧 AdminGearButton - ошибка при нажатии:', error);
+    }
   };
 
   return (
@@ -51,7 +56,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'white',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -59,11 +64,9 @@ const styles = StyleSheet.create({
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 3,
     zIndex: 1000,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 122, 255, 0.2)',
   },
 });

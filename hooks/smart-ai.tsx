@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { smartAI, SmartPost, SmartDecision } from '../lib/smart-ai-system';
+import { smartAI, SmartPost, SmartDecision } from '../lib/smart-ai-system-client';
 
 export const useSmartAI = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);

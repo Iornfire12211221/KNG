@@ -15,7 +15,7 @@ import { useApp } from '@/hooks/app-store';
 import { useAILearning } from '@/hooks/ai-learning';
 import { useAISettings } from '@/hooks/ai-settings';
 import { useSmartAI } from '@/hooks/smart-ai';
-import { useUserManagement } from '@/hooks/user-management';
+import { useUserManagement } from '@/hooks/user-management-client';
 import { router } from 'expo-router';
 import { 
   ArrowLeft, 
