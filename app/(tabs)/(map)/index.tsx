@@ -25,6 +25,7 @@ import { router } from 'expo-router';
 import { Plus, Navigation, AlertCircle, Clock, Trash2, Heart, Shield, Car, AlertTriangle, Camera, Construction, CheckCircle2, X, Settings, Rabbit, TrendingUp, Filter, MapPin as MapPinIcon, Zap, Target, Users, CarFront, Wrench, MoreHorizontal, CheckCheck, MessageCircle } from 'lucide-react-native';
 import { getLandmarkForAddress, getRandomLandmark } from '@/constants/kingisepp-landmarks';
 import CommentsModal from '@/components/CommentsModal';
+import AdminGearButton from '@/components/AdminGearButton';
 
 import * as Location from 'expo-location';
 
@@ -1505,6 +1506,9 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
 
   return (
     <View style={styles.container}>
+      {/* Админская кнопка */}
+      <AdminGearButton />
+      
       {/* Map */}
       <View style={styles.mapContainer}>
         

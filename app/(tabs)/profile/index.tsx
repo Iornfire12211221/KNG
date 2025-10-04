@@ -27,6 +27,7 @@ import {
   Camera
 } from 'lucide-react-native';
 import { router } from 'expo-router';
+import AdminGearButton from '@/components/AdminGearButton';
 
 export default function ProfileScreen() {
   const { currentUser, updateUser, posts, messages, logoutUser, makeAdmin } = useApp();
@@ -122,6 +123,9 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Админская кнопка */}
+      <AdminGearButton />
+      
       {/* Профиль - минималистичный дизайн */}
       <View style={styles.header}>
         <View style={styles.avatarContainer}>
