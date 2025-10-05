@@ -1178,7 +1178,7 @@ export default function AdminScreen() {
             {/* Список пользователей */}
             <View style={styles.usersListContainer}>
               <Text style={styles.usersListTitle}>
-                Пользователи {selectedRole ? `(${getRoleName(selectedRole)})` : '(все)'}
+                Пользователи {selectedRole ? `(${getRoleName(selectedRole || 'USER')})` : '(все)'}
               </Text>
               
               {usersLoading ? (
@@ -1214,9 +1214,9 @@ export default function AdminScreen() {
                           <Text style={styles.userName}>{user.name}</Text>
                           <Text style={styles.userTelegramId}>@{user.username || user.telegramId}</Text>
                           <View style={styles.userRoleContainer}>
-                            <Text style={styles.userRoleIcon}>{getRoleIcon(user.role)}</Text>
-                            <Text style={[styles.userRole, { color: getRoleColor(user.role) }]}>
-                              {getRoleName(user.role)}
+                            <Text style={styles.userRoleIcon}>{getRoleIcon(user.role || 'USER')}</Text>
+                            <Text style={[styles.userRole, { color: getRoleColor(user.role || 'USER') }]}>
+                              {getRoleName(user.role || 'USER')}
                             </Text>
                           </View>
                         </View>
