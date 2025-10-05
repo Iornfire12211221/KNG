@@ -244,9 +244,9 @@ export default function AdminScreen() {
     const userUsername = user.username || 'без_username';
     const userPhotoUrl = user.photoUrl;
     const avatarText = (userName || 'П').charAt(0).toUpperCase();
-    const roleName = getRoleName(userRole);
-    const roleColor = getRoleColor(userRole);
-    const roleIcon = getRoleIcon(userRole);
+    const roleName = getRoleName(userRole) || 'Пользователь';
+    const roleColor = getRoleColor(userRole) || '#95A5A6';
+    const roleIcon = getRoleIcon(userRole) || <Users size={16} color="#95A5A6" />;
     
     console.log('🔧 renderUser values:', {
       userName,
@@ -256,8 +256,20 @@ export default function AdminScreen() {
       avatarText,
       roleName,
       roleColor,
-      roleIcon
+      roleIcon: roleIcon ? 'JSX Element' : 'undefined',
+      roleIconType: typeof roleIcon
     });
+    
+    // Дополнительная проверка на undefined
+    if (!roleIcon) {
+      console.error('🔧 ERROR: roleIcon is undefined for role:', userRole);
+    }
+    if (!roleColor) {
+      console.error('🔧 ERROR: roleColor is undefined for role:', userRole);
+    }
+    if (!roleName) {
+      console.error('🔧 ERROR: roleName is undefined for role:', userRole);
+    }
     
     return (
       <View style={styles.userCard} key={user.id}>
