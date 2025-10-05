@@ -232,7 +232,11 @@ export default function AdminScreen() {
 
   // Рендер пользователя
   const renderUser = ({ item: user }: { item: any }) => {
-    if (!user || !user.id) return null;
+    console.log('🔧 renderUser called with:', user);
+    if (!user || !user.id) {
+      console.log('🔧 renderUser: user is null or missing id, returning null');
+      return null;
+    }
     
     return (
       <View style={styles.userCard} key={user.id}>
@@ -291,7 +295,11 @@ export default function AdminScreen() {
 
   // Рендер поста
   const renderPost = ({ item: post }: { item: any }) => {
-    if (!post || !post.id) return null;
+    console.log('🔧 renderPost called with:', post);
+    if (!post || !post.id) {
+      console.log('🔧 renderPost: post is null or missing id, returning null');
+      return null;
+    }
     
     return (
       <View style={styles.postCard} key={post.id}>
@@ -327,7 +335,11 @@ export default function AdminScreen() {
 
   // Рендер сообщения
   const renderMessage = ({ item: message }: { item: any }) => {
-    if (!message || !message.id) return null;
+    console.log('🔧 renderMessage called with:', message);
+    if (!message || !message.id) {
+      console.log('🔧 renderMessage: message is null or missing id, returning null');
+      return null;
+    }
     
     return (
       <View style={styles.messageCard} key={message.id}>
@@ -348,6 +360,16 @@ export default function AdminScreen() {
       </View>
     );
   };
+
+  console.log('🔧 AdminScreen: About to render with data:', {
+    currentUser: currentUser?.id,
+    currentUserRole: currentUser?.role,
+    safePostsLength: safePosts?.length,
+    safeMessagesLength: safeMessages?.length,
+    safeManagedUsersLength: safeManagedUsers?.length,
+    safeUserStats: safeUserStats,
+    activeTab
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -421,7 +443,10 @@ export default function AdminScreen() {
               <FlatList
                 data={safeManagedUsers}
                 renderItem={renderUser}
-                keyExtractor={(item) => item?.id || Math.random().toString()}
+                keyExtractor={(item) => {
+                  console.log('🔧 keyExtractor for user:', item);
+                  return item?.id || Math.random().toString();
+                }}
                 scrollEnabled={false}
                 showsVerticalScrollIndicator={false}
               />
@@ -434,7 +459,10 @@ export default function AdminScreen() {
             <FlatList
               data={safePosts}
               renderItem={renderPost}
-              keyExtractor={(item) => item?.id || Math.random().toString()}
+              keyExtractor={(item) => {
+                console.log('🔧 keyExtractor for post:', item);
+                return item?.id || Math.random().toString();
+              }}
               scrollEnabled={false}
               showsVerticalScrollIndicator={false}
             />
@@ -446,7 +474,10 @@ export default function AdminScreen() {
             <FlatList
               data={safeMessages}
               renderItem={renderMessage}
-              keyExtractor={(item) => item?.id || Math.random().toString()}
+              keyExtractor={(item) => {
+                console.log('🔧 keyExtractor for message:', item);
+                return item?.id || Math.random().toString();
+              }}
               scrollEnabled={false}
               showsVerticalScrollIndicator={false}
             />
