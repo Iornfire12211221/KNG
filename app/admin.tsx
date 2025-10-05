@@ -61,8 +61,8 @@ export default function AdminScreen() {
     unkickUser
   } = useApp();
 
-  // Проверяем, что currentUser загружен
-  if (!currentUser) {
+  // Проверяем, что currentUser загружен и имеет все необходимые свойства
+  if (!currentUser || !currentUser.id || !currentUser.role) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
@@ -190,7 +190,7 @@ export default function AdminScreen() {
 
   const filteredPosts = pendingPosts;
   const filteredMessages = allMessages;
-  const filteredUsers = allUsers;
+  const filteredUsers = managedUsers;
 
   const handleApprovePost = async (postId: string) => {
     moderatePost(postId, true);

@@ -195,17 +195,71 @@ export const useUserManagement = () => {
     fetchUsers();
   }, [fetchUsers]);
 
+  // Вспомогательные функции
+  const getRoleName = (role: string) => {
+    switch (role) {
+      case 'FOUNDER': return 'Основатель';
+      case 'ADMIN': return 'Админ';
+      case 'MODERATOR': return 'Модератор';
+      case 'USER': return 'Пользователь';
+      default: return 'Неизвестно';
+    }
+  };
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'FOUNDER': return '#FFD700';
+      case 'ADMIN': return '#FF6B6B';
+      case 'MODERATOR': return '#4ECDC4';
+      case 'USER': return '#95A5A6';
+      default: return '#95A5A6';
+    }
+  };
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'FOUNDER': return '👑';
+      case 'ADMIN': return '🛡️';
+      case 'MODERATOR': return '👮';
+      case 'USER': return '👤';
+      default: return '👤';
+    }
+  };
+
+  const loadUsers = async (role?: string) => {
+    await fetchUsers();
+  };
+
+  const loadStats = async () => {
+    await fetchUsers();
+  };
+
+  const setSelectedRoleHandler = (role: string | null) => {
+    setSelectedRole(role);
+  };
+
+  const setErrorHandler = (error: string | null) => {
+    setError(error);
+  };
+
   return {
     users,
-    stats,
+    userStats: stats,
+    selectedRole,
     isLoading,
     error,
-    fetchUsers,
+    loadUsers,
+    loadStats,
     updateUserRole,
     promoteToModerator,
     demoteFromModerator,
     toggleUserMute,
     banUser,
-    unbanUser
+    unbanUser,
+    setSelectedRole: setSelectedRoleHandler,
+    setError: setErrorHandler,
+    getRoleName,
+    getRoleColor,
+    getRoleIcon
   };
 };
