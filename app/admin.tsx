@@ -1043,22 +1043,22 @@ export default function AdminScreen() {
               <View style={styles.userStatsRow}>
                 <View style={styles.userStatCard}>
                   <Crown size={16} color="#FFD700" />
-                  <Text style={styles.userStatValue}>{userStats.founders}</Text>
+                  <Text style={styles.userStatValue}>{userStats?.founders || 0}</Text>
                   <Text style={styles.userStatLabel}>Основатели</Text>
                 </View>
                 <View style={styles.userStatCard}>
                   <UserShield size={16} color="#FF6B6B" />
-                  <Text style={styles.userStatValue}>{userStats.admins}</Text>
+                  <Text style={styles.userStatValue}>{userStats?.admins || 0}</Text>
                   <Text style={styles.userStatLabel}>Админы</Text>
                 </View>
                 <View style={styles.userStatCard}>
                   <UserCog size={16} color="#4ECDC4" />
-                  <Text style={styles.userStatValue}>{userStats.moderators}</Text>
+                  <Text style={styles.userStatValue}>{userStats?.moderators || 0}</Text>
                   <Text style={styles.userStatLabel}>Модераторы</Text>
                 </View>
                 <View style={styles.userStatCard}>
                   <Users size={16} color="#95A5A6" />
-                  <Text style={styles.userStatValue}>{userStats.users}</Text>
+                  <Text style={styles.userStatValue}>{userStats?.users || 0}</Text>
                   <Text style={styles.userStatLabel}>Пользователи</Text>
                 </View>
               </View>
@@ -1073,7 +1073,7 @@ export default function AdminScreen() {
                   onPress={() => setSelectedRole(undefined)}
                 >
                   <Text style={[styles.roleFilterText, !selectedRole && styles.roleFilterTextActive]}>
-                    Все ({userStats.total})
+                    Все ({userStats?.total || 0})
                   </Text>
                 </Pressable>
                 <Pressable
@@ -1081,7 +1081,7 @@ export default function AdminScreen() {
                   onPress={() => setSelectedRole('FOUNDER')}
                 >
                   <Text style={[styles.roleFilterText, selectedRole === 'FOUNDER' && styles.roleFilterTextActive]}>
-                    👑 Основатели ({userStats.founders})
+                    👑 Основатели ({userStats?.founders || 0})
                   </Text>
                 </Pressable>
                 <Pressable
@@ -1089,7 +1089,7 @@ export default function AdminScreen() {
                   onPress={() => setSelectedRole('ADMIN')}
                 >
                   <Text style={[styles.roleFilterText, selectedRole === 'ADMIN' && styles.roleFilterTextActive]}>
-                    🛡️ Админы ({userStats.admins})
+                    🛡️ Админы ({userStats?.admins || 0})
                   </Text>
                 </Pressable>
                 <Pressable
@@ -1097,7 +1097,7 @@ export default function AdminScreen() {
                   onPress={() => setSelectedRole('MODERATOR')}
                 >
                   <Text style={[styles.roleFilterText, selectedRole === 'MODERATOR' && styles.roleFilterTextActive]}>
-                    👮 Модераторы ({userStats.moderators})
+                    👮 Модераторы ({userStats?.moderators || 0})
                   </Text>
                 </Pressable>
               </View>
