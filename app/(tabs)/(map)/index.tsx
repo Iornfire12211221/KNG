@@ -1708,16 +1708,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
 
 
 
-      {/* Top Left Settings Button */}
-      {currentUser?.isAdmin && (
-        <TouchableOpacity
-          style={styles.topLeftSettings}
-          onPress={() => router.push('/admin')}
-          activeOpacity={0.8}
-        >
-          <Settings size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      )}
+      {/* Top Left Settings Button - REMOVED */}
 
       {/* Right Side Control Buttons - Точь в точь как на скриншоте */}
       <View style={styles.mapControlsContainer} pointerEvents="box-none">
@@ -3428,23 +3419,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#34C759',
     fontWeight: '500',
-  },
-  topLeftSettings: {
-    position: 'absolute',
-    top: 60,
-    left: 20,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 100,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
   leftColumnContainer: {
     position: 'absolute',
