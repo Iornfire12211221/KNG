@@ -397,12 +397,21 @@ export default function AdminScreen() {
   console.log('🔧 AdminScreen: About to render with data:', {
     currentUser: currentUser?.id,
     currentUserRole: currentUser?.role,
+    currentUserFull: currentUser,
     safePostsLength: safePosts?.length,
     safeMessagesLength: safeMessages?.length,
     safeManagedUsersLength: safeManagedUsers?.length,
     safeUserStats: safeUserStats,
     activeTab
   });
+  
+  // Дополнительная проверка на undefined
+  if (!currentUser) {
+    console.error('🔧 ERROR: currentUser is undefined in AdminScreen render');
+  }
+  if (!currentUser?.role) {
+    console.error('🔧 ERROR: currentUser.role is undefined in AdminScreen render');
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -412,42 +421,42 @@ export default function AdminScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Админ панель</Text>
         <View style={styles.headerRight}>
-          <Text style={styles.userRole}>{getRoleName(currentUser.role || 'USER')}</Text>
+          <Text style={styles.userRole}>{getRoleName(currentUser?.role || 'USER')}</Text>
         </View>
       </View>
 
       <View style={styles.tabContainer}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'user-management' && styles.activeTab]}
+          style={[styles.tab, (activeTab || '') === 'user-management' && styles.activeTab]}
           onPress={() => setActiveTab('user-management')}
         >
-          <Users size={20} color={activeTab === 'user-management' ? '#0066FF' : '#666'} />
-          <Text style={[styles.tabText, activeTab === 'user-management' && styles.activeTabText]}>
+          <Users size={20} color={(activeTab || '') === 'user-management' ? '#0066FF' : '#666'} />
+          <Text style={[styles.tabText, (activeTab || '') === 'user-management' && styles.activeTabText]}>
             Пользователи
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'posts' && styles.activeTab]}
+          style={[styles.tab, (activeTab || '') === 'posts' && styles.activeTab]}
           onPress={() => setActiveTab('posts')}
         >
-          <FileText size={20} color={activeTab === 'posts' ? '#0066FF' : '#666'} />
-          <Text style={[styles.tabText, activeTab === 'posts' && styles.activeTabText]}>
+          <FileText size={20} color={(activeTab || '') === 'posts' ? '#0066FF' : '#666'} />
+          <Text style={[styles.tabText, (activeTab || '') === 'posts' && styles.activeTabText]}>
             Посты
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'messages' && styles.activeTab]}
+          style={[styles.tab, (activeTab || '') === 'messages' && styles.activeTab]}
           onPress={() => setActiveTab('messages')}
         >
-          <MessageCircle size={20} color={activeTab === 'messages' ? '#0066FF' : '#666'} />
-          <Text style={[styles.tabText, activeTab === 'messages' && styles.activeTabText]}>
+          <MessageCircle size={20} color={(activeTab || '') === 'messages' ? '#0066FF' : '#666'} />
+          <Text style={[styles.tabText, (activeTab || '') === 'messages' && styles.activeTabText]}>
             Сообщения
           </Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content}>
-        {activeTab === 'user-management' && (
+        {(activeTab || '') === 'user-management' && (
           <View style={styles.tabContent}>
             <View style={styles.statsContainer}>
               <View style={styles.statCard}>
@@ -487,7 +496,7 @@ export default function AdminScreen() {
           </View>
         )}
 
-        {activeTab === 'posts' && (
+        {(activeTab || '') === 'posts' && (
           <View style={styles.tabContent}>
             <FlatList
               data={safePosts}
@@ -502,7 +511,7 @@ export default function AdminScreen() {
           </View>
         )}
 
-        {activeTab === 'messages' && (
+        {(activeTab || '') === 'messages' && (
           <View style={styles.tabContent}>
             <FlatList
               data={safeMessages}
