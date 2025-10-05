@@ -575,7 +575,7 @@ export default function AdminScreen() {
                   <View key={message.id} style={styles.messageCard}>
                     <View style={styles.messageHeader}>
                       <View style={styles.userInfo}>
-                        <Text style={styles.userName}>{message.userName}</Text>
+                        <Text style={styles.userName}>{message.userName || 'Пользователь'}</Text>
                         <Text style={styles.timestamp}>
                           {new Date(message.timestamp).toLocaleString('ru-RU')}
                         </Text>
@@ -638,7 +638,7 @@ export default function AdminScreen() {
               filteredUsers.map((user) => (
                 <View key={user.id} style={styles.userCard}>
                   <View style={styles.userInfo}>
-                    <Text style={styles.userName}>{user.name}</Text>
+                    <Text style={styles.userName}>{user.name || 'Пользователь'}</Text>
                     <Text style={styles.userEmail}>{user.email}</Text>
                     <Text style={styles.userId}>
                       Регистрация: {new Date(user.registeredAt).toLocaleDateString('ru-RU')}
@@ -1040,7 +1040,7 @@ export default function AdminScreen() {
             {/* Рекомендации умной ИИ */}
             <View style={styles.aiSettingsContainer}>
               <Text style={styles.aiSettingsTitle}>Рекомендации умной ИИ</Text>
-              {getSmartRecommendations().map((rec, index) => (
+              {(getSmartRecommendations() || []).map((rec, index) => (
                 <View key={index} style={styles.recommendationItem}>
                   <Text style={styles.recommendationText}>• {rec}</Text>
                 </View>
@@ -1207,11 +1207,11 @@ export default function AdminScreen() {
                       <View style={styles.userInfo}>
                         <View style={styles.userAvatar}>
                           <Text style={styles.userAvatarText}>
-                            {user.name.charAt(0).toUpperCase()}
+                            {(user.name || 'U').charAt(0).toUpperCase()}
                           </Text>
                         </View>
                         <View style={styles.userDetails}>
-                          <Text style={styles.userName}>{user.name}</Text>
+                          <Text style={styles.userName}>{user.name || 'Пользователь'}</Text>
                           <Text style={styles.userTelegramId}>@{user.username || user.telegramId}</Text>
                           <View style={styles.userRoleContainer}>
                             <Text style={styles.userRoleIcon}>{getRoleIcon(user.role || 'USER')}</Text>
