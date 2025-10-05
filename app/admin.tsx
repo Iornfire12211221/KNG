@@ -60,6 +60,22 @@ export default function AdminScreen() {
     kickUser,
     unkickUser
   } = useApp();
+
+  // Проверяем, что currentUser загружен
+  if (!currentUser) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <ArrowLeft size={24} color="#0066FF" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Загрузка...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
   
   const [activeTab, setActiveTab] = useState<'posts' | 'messages' | 'users' | 'ai' | 'smart-ai' | 'user-management'>('user-management');
   const { modelStats, trainingData, trainModel, recordModeratorDecision, recordAIDecision, isTraining } = useAILearning();
@@ -123,7 +139,7 @@ export default function AdminScreen() {
     });
   }, [posts, trainingData, recordAIDecision]);
 
-  if (!currentUser?.isAdmin && !currentUser?.isModerator) {
+  if (!currentUser?.isAdmin && !currentUser?.isModerator && currentUser?.role !== 'FOUNDER') {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
@@ -1268,6 +1284,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 12,
     lineHeight: 26,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    fontSize: 18,
+    color: '#0066FF',
+    textAlign: 'center',
   },
   getAdminButton: {
     marginTop: 40,
