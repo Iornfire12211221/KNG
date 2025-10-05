@@ -45,7 +45,7 @@ export default function AdminScreen() {
   const { 
     posts = [], 
     messages = [], 
-    currentUser, 
+    currentUser = null, 
     users = [],
     moderatePost = () => {},
     deleteMessage = () => {},
@@ -75,6 +75,11 @@ export default function AdminScreen() {
   console.log('🔧 AdminScreen: currentUser:', currentUser);
   console.log('🔧 AdminScreen: currentUser?.role:', currentUser?.role);
   console.log('🔧 AdminScreen: currentUser?.id:', currentUser?.id);
+  
+  // Дополнительная проверка на undefined
+  if (!currentUser) {
+    console.error('🔧 ERROR: currentUser is undefined in AdminScreen');
+  }
   console.log('🔧 AdminScreen: posts length:', posts?.length || 0);
   console.log('🔧 AdminScreen: messages length:', messages?.length || 0);
   console.log('🔧 AdminScreen: managedUsers length:', managedUsers?.length || 0);
@@ -315,9 +320,9 @@ export default function AdminScreen() {
               )}
               <TouchableOpacity
                 style={[styles.actionButton, styles.muteButton]}
-                onPress={() => user.isMuted ? handleUnmuteUser(user.id) : handleMuteUser(user.id)}
+                onPress={() => (user.isMuted || false) ? handleUnmuteUser(user.id) : handleMuteUser(user.id)}
               >
-                {user.isMuted ? <Eye size={16} color="#27AE60" /> : <EyeOff size={16} color="#E74C3C" />}
+                {(user.isMuted || false) ? <Eye size={16} color="#27AE60" /> : <EyeOff size={16} color="#E74C3C" />}
               </TouchableOpacity>
             </>
           )}
