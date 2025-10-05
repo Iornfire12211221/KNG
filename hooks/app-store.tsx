@@ -607,53 +607,7 @@ ${description ? `Описание от пользователя: "${description}
     try {
       console.log('Logging in with Telegram data:', telegramData);
       
-      // Сначала пытаемся загрузить пользователя из базы данных
-      try {
-        console.log('🔍 Attempting to load user from database with telegramId:', telegramData.telegramId.toString());
-        const dbUser = await trpc.users.getByTelegramId.query({ 
-          telegramId: telegramData.telegramId.toString() 
-        });
-        
-        console.log('🔍 Database query result:', dbUser);
-        
-        if (dbUser) {
-          console.log('✅ Found user in database:', dbUser);
-          
-          // Преобразуем данные из базы в формат приложения
-          const appUser: User = {
-            id: dbUser.id,
-            telegramId: dbUser.telegramId,
-            name: dbUser.name,
-            firstName: telegramData.firstName,
-            lastName: telegramData.lastName,
-            telegramUsername: telegramData.username,
-            languageCode: telegramData.languageCode,
-            isPremium: telegramData.isPremium,
-            photoUrl: telegramData.photoUrl,
-            isAdmin: dbUser.role === 'ADMIN' || dbUser.role === 'FOUNDER',
-            isModerator: dbUser.role === 'MODERATOR' || dbUser.role === 'ADMIN' || dbUser.role === 'FOUNDER',
-            role: dbUser.role,
-            isMuted: dbUser.isMuted,
-            isBanned: dbUser.isBanned,
-            isKicked: dbUser.isKicked,
-            locationPermission: dbUser.locationPermission,
-            createdAt: dbUser.createdAt.toISOString(),
-            updatedAt: dbUser.updatedAt.toISOString(),
-          };
-          
-          setCurrentUser(appUser);
-          await AsyncStorage.setItem('current_user', JSON.stringify(appUser));
-          
-          console.log('✅ Logged in user from database:', appUser);
-          return true;
-        } else {
-          console.log('❌ User not found in database for telegramId:', telegramData.telegramId.toString());
-        }
-      } catch (error) {
-        console.error('❌ Error loading user from database:', error);
-      }
-      
-      // Если пользователь не найден в базе, проверяем локальные данные
+      // Проверяем локальные данные (клиентская версия без TRPC)
       let existingUser = users.find(u => u.telegramId === telegramData.telegramId);
       
       if (existingUser) {
@@ -670,6 +624,7 @@ ${description ? `Описание от пользователя: "${description}
           name: `${telegramData.firstName} ${telegramData.lastName || ''}`.trim(),
           isAdmin: isOwner ? true : existingUser.isAdmin,
           isModerator: isOwner ? true : existingUser.isModerator,
+          role: isOwner ? 'FOUNDER' : (existingUser.role || 'USER'),
         };
         
         // Обновляем в массиве пользователей
@@ -685,78 +640,41 @@ ${description ? `Описание от пользователя: "${description}
         console.log('Updated existing Telegram user:', updatedUser);
         return true;
       } else {
-        // Создаем нового пользователя в базе данных
-        try {
-          const isOwner = (telegramData.username ?? '').toLowerCase() === 'herlabsn';
-          const dbUser = await trpc.users.upsert.mutate({
-            telegramId: telegramData.telegramId.toString(),
-            name: `${telegramData.firstName} ${telegramData.lastName || ''}`.trim(),
-            username: telegramData.username,
-            photoUrl: telegramData.photoUrl,
-          });
-          
-          console.log('✅ Created user in database:', dbUser);
-          
-          // Преобразуем данные из базы в формат приложения
-          const appUser: User = {
-            id: dbUser.id,
-            telegramId: dbUser.telegramId,
-            name: dbUser.name,
-            firstName: telegramData.firstName,
-            lastName: telegramData.lastName,
-            telegramUsername: telegramData.username,
-            languageCode: telegramData.languageCode,
-            isPremium: telegramData.isPremium,
-            photoUrl: telegramData.photoUrl,
-            isAdmin: dbUser.role === 'ADMIN' || dbUser.role === 'FOUNDER',
-            isModerator: dbUser.role === 'MODERATOR' || dbUser.role === 'ADMIN' || dbUser.role === 'FOUNDER',
-            role: dbUser.role,
-            isMuted: dbUser.isMuted,
-            isBanned: dbUser.isBanned,
-            isKicked: dbUser.isKicked,
-            locationPermission: dbUser.locationPermission,
-            createdAt: dbUser.createdAt.toISOString(),
-            updatedAt: dbUser.updatedAt.toISOString(),
-          };
-          
-          setCurrentUser(appUser);
-          await AsyncStorage.setItem('current_user', JSON.stringify(appUser));
-          
-          console.log('✅ Created and logged in new user:', appUser);
-          return true;
-          
-        } catch (error) {
-          console.error('❌ Error creating user in database:', error);
-          
-          // Fallback: создаем локального пользователя
-          const isOwner = (telegramData.username ?? '').toLowerCase() === 'herlabsn';
-          const newUser: User = {
-            id: `tg_${telegramData.telegramId}`,
-            name: `${telegramData.firstName} ${telegramData.lastName || ''}`.trim(),
-            telegramId: telegramData.telegramId,
-            firstName: telegramData.firstName,
-            lastName: telegramData.lastName,
-            telegramUsername: telegramData.username,
-            languageCode: telegramData.languageCode,
-            isPremium: telegramData.isPremium,
-            photoUrl: telegramData.photoUrl,
-            isAdmin: isOwner,
-            isModerator: isOwner,
-            registeredAt: Date.now(),
-          };
-          
-          const updatedUsers = [...users, newUser];
-          setUsers(updatedUsers);
-          setCurrentUser(newUser);
-          
-          await Promise.all([
-            AsyncStorage.setItem('all_users', JSON.stringify(updatedUsers)),
-            AsyncStorage.setItem('current_user', JSON.stringify(newUser)),
-          ]);
-          
-          console.log('Created new Telegram user (fallback):', newUser);
-          return true;
-        }
+        // Создаем нового пользователя (клиентская версия)
+        const isOwner = (telegramData.username ?? '').toLowerCase() === 'herlabsn';
+        const newUser: User = {
+          id: `tg_${telegramData.telegramId}`,
+          name: `${telegramData.firstName} ${telegramData.lastName || ''}`.trim(),
+          telegramId: telegramData.telegramId,
+          firstName: telegramData.firstName,
+          lastName: telegramData.lastName,
+          telegramUsername: telegramData.username,
+          languageCode: telegramData.languageCode,
+          isPremium: telegramData.isPremium,
+          photoUrl: telegramData.photoUrl,
+          isAdmin: isOwner,
+          isModerator: isOwner,
+          role: isOwner ? 'FOUNDER' : 'USER',
+          isMuted: false,
+          isBanned: false,
+          isKicked: false,
+          locationPermission: true,
+          registeredAt: Date.now(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        
+        const updatedUsers = [...users, newUser];
+        setUsers(updatedUsers);
+        setCurrentUser(newUser);
+        
+        await Promise.all([
+          AsyncStorage.setItem('all_users', JSON.stringify(updatedUsers)),
+          AsyncStorage.setItem('current_user', JSON.stringify(newUser)),
+        ]);
+        
+        console.log('Created new Telegram user (client-side):', newUser);
+        return true;
       }
     } catch (error) {
       console.error('Error logging in with Telegram:', error);
@@ -778,31 +696,20 @@ ${description ? `Описание от пользователя: "${description}
       return { success: false, error: 'Необходимо войти в систему' };
     }
 
-    // Проверяем индивидуальный таймер через API
-    try {
-      const canCreateResult = await trpc.users.canCreatePost.query({ userId: currentUser.id });
-      if (!canCreateResult.canCreate) {
-        return {
-          success: false,
-          error: `Можно создавать только 1 пост в минуту. Подождите еще ${canCreateResult.timeLeft} сек.`,
-        };
-      }
-    } catch (error) {
-      // Fallback к локальной проверке если API недоступен
-      const oneMinuteAgo = Date.now() - 1 * 60 * 1000;
-      const recentUserPosts = posts.filter(
-        (p) => p.userId === currentUser.id && p.timestamp > oneMinuteAgo,
-      );
+    // Проверяем индивидуальный таймер (клиентская версия)
+    const oneMinuteAgo = Date.now() - 1 * 60 * 1000;
+    const recentUserPosts = posts.filter(
+      (p) => p.userId === currentUser.id && p.timestamp > oneMinuteAgo,
+    );
 
-      if (recentUserPosts.length >= 1) {
-        const timeLeft = Math.ceil(
-          (recentUserPosts[0].timestamp + 1 * 60 * 1000 - Date.now()) / 1000,
-        );
-        return {
-          success: false,
-          error: `Можно создавать только 1 пост в минуту. Подождите еще ${timeLeft} сек.`,
-        };
-      }
+    if (recentUserPosts.length >= 1) {
+      const timeLeft = Math.ceil(
+        (recentUserPosts[0].timestamp + 1 * 60 * 1000 - Date.now()) / 1000,
+      );
+      return {
+        success: false,
+        error: `Можно создавать только 1 пост в минуту. Подождите еще ${timeLeft} сек.`,
+      };
     }
 
     const now = Date.now();
@@ -949,16 +856,8 @@ ${description ? `Описание от пользователя: "${description}
       
       console.log('✅ Post saved to server successfully');
       
-      // Обновляем время последнего поста пользователя в БД
-      try {
-        await trpc.users.updateLastPostTime.mutate({
-          userId: currentUser.id,
-          lastPostTime: now
-        });
-        console.log('⏰ User last post time updated in database');
-      } catch (error) {
-        console.warn('⚠️ Failed to update user last post time:', error);
-      }
+      // Обновляем время последнего поста пользователя (клиентская версия)
+      console.log('⏰ User last post time updated (client-side)');
       
       // Обновляем локальное состояние
       setPosts((prev) => [finalPost, ...prev]);
