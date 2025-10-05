@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Platform } from 'react-native';
+import { useApp } from './app-store';
 
 interface TelegramWebApp {
   initData: string;
@@ -117,6 +118,7 @@ export const useTelegram = () => {
   const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
   const [user, setUser] = useState<TelegramWebApp['initDataUnsafe']['user'] | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const { loginWithTelegram } = useApp();
 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -235,6 +237,22 @@ export const useTelegram = () => {
               
               setWebApp(mockWebApp as any);
               console.log('✅ Mock Telegram WebApp создан');
+              
+              // Автоматически авторизуем пользователя
+              console.log('🔄 Вызываем loginWithTelegram из useTelegram...');
+              loginWithTelegram({
+                telegramId: userData.id,
+                firstName: userData.first_name,
+                lastName: userData.last_name,
+                username: userData.username,
+                languageCode: userData.language_code,
+                isPremium: userData.is_premium,
+                photoUrl: userData.photo_url,
+              }).then((success) => {
+                console.log('🔄 Результат loginWithTelegram из useTelegram:', success);
+              }).catch((error) => {
+                console.error('❌ Ошибка loginWithTelegram из useTelegram:', error);
+              });
             }
           }
         } catch (error) {
