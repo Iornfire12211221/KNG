@@ -26,6 +26,7 @@ import { Plus, Navigation, AlertCircle, Clock, Trash2, Heart, Shield, Car, Alert
 import { getLandmarkForAddress, getRandomLandmark } from '@/constants/kingisepp-landmarks';
 import CommentsModal from '@/components/CommentsModal';
 import AdminGearButton from '@/components/AdminGearButton';
+import FloatingActionButton from '@/components/FloatingActionButton';
 
 import * as Location from 'expo-location';
 
@@ -1516,6 +1517,9 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
     <View style={styles.container}>
       {/* Админская кнопка */}
       <AdminGearButton />
+      
+      {/* Floating Action Button */}
+      <FloatingActionButton />
       
       {/* Ошибка локации */}
       {locationError && (

@@ -61,9 +61,24 @@
   <!-- PWA Meta Tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="ДПС Кингисепп">
+  <meta name="apple-mobile-web-app-title" content="KNG">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#007AFF">
+  <meta name="theme-color" content="#3390EC">
+  <meta name="msapplication-TileColor" content="#3390EC">
+  <meta name="msapplication-config" content="/browserconfig.xml">
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
+  
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" href="/assets/images/icon.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/assets/images/icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/icon.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="/assets/images/icon.png">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/images/favicon.png">
   
   <!-- Cache busting -->
   <meta name="cache-control" content="no-cache, no-store, must-revalidate">
@@ -287,6 +302,37 @@
         }
       }
     });
+    
+    // Register Service Worker for PWA functionality
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js')
+          .then(function(registration) {
+            console.log('✅ Service Worker registered successfully:', registration.scope);
+            
+            // Check for updates
+            registration.addEventListener('updatefound', function() {
+              const newWorker = registration.installing;
+              newWorker.addEventListener('statechange', function() {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('🔄 New Service Worker available, reloading...');
+                  window.location.reload();
+                }
+              });
+            });
+          })
+          .catch(function(error) {
+            console.error('❌ Service Worker registration failed:', error);
+          });
+      });
+    }
+    
+    // Request notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(function(permission) {
+        console.log('🔔 Notification permission:', permission);
+      });
+    }
   </script>
 </body>
 </html>
