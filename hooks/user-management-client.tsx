@@ -78,6 +78,12 @@ export const useUserManagement = () => {
         }
       ];
 
+      // Имитируем задержку сети с таймаутом
+      await Promise.race([
+        new Promise(resolve => setTimeout(resolve, 1000)),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+      ]);
+
       setUsers(mockUsers);
       
       // Обновляем статистику
@@ -94,6 +100,32 @@ export const useUserManagement = () => {
     } catch (err) {
       console.error('👥 UserManagement (клиентская версия): Ошибка загрузки пользователей:', err);
       setError('Ошибка загрузки пользователей');
+      
+      // Устанавливаем fallback данные при ошибке
+      const fallbackUsers: User[] = [
+        {
+          id: 'fallback-1',
+          telegramId: '6014412239',
+          name: 'Основатель',
+          username: 'herlabsn',
+          role: 'FOUNDER',
+          isMuted: false,
+          isBanned: false,
+          isKicked: false,
+          locationPermission: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      ];
+      
+      setUsers(fallbackUsers);
+      setStats({
+        total: 1,
+        founders: 1,
+        admins: 0,
+        moderators: 0,
+        users: 0
+      });
     } finally {
       setIsLoading(false);
     }
@@ -192,6 +224,33 @@ export const useUserManagement = () => {
 
   // Загружаем пользователей при монтировании
   useEffect(() => {
+    // Инициализируем данные по умолчанию сразу
+    const defaultUsers: User[] = [
+      {
+        id: 'default-1',
+        telegramId: '6014412239',
+        name: 'Основатель',
+        username: 'herlabsn',
+        role: 'FOUNDER',
+        isMuted: false,
+        isBanned: false,
+        isKicked: false,
+        locationPermission: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+    ];
+    
+    setUsers(defaultUsers);
+    setStats({
+      total: 1,
+      founders: 1,
+      admins: 0,
+      moderators: 0,
+      users: 0
+    });
+    
+    // Затем пытаемся загрузить актуальные данные
     fetchUsers();
   }, [fetchUsers]);
 

@@ -107,8 +107,28 @@ export default function AdminScreen() {
 
   // 👥 УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ
   const {
-    users: managedUsers,
-    userStats,
+    users: managedUsers = [
+      {
+        id: 'default-1',
+        telegramId: '6014412239',
+        name: 'Основатель',
+        username: 'herlabsn',
+        role: 'FOUNDER' as const,
+        isMuted: false,
+        isBanned: false,
+        isKicked: false,
+        locationPermission: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+    ],
+    userStats = {
+      total: 1,
+      founders: 1,
+      admins: 0,
+      moderators: 0,
+      users: 0
+    },
     selectedRole,
     isLoading: usersLoading,
     error: usersError,
