@@ -37,6 +37,7 @@ export const useUserManagement = () => {
     moderators: 0,
     users: 0
   });
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -293,9 +294,9 @@ export const useUserManagement = () => {
     await fetchUsers();
   };
 
-  const setSelectedRoleHandler = (role: string | null) => {
+  const setSelectedRoleHandler = useCallback((role: string | null) => {
     setSelectedRole(role);
-  };
+  }, []);
 
   const setErrorHandler = (error: string | null) => {
     setError(error);

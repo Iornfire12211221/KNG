@@ -61,6 +61,9 @@ export default function AdminScreen() {
     unkickUser
   } = useApp();
 
+  console.log('🔧 AdminScreen: currentUser:', currentUser);
+  console.log('🔧 AdminScreen: currentUser?.role:', currentUser?.role);
+
   // Проверяем, что currentUser загружен и имеет все необходимые свойства
   if (!currentUser || !currentUser.id || !currentUser.role) {
     return (
@@ -143,6 +146,11 @@ export default function AdminScreen() {
     getRoleIcon,
     getRoleName
   } = useUserManagement();
+
+  console.log('🔧 AdminScreen: useUserManagement loaded');
+  console.log('🔧 AdminScreen: managedUsers:', managedUsers);
+  console.log('🔧 AdminScreen: userStats:', userStats);
+  console.log('🔧 AdminScreen: usersLoading:', usersLoading);
   
   // Синхронизируем данные обучения с постами
   React.useEffect(() => {
