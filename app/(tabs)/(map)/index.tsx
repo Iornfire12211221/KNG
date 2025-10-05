@@ -1708,7 +1708,18 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
 
 
 
-      {/* Top Left Settings Button - REMOVED */}
+      {/* Minimalist Admin Gear Button */}
+      {currentUser?.isAdmin && (
+        <TouchableOpacity
+          style={styles.minimalistGearButton}
+          onPress={() => router.push('/admin')}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Открыть админ панель"
+        >
+          <Settings size={18} color="#007AFF" />
+        </TouchableOpacity>
+      )}
 
       {/* Right Side Control Buttons - Точь в точь как на скриншоте */}
       <View style={styles.mapControlsContainer} pointerEvents="box-none">
@@ -3419,6 +3430,28 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#34C759',
     fontWeight: '500',
+  },
+  minimalistGearButton: {
+    position: 'absolute',
+    top: Platform.OS === 'web' ? 60 : 70,
+    left: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    zIndex: 1000,
+    borderWidth: 0.5,
+    borderColor: 'rgba(0, 122, 255, 0.2)',
   },
   leftColumnContainer: {
     position: 'absolute',
