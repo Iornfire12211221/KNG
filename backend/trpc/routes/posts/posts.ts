@@ -39,6 +39,20 @@ export const postsRouter = createTRPCRouter({
   getAll: publicProcedure.query(async () => {
     try {
       const now = Date.now();
+      
+      // Сначала очищаем просроченные посты
+      const deletedCount = await prisma.post.deleteMany({
+        where: {
+          expiresAt: {
+            lte: now
+          }
+        }
+      });
+      
+      if (deletedCount.count > 0) {
+        console.log(`🗑️ Cleaned up ${deletedCount.count} expired posts from database`);
+      }
+      
       const posts = await prisma.post.findMany({
         where: {
           expiresAt: {
@@ -79,6 +93,26 @@ export const postsRouter = createTRPCRouter({
       console.log(`📤 Created new post: ${post.id} by ${post.userName}`);
       return post;
     }),
+
+  // Очистить просроченные посты
+  cleanupExpired: publicProcedure.mutation(async () => {
+    try {
+      const now = Date.now();
+      const deletedCount = await prisma.post.deleteMany({
+        where: {
+          expiresAt: {
+            lte: now
+          }
+        }
+      });
+      
+      console.log(`🗑️ Cleaned up ${deletedCount.count} expired posts`);
+      return { deletedCount: deletedCount.count };
+    } catch (error) {
+      console.error('❌ Error cleaning up expired posts:', error);
+      throw error;
+    }
+  }),
 
   // Лайкнуть пост
   like: publicProcedure

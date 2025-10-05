@@ -236,6 +236,7 @@ export default function MapScreen() {
   const [selectedPost, setSelectedPost] = useState<string | null>(null);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [locationRetryCount, setLocationRetryCount] = useState(0);
   const [isMapReady, setIsMapReady] = useState(true);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickAddLocation, setQuickAddLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -436,7 +437,7 @@ export default function MapScreen() {
     }
   }, [userLocation, userHasMovedMap]);
 
-  const requestLocationPermission = async () => {
+  const requestLocationPermission = useCallback(async () => {
     try {
       setIsLoadingLocation(true);
       setLocationError(null);
@@ -449,9 +450,9 @@ export default function MapScreen() {
             coords: {
               latitude: result.location.latitude,
               longitude: result.location.longitude,
-              altitude: null as unknown as number,
+              altitude: 0,
               accuracy: 10,
-              altitudeAccuracy: null as unknown as number,
+              altitudeAccuracy: 0,
               heading: 0,
               speed: 0,
             },
@@ -555,7 +556,14 @@ export default function MapScreen() {
     } finally {
       setIsLoadingLocation(false);
     }
-  };
+  }, [isTelegramWebApp, requestLocation]);
+
+  const retryLocationRequest = useCallback(() => {
+    console.log('🔄 Retrying location request...');
+    setLocationRetryCount(prev => prev + 1);
+    setLocationError(null);
+    requestLocationPermission();
+  }, [requestLocationPermission]);
 
   const startLocationTracking = async () => {
     try {
@@ -571,9 +579,9 @@ export default function MapScreen() {
                 coords: {
                   latitude: result.location.latitude,
                   longitude: result.location.longitude,
-                  altitude: null as unknown as number,
-                  accuracy: 10,
-                  altitudeAccuracy: null as unknown as number,
+              altitude: 0,
+              accuracy: 10,
+              altitudeAccuracy: 0,
                   heading: 0,
                   speed: 0,
                 },
@@ -1509,6 +1517,22 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
       {/* Админская кнопка */}
       <AdminGearButton />
       
+      {/* Ошибка локации */}
+      {locationError && (
+        <View style={styles.locationErrorContainer}>
+          <View style={styles.locationErrorContent}>
+            <Ionicons name="location-outline" size={20} color="#FF4757" />
+            <Text style={styles.locationErrorText}>{locationError}</Text>
+            <TouchableOpacity 
+              style={styles.locationRetryButton}
+              onPress={retryLocationRequest}
+            >
+              <Text style={styles.locationRetryText}>Повторить</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+      
       {/* Map */}
       <View style={styles.mapContainer}>
         
@@ -1783,9 +1807,9 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                       coords: {
                         latitude,
                         longitude,
-                        altitude: null as unknown as number,
-                          accuracy: 10,
-                        altitudeAccuracy: null as unknown as number,
+              altitude: 0,
+              accuracy: 10,
+              altitudeAccuracy: 0,
                         heading: 0,
                         speed: 0,
                       },
@@ -1845,9 +1869,9 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                         coords: {
                           latitude,
                           longitude,
-                          altitude: null as unknown as number,
-                          accuracy: pos.coords.accuracy ?? 0,
-                          altitudeAccuracy: null as unknown as number,
+                          altitude: 0,
+                          accuracy: pos.coords.accuracy && !isNaN(pos.coords.accuracy) ? pos.coords.accuracy : 10,
+                          altitudeAccuracy: 0,
                           heading: pos.coords.heading ?? 0,
                           speed: pos.coords.speed ?? 0,
                         },
@@ -2273,11 +2297,6 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                         </View>
                       )}
                       
-                      {!post.needsModeration && !post.verified && !post.autoApproved && !post.textApproved && post.userId !== currentUser?.id && (
-                        <View style={styles.compactApprovalContainer}>
-                          <CheckCheck size={16} color="#34C759" />
-                        </View>
-                      )}
                       
                       {!post.verified && post.userId !== currentUser?.id && (
                         <TouchableOpacity 
@@ -2858,6 +2877,44 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  locationErrorContainer: {
+    position: 'absolute',
+    top: 60,
+    left: 16,
+    right: 16,
+    zIndex: 1000,
+  },
+  locationErrorContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF4757',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  locationErrorText: {
+    flex: 1,
+    color: '#FFFFFF',
+    fontSize: 14,
+    marginLeft: 8,
+    marginRight: 8,
+  },
+  locationRetryButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  locationRetryText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
   },
   mapContainer: {
     height: height * 0.7,

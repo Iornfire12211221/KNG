@@ -12,6 +12,7 @@ import {
   Image,
   Switch,
   TextInput,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -67,7 +68,7 @@ interface AISettings {
 
 export default function AdminScreen() {
   const router = useRouter();
-  const { currentUser, posts, messages } = useApp();
+  const { currentUser, posts, messages, clearExpiredPosts } = useApp();
   
   // Состояние
   const [users, setUsers] = useState<User[]>([]);
@@ -197,11 +198,11 @@ export default function AdminScreen() {
   const renderUser = useCallback(({ item: user }: { item: User }) => {
     const userName = user.name || 'Без имени';
     const userUsername = user.username || 'без username';
-    const avatarText = userName.charAt(0).toUpperCase();
+    const avatarText = userName && userName.length > 0 ? userName.charAt(0).toUpperCase() : '?';
     const isMuted = Boolean(user.isMuted);
     const canManage = currentUser?.role === 'FOUNDER';
 
-    return (
+  return (
       <View style={styles.userCard} key={user.id}>
         <View style={styles.userInfo}>
           <View style={styles.avatar}>
@@ -210,15 +211,15 @@ export default function AdminScreen() {
             ) : (
               <Text style={styles.avatarText}>{avatarText}</Text>
             )}
-          </View>
+      </View>
           <View style={styles.userDetails}>
             <Text style={styles.userName}>{userName}</Text>
             <Text style={styles.userUsername}>@{userUsername}</Text>
             <View style={styles.roleBadge}>
               <Text style={styles.roleText}>{user.role === 'FOUNDER' ? 'Основатель' : user.role}</Text>
+          </View>
             </View>
           </View>
-        </View>
         
         {canManage && user.role !== 'FOUNDER' && (
           <View style={styles.userActions}>
@@ -249,39 +250,43 @@ export default function AdminScreen() {
             {post.authorPhoto ? (
               <Image source={{ uri: post.authorPhoto }} style={styles.postAuthorAvatarImage} />
             ) : (
-              <Text style={styles.postAuthorAvatarText}>{post.author.charAt(0).toUpperCase()}</Text>
+              <Text style={styles.postAuthorAvatarText}>
+                {post.author && post.author.length > 0 ? post.author.charAt(0).toUpperCase() : '?'}
+              </Text>
             )}
           </View>
           <View>
             <Text style={styles.postAuthor}>{post.author}</Text>
             <Text style={styles.postDate}>{new Date(post.createdAt).toLocaleDateString()}</Text>
-          </View>
-        </View>
+              </View>
+                      </View>
         {post.location && (
           <View style={styles.postLocation}>
             <Ionicons name="location" size={12} color="#707579" />
             <Text style={styles.postLocationText}>{post.location}</Text>
-          </View>
+                      </View>
         )}
-      </View>
-      
+                    </View>
+                    
       <Text style={styles.postContent}>{post.content}</Text>
       
       {post.imageUrl && (
         <Image source={{ uri: post.imageUrl }} style={styles.postImage} />
       )}
       
-      <View style={styles.postActions}>
-        <TouchableOpacity style={[styles.actionButton, styles.approveButton]}>
-          <Ionicons name="checkmark" size={16} color="white" />
-          <Text style={styles.actionText}>Одобрить</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionButton, styles.rejectButton]}>
-          <Ionicons name="close" size={16} color="white" />
-          <Text style={styles.actionText}>Отклонить</Text>
-        </TouchableOpacity>
+      <View style={styles.postStatus}>
+        <View style={[styles.statusBadge, post.verified ? styles.verifiedBadge : styles.pendingBadge]}>
+          <Ionicons 
+            name={post.verified ? "checkmark-circle" : "time"} 
+            size={14} 
+            color={post.verified ? "#34C759" : "#FF9500"} 
+          />
+          <Text style={[styles.statusText, { color: post.verified ? "#34C759" : "#FF9500" }]}>
+            {post.verified ? "Проверено" : "Ожидает"}
+          </Text>
+        </View>
       </View>
-    </View>
+                      </View>
   ), []);
 
   // Рендер сообщения
@@ -293,26 +298,28 @@ export default function AdminScreen() {
             {message.userPhoto ? (
               <Image source={{ uri: message.userPhoto }} style={styles.messageUserAvatarImage} />
             ) : (
-              <Text style={styles.messageUserAvatarText}>{message.userName.charAt(0).toUpperCase()}</Text>
+              <Text style={styles.messageUserAvatarText}>
+                {message.userName && message.userName.length > 0 ? message.userName.charAt(0).toUpperCase() : '?'}
+              </Text>
             )}
           </View>
           <View>
             <Text style={styles.messageUser}>{message.userName}</Text>
             <Text style={styles.messageDate}>{new Date(message.createdAt).toLocaleDateString()}</Text>
-          </View>
-        </View>
-      </View>
+                        </View>
+                          </View>
+                      </View>
       <Text style={styles.messageContent}>{message.content}</Text>
       <TouchableOpacity style={[styles.actionButton, styles.deleteButton]}>
         <Ionicons name="trash" size={16} color="white" />
         <Text style={styles.actionText}>Удалить</Text>
-      </TouchableOpacity>
+                      </TouchableOpacity>
     </View>
   ), []);
 
   // Рендер настроек ИИ
   const renderAISettings = useCallback(() => (
-    <View style={styles.aiSettingsContainer}>
+    <ScrollView style={styles.aiSettingsContainer} showsVerticalScrollIndicator={false}>
       <View style={styles.sectionHeader}>
         <Ionicons name="settings" size={20} color="#3390EC" />
         <Text style={styles.sectionTitle}>Настройки ИИ</Text>
@@ -326,40 +333,40 @@ export default function AdminScreen() {
           <View style={styles.settingInfo}>
             <Text style={styles.settingName}>Автомодерация</Text>
             <Text style={styles.settingDescription}>Автоматическое удаление нежелательного контента</Text>
-          </View>
+                          </View>
           <Switch
             value={aiSettings.autoModeration}
             onValueChange={(value) => saveAISettings({ ...aiSettings, autoModeration: value })}
             trackColor={{ false: '#E5E5E5', true: '#3390EC' }}
             thumbColor={aiSettings.autoModeration ? '#FFFFFF' : '#FFFFFF'}
           />
-        </View>
+                        </View>
 
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
             <Text style={styles.settingName}>Умная фильтрация</Text>
             <Text style={styles.settingDescription}>Интеллектуальный анализ контента</Text>
-          </View>
+                    </View>
           <Switch
             value={aiSettings.smartFiltering}
             onValueChange={(value) => saveAISettings({ ...aiSettings, smartFiltering: value })}
             trackColor={{ false: '#E5E5E5', true: '#3390EC' }}
             thumbColor={aiSettings.smartFiltering ? '#FFFFFF' : '#FFFFFF'}
           />
-        </View>
+          </View>
 
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
             <Text style={styles.settingName}>Анализ изображений</Text>
             <Text style={styles.settingDescription}>Модерация фотографий и картинок</Text>
-          </View>
+                </View>
           <Switch
             value={aiSettings.imageModeration}
             onValueChange={(value) => saveAISettings({ ...aiSettings, imageModeration: value })}
             trackColor={{ false: '#E5E5E5', true: '#3390EC' }}
             thumbColor={aiSettings.imageModeration ? '#FFFFFF' : '#FFFFFF'}
           />
-        </View>
+              </View>
       </View>
 
       {/* Пороги чувствительности */}
@@ -370,25 +377,29 @@ export default function AdminScreen() {
           <View style={styles.settingInfo}>
             <Text style={styles.settingName}>Порог модерации</Text>
             <Text style={styles.settingDescription}>Чувствительность к нежелательному контенту</Text>
-          </View>
+                          </View>
           <View style={styles.sliderContainer}>
-            <Text style={styles.sliderValue}>{Math.round(aiSettings.moderationThreshold * 100)}%</Text>
+            <Text style={styles.sliderValue}>
+              {isNaN(aiSettings.moderationThreshold) ? '70%' : Math.round(aiSettings.moderationThreshold * 100)}%
+            </Text>
             <View style={styles.slider}>
-              <View style={[styles.sliderTrack, { width: `${aiSettings.moderationThreshold * 100}%` }]} />
+              <View style={[styles.sliderTrack, { width: `${isNaN(aiSettings.moderationThreshold) ? 70 : aiSettings.moderationThreshold * 100}%` }]} />
             </View>
-          </View>
-        </View>
-
+                      </View>
+                    </View>
+                    
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
             <Text style={styles.settingName}>Порог спама</Text>
             <Text style={styles.settingDescription}>Чувствительность к спаму</Text>
-          </View>
+                    </View>
           <View style={styles.sliderContainer}>
-            <Text style={styles.sliderValue}>{Math.round(aiSettings.spamThreshold * 100)}%</Text>
+            <Text style={styles.sliderValue}>
+              {isNaN(aiSettings.spamThreshold) ? '80%' : Math.round(aiSettings.spamThreshold * 100)}%
+            </Text>
             <View style={styles.slider}>
-              <View style={[styles.sliderTrack, { width: `${aiSettings.spamThreshold * 100}%` }]} />
-            </View>
+              <View style={[styles.sliderTrack, { width: `${isNaN(aiSettings.spamThreshold) ? 80 : aiSettings.spamThreshold * 100}%` }]} />
+                  </View>
           </View>
         </View>
 
@@ -396,15 +407,17 @@ export default function AdminScreen() {
           <View style={styles.settingInfo}>
             <Text style={styles.settingName}>Порог токсичности</Text>
             <Text style={styles.settingDescription}>Чувствительность к оскорблениям</Text>
-          </View>
+                </View>
           <View style={styles.sliderContainer}>
-            <Text style={styles.sliderValue}>{Math.round(aiSettings.toxicityThreshold * 100)}%</Text>
+            <Text style={styles.sliderValue}>
+              {isNaN(aiSettings.toxicityThreshold) ? '60%' : Math.round(aiSettings.toxicityThreshold * 100)}%
+            </Text>
             <View style={styles.slider}>
-              <View style={[styles.sliderTrack, { width: `${aiSettings.toxicityThreshold * 100}%` }]} />
-            </View>
-          </View>
-        </View>
-      </View>
+              <View style={[styles.sliderTrack, { width: `${isNaN(aiSettings.toxicityThreshold) ? 60 : aiSettings.toxicityThreshold * 100}%` }]} />
+              </View>
+                        </View>
+                        </View>
+                        </View>
 
       {/* Дополнительные настройки */}
       <View style={styles.settingsGroup}>
@@ -414,29 +427,29 @@ export default function AdminScreen() {
           <View style={styles.settingInfo}>
             <Text style={styles.settingName}>Автоодобрение</Text>
             <Text style={styles.settingDescription}>Автоматически одобрять безопасный контент</Text>
-          </View>
+                        </View>
           <Switch
             value={aiSettings.autoApprove}
             onValueChange={(value) => saveAISettings({ ...aiSettings, autoApprove: value })}
             trackColor={{ false: '#E5E5E5', true: '#3390EC' }}
             thumbColor={aiSettings.autoApprove ? '#FFFFFF' : '#FFFFFF'}
           />
-        </View>
+                        </View>
 
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
             <Text style={styles.settingName}>Анализ настроений</Text>
             <Text style={styles.settingDescription}>Определение эмоциональной окраски сообщений</Text>
-          </View>
+                    </View>
           <Switch
             value={aiSettings.sentimentAnalysis}
             onValueChange={(value) => saveAISettings({ ...aiSettings, sentimentAnalysis: value })}
             trackColor={{ false: '#E5E5E5', true: '#3390EC' }}
             thumbColor={aiSettings.sentimentAnalysis ? '#FFFFFF' : '#FFFFFF'}
           />
-        </View>
+                  </View>
       </View>
-    </View>
+    </ScrollView>
   ), [aiSettings, saveAISettings]);
 
   // Загрузка
@@ -461,12 +474,12 @@ export default function AdminScreen() {
           <Text style={styles.noAccessText}>
             У вас нет прав для доступа к админ панели
           </Text>
-          <TouchableOpacity
+                        <TouchableOpacity
             style={styles.backButton}
             onPress={() => router.back()}
-          >
+                        >
             <Text style={styles.backButtonText}>Назад</Text>
-          </TouchableOpacity>
+                        </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -485,43 +498,48 @@ export default function AdminScreen() {
           <Ionicons name="arrow-back" size={24} color="#000000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Админ панель</Text>
-        <View style={styles.headerSpacer} />
+        <TouchableOpacity
+          style={styles.cleanupButton}
+          onPress={clearExpiredPosts}
+        >
+          <Ionicons name="trash" size={20} color="#FF4757" />
+        </TouchableOpacity>
       </View>
-
+                      
       {/* Табы */}
       <View style={styles.tabContainer}>
-        <TouchableOpacity
+                        <TouchableOpacity
           style={[styles.tab, activeTab === 'users' && styles.activeTab]}
           onPress={() => setActiveTab('users')}
-        >
+                        >
           <Text style={[styles.tabText, activeTab === 'users' && styles.activeTabText]}>
             Пользователи ({users.length})
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+                        </TouchableOpacity>
+                        <TouchableOpacity
           style={[styles.tab, activeTab === 'posts' && styles.activeTab]}
           onPress={() => setActiveTab('posts')}
-        >
+                        >
           <Text style={[styles.tabText, activeTab === 'posts' && styles.activeTabText]}>
             Посты ({posts?.length || 0})
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+                        </TouchableOpacity>
+                        <TouchableOpacity
           style={[styles.tab, activeTab === 'messages' && styles.activeTab]}
           onPress={() => setActiveTab('messages')}
-        >
+                        >
           <Text style={[styles.tabText, activeTab === 'messages' && styles.activeTabText]}>
             Сообщения ({messages?.length || 0})
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+                        </TouchableOpacity>
+                        <TouchableOpacity
           style={[styles.tab, activeTab === 'ai' && styles.activeTab]}
           onPress={() => setActiveTab('ai')}
-        >
+                        >
           <Text style={[styles.tabText, activeTab === 'ai' && styles.activeTabText]}>
             ИИ
           </Text>
-        </TouchableOpacity>
+                        </TouchableOpacity>
       </View>
 
       {/* Фильтр ролей для пользователей */}
@@ -532,19 +550,19 @@ export default function AdminScreen() {
             data={['ALL', 'FOUNDER']}
             keyExtractor={(item) => item}
             renderItem={({ item }) => (
-              <TouchableOpacity
+                            <TouchableOpacity
                 style={[styles.filterButton, selectedRole === item && styles.activeFilterButton]}
                 onPress={() => setSelectedRole(item)}
               >
                 <Text style={[styles.filterText, selectedRole === item && styles.activeFilterText]}>
                   {item === 'ALL' ? 'Все' : 'Основатель'}
                 </Text>
-              </TouchableOpacity>
-            )}
+                            </TouchableOpacity>
+                          )}
             showsHorizontalScrollIndicator={false}
           />
-        </View>
-      )}
+                    </View>
+                  )}
 
       {/* Контент */}
       <View style={styles.content}>
@@ -557,7 +575,7 @@ export default function AdminScreen() {
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>Пользователи не найдены</Text>
-              </View>
+                </View>
             }
           />
         )}
@@ -571,7 +589,7 @@ export default function AdminScreen() {
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>Посты не найдены</Text>
-              </View>
+          </View>
             }
           />
         )}
@@ -585,13 +603,13 @@ export default function AdminScreen() {
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>Сообщения не найдены</Text>
-              </View>
+            </View>
             }
           />
         )}
 
         {activeTab === 'ai' && renderAISettings()}
-      </View>
+              </View>
     </SafeAreaView>
   );
 }
@@ -649,6 +667,9 @@ const styles = StyleSheet.create({
   },
   headerSpacer: {
     width: 40,
+  },
+  cleanupButton: {
+    padding: 8,
   },
   tabContainer: {
     flexDirection: 'row',
@@ -856,15 +877,27 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 12,
   },
-  postActions: {
+  postStatus: {
+    marginTop: 8,
+  },
+  statusBadge: {
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
   },
-  approveButton: {
-    backgroundColor: '#2ED573',
+  verifiedBadge: {
+    backgroundColor: 'rgba(52, 199, 89, 0.1)',
   },
-  rejectButton: {
-    backgroundColor: '#FF4757',
+  pendingBadge: {
+    backgroundColor: 'rgba(255, 149, 0, 0.1)',
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   messageCard: {
     backgroundColor: '#FFFFFF',

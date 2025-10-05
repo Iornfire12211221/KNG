@@ -244,11 +244,17 @@ export const [AppProviderInternal, useAppInternal] = createContextHook(() => {
     // Проверяем сразу при загрузке
     checkAndCleanPosts();
     
+    // Также вызываем очистку просроченных постов
+    clearExpiredPosts();
+    
     // Устанавливаем интервал для регулярной проверки
-    const interval = setInterval(checkAndCleanPosts, 60 * 1000); // Проверяем каждую минуту
+    const interval = setInterval(() => {
+      checkAndCleanPosts();
+      clearExpiredPosts();
+    }, 30 * 1000); // Проверяем каждые 30 секунд
 
     return () => clearInterval(interval);
-  }, []);
+  }, [clearExpiredPosts]);
 
   const analyzeTextContent = async (text: string): Promise<{ isAppropriate: boolean; reason?: string }> => {
     try {
@@ -913,9 +919,37 @@ ${description ? `Описание от пользователя: "${description}
     [currentUser],
   );
 
-  const clearExpiredPosts = useCallback(() => {
+  const clearExpiredPosts = useCallback(async () => {
     const now = Date.now();
-    setPosts((prev) => prev.filter((p) => p.expiresAt > now));
+    setPosts((prev) => {
+      const activePosts = prev.filter((p) => p.expiresAt > now);
+      if (activePosts.length !== prev.length) {
+        console.log(`🗑️ Cleared ${prev.length - activePosts.length} expired posts`);
+        // Асинхронно обновляем AsyncStorage
+        AsyncStorage.setItem('dps_posts', JSON.stringify(activePosts));
+      }
+      return activePosts;
+    });
+    
+    // Также очищаем на сервере
+    try {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_RORK_API_BASE_URL || ''}/api/trpc/posts.cleanupExpired`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.result?.data?.deletedCount > 0) {
+          console.log(`🗑️ Server cleaned up ${data.result.data.deletedCount} expired posts`);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error cleaning up posts on server:', error);
+    }
   }, []);
 
   // Функция для принудительного обновления постов из AsyncStorage (fallback)
@@ -971,13 +1005,28 @@ ${description ? `Описание от пользователя: "${description}
         relevanceCheckedAt: post.relevanceCheckedAt ? Number(post.relevanceCheckedAt) : undefined,
       }));
       
-      setPosts(convertedPosts);
+      // Фильтруем просроченные посты сразу после получения с сервера
+      const now = Date.now();
+      const activePosts = convertedPosts.filter((post: DPSPost) => {
+        // Если у поста нет expiresAt, добавляем его
+        if (!post.expiresAt) {
+          const postLifetime = POST_LIFETIMES[post.type] || POST_LIFETIMES.dps;
+          post.expiresAt = post.timestamp + postLifetime;
+        }
+        return post.expiresAt > now;
+      });
+      
+      if (activePosts.length !== convertedPosts.length) {
+        console.log(`🗑️ Filtered out ${convertedPosts.length - activePosts.length} expired posts from server`);
+      }
+      
+      setPosts(activePosts);
       
       // Сохраняем в AsyncStorage как резервную копию
-      await AsyncStorage.setItem('dps_posts', JSON.stringify(convertedPosts));
+      await AsyncStorage.setItem('dps_posts', JSON.stringify(activePosts));
       
-      console.log('✅ Posts synced with server:', convertedPosts.length);
-      return convertedPosts;
+      console.log('✅ Posts synced with server:', activePosts.length);
+      return activePosts;
     } catch (error) {
       console.error('❌ Error syncing with server, falling back to local storage:', error);
       // Fallback к локальному хранилищу
