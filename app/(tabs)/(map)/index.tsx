@@ -1709,7 +1709,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
 
 
       {/* Minimalist Admin Gear Button */}
-      {currentUser?.isAdmin && (
+      {(currentUser?.isAdmin || currentUser?.role === 'FOUNDER') && (
         <TouchableOpacity
           style={styles.minimalistGearButton}
           onPress={() => router.push('/admin')}
