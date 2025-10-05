@@ -1,536 +1,435 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
-  StyleSheet,
   Text,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  Image,
+  StyleSheet,
   FlatList,
-  Dimensions,
-  Pressable,
+  TouchableOpacity,
+  Alert,
+  SafeAreaView,
+  StatusBar,
+  ActivityIndicator,
+  Image,
 } from 'react-native';
-import { useApp } from '@/hooks/app-store';
-import { useUserManagement } from '@/hooks/user-management-client';
-import { router } from 'expo-router';
-import { 
-  ArrowLeft, 
-  Shield, 
-  MessageCircle, 
-  Users, 
-  CheckCircle, 
-  X, 
-  Settings,
-  Eye,
-  EyeOff,
-  Ban,
-  UserX,
-  UserCheck,
-  FileText,
-  Brain,
-  TrendingUp,
-  RefreshCw,
-  Zap,
-  UserCog,
-  UserShield,
-  Crown
-} from 'lucide-react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useApp } from '../hooks/app-store';
+
+// Типы данных
+interface User {
+  id: string;
+  name: string;
+  username?: string;
+  role: 'FOUNDER' | 'ADMIN' | 'MODERATOR' | 'USER';
+  isMuted?: boolean;
+  isBanned?: boolean;
+  isKicked?: boolean;
+  photoUrl?: string;
+  telegramId?: number;
+}
+
+interface Post {
+  id: string;
+  content: string;
+  author: string;
+  isApproved?: boolean;
+  createdAt: string;
+}
+
+interface Message {
+  id: string;
+  content: string;
+  userName: string;
+  createdAt: string;
+}
+
+// Константы
+const ROLES = {
+  FOUNDER: { name: 'Основатель', color: '#FF6B35', icon: 'crown' as const },
+  ADMIN: { name: 'Администратор', color: '#FF4757', icon: 'shield' as const },
+  MODERATOR: { name: 'Модератор', color: '#3742FA', icon: 'checkmark-circle' as const },
+  USER: { name: 'Пользователь', color: '#747D8C', icon: 'person' as const },
+};
 
 export default function AdminScreen() {
-  const { width } = Dimensions.get('window');
-
-  // Безопасное извлечение данных с дефолтными значениями
-  const { 
-    posts = [], 
-    messages = [], 
-    currentUser = null, 
-    users = [],
-    moderatePost = () => {},
-    deleteMessage = () => {},
-    muteUser = () => {},
-    unmuteUser = () => {},
-    makeAdmin = () => {},
-    makeModerator = () => {},
-    banUser = () => {},
-    unbanUser = () => {},
-    kickUser = () => {},
-    unkickUser = () => {}
-  } = useApp();
-
-  const { 
-    managedUsers = [], 
-    userStats = { total: 0, founders: 0, admins: 0, moderators: 0, users: 0 }, 
-    selectedRole = null, 
-    usersLoading = false, 
-    error: userError = null,
-    loadUsers = () => {},
-    loadStats = () => {},
-    setSelectedRole: setSelectedRoleHandler = () => {},
-    setError: setUserError = () => {}
-  } = useUserManagement();
-
-  // Обширное логирование для отладки
-  console.log('🔧 AdminScreen: currentUser:', currentUser);
-  console.log('🔧 AdminScreen: currentUser?.role:', currentUser?.role);
-  console.log('🔧 AdminScreen: currentUser?.id:', currentUser?.id);
+  const router = useRouter();
+  const { currentUser, posts, messages } = useApp();
   
-  // Дополнительная проверка на undefined
-  if (!currentUser) {
-    console.error('🔧 ERROR: currentUser is undefined in AdminScreen');
-  }
-  console.log('🔧 AdminScreen: posts length:', posts?.length || 0);
-  console.log('🔧 AdminScreen: messages length:', messages?.length || 0);
-  console.log('🔧 AdminScreen: managedUsers length:', managedUsers?.length || 0);
-  console.log('🔧 AdminScreen: userStats:', userStats);
-  console.log('🔧 AdminScreen: usersLoading:', usersLoading);
+  // Состояние
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'users' | 'posts' | 'messages'>('users');
+  const [selectedRole, setSelectedRole] = useState<string>('ALL');
 
-  const [activeTab, setActiveTab] = useState<'posts' | 'messages' | 'users' | 'user-management'>('user-management');
+  // Проверка доступа
+  const hasAccess = useMemo(() => {
+    if (!currentUser) return false;
+    return ['FOUNDER', 'ADMIN', 'MODERATOR'].includes(currentUser.role);
+  }, [currentUser]);
 
-  // Проверяем доступ к админ панели
-  if (!currentUser || !currentUser.id || !currentUser.role) {
-    console.log('🔧 AdminScreen: currentUser not ready, showing loading');
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ArrowLeft size={24} color="#0066FF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Админ панель</Text>
-        </View>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Загрузка пользователя...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // Проверяем права доступа
-  const hasAccess = currentUser.isAdmin || currentUser.isModerator || currentUser.role === 'FOUNDER';
-  if (!hasAccess) {
-    console.log('🔧 AdminScreen: No access, currentUser role:', currentUser.role);
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ArrowLeft size={24} color="#0066FF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Админ панель</Text>
-        </View>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>У вас нет доступа к админ панели</Text>
-          <Text style={styles.errorSubtext}>Роль: {currentUser.role || 'Не определена'}</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // Создаем безопасные данные с fallback
-  const safePosts = Array.isArray(posts) ? posts : [];
-  const safeMessages = Array.isArray(messages) ? messages : [];
-  const safeManagedUsers = Array.isArray(managedUsers) ? managedUsers : [];
-  const safeUserStats = userStats || { total: 0, founders: 0, admins: 0, moderators: 0, users: 0 };
-
-  // Функции для работы с пользователями
-  const handleMuteUser = (userId: string) => {
+  // Загрузка пользователей
+  const loadUsers = useCallback(async () => {
     try {
-      muteUser(userId);
-      Alert.alert('Успех', 'Пользователь заблокирован');
+      setLoading(true);
+      
+      // Получаем пользователей из AsyncStorage
+      const storedUsers = await AsyncStorage.getItem('users');
+      let userList: User[] = [];
+      
+      if (storedUsers) {
+        userList = JSON.parse(storedUsers);
+      } else {
+        // Создаем базовых пользователей если их нет
+        userList = [
+          {
+            id: '1',
+            name: 'Основатель',
+            username: 'founder',
+            role: 'FOUNDER',
+            isMuted: false,
+            isBanned: false,
+            isKicked: false,
+            telegramId: 6014412239,
+          },
+          {
+            id: '2',
+            name: 'Админ',
+            username: 'admin',
+            role: 'ADMIN',
+            isMuted: false,
+            isBanned: false,
+            isKicked: false,
+            telegramId: 123456789,
+          },
+        ];
+        await AsyncStorage.setItem('users', JSON.stringify(userList));
+      }
+      
+      setUsers(userList);
     } catch (error) {
-      console.error('Error muting user:', error);
-      Alert.alert('Ошибка', 'Не удалось заблокировать пользователя');
+      console.error('Ошибка загрузки пользователей:', error);
+      // Fallback данные
+      setUsers([
+        {
+          id: '1',
+          name: 'Основатель',
+          username: 'founder',
+          role: 'FOUNDER',
+          isMuted: false,
+          isBanned: false,
+          isKicked: false,
+          telegramId: 6014412239,
+        },
+      ]);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
 
-  const handleUnmuteUser = (userId: string) => {
-    try {
-      unmuteUser(userId);
-      Alert.alert('Успех', 'Пользователь разблокирован');
-    } catch (error) {
-      console.error('Error unmuting user:', error);
-      Alert.alert('Ошибка', 'Не удалось разблокировать пользователя');
-    }
-  };
+  // Инициализация
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
-  const handleMakeAdmin = (userId: string) => {
+  // Фильтрация пользователей
+  const filteredUsers = useMemo(() => {
+    if (selectedRole === 'ALL') return users;
+    return users.filter(user => user.role === selectedRole);
+  }, [users, selectedRole]);
+
+  // Обработчики действий
+  const handleMakeAdmin = useCallback(async (userId: string) => {
     try {
-      makeAdmin(userId);
+      const updatedUsers = users.map(user =>
+        user.id === userId ? { ...user, role: 'ADMIN' as const } : user
+      );
+      setUsers(updatedUsers);
+      await AsyncStorage.setItem('users', JSON.stringify(updatedUsers));
       Alert.alert('Успех', 'Пользователь назначен администратором');
     } catch (error) {
-      console.error('Error making admin:', error);
       Alert.alert('Ошибка', 'Не удалось назначить администратора');
     }
-  };
+  }, [users]);
 
-  const handleMakeModerator = (userId: string) => {
+  const handleMakeModerator = useCallback(async (userId: string) => {
     try {
-      makeModerator(userId);
+      const updatedUsers = users.map(user =>
+        user.id === userId ? { ...user, role: 'MODERATOR' as const } : user
+      );
+      setUsers(updatedUsers);
+      await AsyncStorage.setItem('users', JSON.stringify(updatedUsers));
       Alert.alert('Успех', 'Пользователь назначен модератором');
     } catch (error) {
-      console.error('Error making moderator:', error);
       Alert.alert('Ошибка', 'Не удалось назначить модератора');
     }
-  };
+  }, [users]);
 
-  // Функции для работы с постами
-  const handleApprovePost = (postId: string) => {
+  const handleMuteUser = useCallback(async (userId: string) => {
     try {
-      moderatePost(postId, 'approved');
-      Alert.alert('Успех', 'Пост одобрен');
+      const updatedUsers = users.map(user =>
+        user.id === userId ? { ...user, isMuted: true } : user
+      );
+      setUsers(updatedUsers);
+      await AsyncStorage.setItem('users', JSON.stringify(updatedUsers));
+      Alert.alert('Успех', 'Пользователь заглушен');
     } catch (error) {
-      console.error('Error approving post:', error);
-      Alert.alert('Ошибка', 'Не удалось одобрить пост');
+      Alert.alert('Ошибка', 'Не удалось заглушить пользователя');
     }
-  };
+  }, [users]);
 
-  const handleRejectPost = (postId: string) => {
+  const handleUnmuteUser = useCallback(async (userId: string) => {
     try {
-      moderatePost(postId, 'rejected');
-      Alert.alert('Успех', 'Пост отклонен');
+      const updatedUsers = users.map(user =>
+        user.id === userId ? { ...user, isMuted: false } : user
+      );
+      setUsers(updatedUsers);
+      await AsyncStorage.setItem('users', JSON.stringify(updatedUsers));
+      Alert.alert('Успех', 'Пользователь разглушен');
     } catch (error) {
-      console.error('Error rejecting post:', error);
-      Alert.alert('Ошибка', 'Не удалось отклонить пост');
+      Alert.alert('Ошибка', 'Не удалось разглушить пользователя');
     }
-  };
-
-  // Функции для работы с сообщениями
-  const handleDeleteMessage = (messageId: string) => {
-    try {
-      deleteMessage(messageId);
-      Alert.alert('Успех', 'Сообщение удалено');
-    } catch (error) {
-      console.error('Error deleting message:', error);
-      Alert.alert('Ошибка', 'Не удалось удалить сообщение');
-    }
-  };
-
-  // Получение иконки роли
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'FOUNDER': return <Crown size={16} color="#FFD700" />;
-      case 'ADMIN': return <Shield size={16} color="#FF6B6B" />;
-      case 'MODERATOR': return <UserShield size={16} color="#4ECDC4" />;
-      default: return <Users size={16} color="#95A5A6" />;
-    }
-  };
-
-  // Получение названия роли
-  const getRoleName = (role: string) => {
-    switch (role) {
-      case 'FOUNDER': return 'Основатель';
-      case 'ADMIN': return 'Администратор';
-      case 'MODERATOR': return 'Модератор';
-      default: return 'Пользователь';
-    }
-  };
-
-  // Получение цвета роли
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'FOUNDER': return '#FFD700';
-      case 'ADMIN': return '#FF6B6B';
-      case 'MODERATOR': return '#4ECDC4';
-      default: return '#95A5A6';
-    }
-  };
+  }, [users]);
 
   // Рендер пользователя
-  const renderUser = ({ item: user }: { item: any }) => {
-    console.log('🔧 renderUser called with:', user);
-    if (!user || !user.id) {
-      console.log('🔧 renderUser: user is null or missing id, returning null');
-      return null;
-    }
-    
-    // Детальное логирование всех значений
-    const userName = user.name || user.firstName || 'Пользователь';
-    const userRole = user.role || 'USER';
-    const userUsername = user.username || 'без_username';
-    const userPhotoUrl = user.photoUrl;
-    const avatarText = (userName || 'П').charAt(0).toUpperCase();
-    const roleName = getRoleName(userRole) || 'Пользователь';
-    const roleColor = getRoleColor(userRole) || '#95A5A6';
-    const roleIcon = getRoleIcon(userRole) || <Users size={16} color="#95A5A6" />;
-    
-    console.log('🔧 renderUser values:', {
-      userName,
-      userRole,
-      userUsername,
-      userPhotoUrl,
-      avatarText,
-      roleName,
-      roleColor,
-      roleIcon: roleIcon ? 'JSX Element' : 'undefined',
-      roleIconType: typeof roleIcon
-    });
-    
-    // Дополнительная проверка на undefined
-    if (!roleIcon) {
-      console.error('🔧 ERROR: roleIcon is undefined for role:', userRole);
-    }
-    if (!roleColor) {
-      console.error('🔧 ERROR: roleColor is undefined for role:', userRole);
-    }
-    if (!roleName) {
-      console.error('🔧 ERROR: roleName is undefined for role:', userRole);
-    }
-    
+  const renderUser = useCallback(({ item: user }: { item: User }) => {
+    const roleInfo = ROLES[user.role] || ROLES.USER;
+    const userName = user.name || 'Без имени';
+    const userUsername = user.username || 'без username';
+    const avatarText = userName.charAt(0).toUpperCase();
+    const isMuted = Boolean(user.isMuted);
+    const canManage = currentUser?.role === 'FOUNDER' || 
+                     (currentUser?.role === 'ADMIN' && user.role !== 'FOUNDER');
+
     return (
-      <View style={styles.userCard} key={user.id || Math.random().toString()}>
+      <View style={styles.userCard} key={user.id}>
         <View style={styles.userInfo}>
-          <View style={styles.userAvatar}>
-            {userPhotoUrl ? (
-              <Image source={{ uri: userPhotoUrl }} style={styles.avatarImage} />
+          <View style={[styles.avatar, { backgroundColor: roleInfo.color }]}>
+            {user.photoUrl ? (
+              <Image source={{ uri: user.photoUrl }} style={styles.avatarImage} />
             ) : (
-              <Text style={styles.avatarText}>
-                {avatarText}
-              </Text>
+              <Text style={styles.avatarText}>{avatarText}</Text>
             )}
           </View>
           <View style={styles.userDetails}>
             <Text style={styles.userName}>{userName}</Text>
             <Text style={styles.userUsername}>@{userUsername}</Text>
-            <View style={styles.roleContainer}>
-              {roleIcon}
-              <Text style={[styles.roleText, { color: roleColor }]}>
-                {roleName}
-              </Text>
+            <View style={[styles.roleBadge, { backgroundColor: roleInfo.color }]}>
+              <Ionicons name={roleInfo.icon} size={12} color="white" />
+              <Text style={styles.roleText}>{roleInfo.name}</Text>
             </View>
           </View>
         </View>
-        <View style={styles.userActions}>
-          {userRole !== 'FOUNDER' && (
-            <>
-              {userRole !== 'ADMIN' && (
+        
+        {canManage && (
+          <View style={styles.userActions}>
+            {user.role === 'USER' && (
+              <>
                 <TouchableOpacity
                   style={[styles.actionButton, styles.adminButton]}
-                  onPress={() => handleMakeAdmin(user.id || '')}
+                  onPress={() => handleMakeAdmin(user.id)}
                 >
-                  <Shield size={16} color="#FF6B6B" />
+                  <Ionicons name="shield" size={16} color="white" />
                 </TouchableOpacity>
-              )}
-              {userRole !== 'MODERATOR' && (
                 <TouchableOpacity
                   style={[styles.actionButton, styles.moderatorButton]}
-                  onPress={() => handleMakeModerator(user.id || '')}
+                  onPress={() => handleMakeModerator(user.id)}
                 >
-                  <UserShield size={16} color="#4ECDC4" />
+                  <Ionicons name="checkmark-circle" size={16} color="white" />
                 </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                style={[styles.actionButton, styles.muteButton]}
-                onPress={() => (user.isMuted || false) ? handleUnmuteUser(user.id || '') : handleMuteUser(user.id || '')}
-              >
-                {(user.isMuted || false) ? <Eye size={16} color="#27AE60" /> : <EyeOff size={16} color="#E74C3C" />}
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
+              </>
+            )}
+            <TouchableOpacity
+              style={[styles.actionButton, isMuted ? styles.unmuteButton : styles.muteButton]}
+              onPress={() => isMuted ? handleUnmuteUser(user.id) : handleMuteUser(user.id)}
+            >
+              <Ionicons name={isMuted ? "volume-high" : "volume-mute"} size={16} color="white" />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     );
-  };
+  }, [currentUser, handleMakeAdmin, handleMakeModerator, handleMuteUser, handleUnmuteUser]);
 
   // Рендер поста
-  const renderPost = ({ item: post }: { item: any }) => {
-    console.log('🔧 renderPost called with:', post);
-    if (!post || !post.id) {
-      console.log('🔧 renderPost: post is null or missing id, returning null');
-      return null;
-    }
-    
-    return (
-      <View style={styles.postCard} key={post.id}>
-        <View style={styles.postHeader}>
-          <Text style={styles.postUser}>{post.userName || 'Неизвестный пользователь'}</Text>
-          <Text style={styles.postTime}>
-            {post.timestamp ? new Date(post.timestamp).toLocaleString() : 'Неизвестное время'}
-          </Text>
-        </View>
-        <Text style={styles.postDescription}>{post.description || 'Нет описания'}</Text>
-        {post.photo && (
-          <Image source={{ uri: post.photo }} style={styles.postImage} />
-        )}
-        <View style={styles.postActions}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.approveButton]}
-            onPress={() => handleApprovePost(post.id)}
-          >
-            <CheckCircle size={16} color="#27AE60" />
-            <Text style={styles.actionText}>Одобрить</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.rejectButton]}
-            onPress={() => handleRejectPost(post.id)}
-          >
-            <X size={16} color="#E74C3C" />
-            <Text style={styles.actionText}>Отклонить</Text>
-          </TouchableOpacity>
-        </View>
+  const renderPost = useCallback(({ item: post }: { item: Post }) => (
+    <View style={styles.postCard} key={post.id}>
+      <View style={styles.postHeader}>
+        <Text style={styles.postAuthor}>{post.author}</Text>
+        <Text style={styles.postDate}>{new Date(post.createdAt).toLocaleDateString()}</Text>
       </View>
-    );
-  };
-
-  // Рендер сообщения
-  const renderMessage = ({ item: message }: { item: any }) => {
-    console.log('🔧 renderMessage called with:', message);
-    if (!message || !message.id) {
-      console.log('🔧 renderMessage: message is null or missing id, returning null');
-      return null;
-    }
-    
-    return (
-      <View style={styles.messageCard} key={message.id}>
-        <View style={styles.messageHeader}>
-          <Text style={styles.messageUser}>{message.userName || 'Неизвестный пользователь'}</Text>
-          <Text style={styles.messageTime}>
-            {message.timestamp ? new Date(message.timestamp).toLocaleString() : 'Неизвестное время'}
-          </Text>
-        </View>
-        <Text style={styles.messageText}>{message.text || 'Нет текста'}</Text>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.deleteButton]}
-          onPress={() => handleDeleteMessage(message.id)}
-        >
-          <X size={16} color="#E74C3C" />
-          <Text style={styles.actionText}>Удалить</Text>
+      <Text style={styles.postContent}>{post.content}</Text>
+      <View style={styles.postActions}>
+        <TouchableOpacity style={[styles.actionButton, styles.approveButton]}>
+          <Ionicons name="checkmark" size={16} color="white" />
+          <Text style={styles.actionText}>Одобрить</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.actionButton, styles.rejectButton]}>
+          <Ionicons name="close" size={16} color="white" />
+          <Text style={styles.actionText}>Отклонить</Text>
         </TouchableOpacity>
       </View>
-    );
-  };
+    </View>
+  ), []);
 
-  console.log('🔧 AdminScreen: About to render with data:', {
-    currentUser: currentUser?.id,
-    currentUserRole: currentUser?.role,
-    currentUserFull: currentUser,
-    safePostsLength: safePosts?.length,
-    safeMessagesLength: safeMessages?.length,
-    safeManagedUsersLength: safeManagedUsers?.length,
-    safeUserStats: safeUserStats,
-    activeTab
-  });
-  
-  // Дополнительная проверка на undefined
-  if (!currentUser) {
-    console.error('🔧 ERROR: currentUser is undefined in AdminScreen render');
+  // Рендер сообщения
+  const renderMessage = useCallback(({ item: message }: { item: Message }) => (
+    <View style={styles.messageCard} key={message.id}>
+      <View style={styles.messageHeader}>
+        <Text style={styles.messageUser}>{message.userName}</Text>
+        <Text style={styles.messageDate}>{new Date(message.createdAt).toLocaleDateString()}</Text>
+      </View>
+      <Text style={styles.messageContent}>{message.content}</Text>
+      <TouchableOpacity style={[styles.actionButton, styles.deleteButton]}>
+        <Ionicons name="trash" size={16} color="white" />
+        <Text style={styles.actionText}>Удалить</Text>
+      </TouchableOpacity>
+    </View>
+  ), []);
+
+  // Загрузка
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Загрузка...</Text>
+        </View>
+      </SafeAreaView>
+    );
   }
-  if (!currentUser?.role) {
-    console.error('🔧 ERROR: currentUser.role is undefined in AdminScreen render');
+
+  // Нет доступа
+  if (!hasAccess) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.noAccessContainer}>
+          <Ionicons name="lock-closed" size={64} color="#FF4757" />
+          <Text style={styles.noAccessTitle}>Нет доступа</Text>
+          <Text style={styles.noAccessText}>
+            У вас нет прав для доступа к админ панели
+          </Text>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.backButtonText}>Назад</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#1A1A1A" />
+      
+      {/* Заголовок */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft size={24} color="#0066FF" />
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Админ панель</Text>
-        <View style={styles.headerRight}>
-          <Text style={styles.userRole}>{getRoleName(currentUser?.role || 'USER')}</Text>
-        </View>
+        <View style={styles.headerSpacer} />
       </View>
 
+      {/* Табы */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
-          style={[styles.tab, (activeTab || '') === 'user-management' && styles.activeTab]}
-          onPress={() => setActiveTab('user-management')}
+          style={[styles.tab, activeTab === 'users' && styles.activeTab]}
+          onPress={() => setActiveTab('users')}
         >
-          <Users size={20} color={(activeTab || '') === 'user-management' ? '#0066FF' : '#666'} />
-          <Text style={[styles.tabText, (activeTab || '') === 'user-management' && styles.activeTabText]}>
-            Пользователи
+          <Text style={[styles.tabText, activeTab === 'users' && styles.activeTabText]}>
+            Пользователи ({users.length})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, (activeTab || '') === 'posts' && styles.activeTab]}
+          style={[styles.tab, activeTab === 'posts' && styles.activeTab]}
           onPress={() => setActiveTab('posts')}
         >
-          <FileText size={20} color={(activeTab || '') === 'posts' ? '#0066FF' : '#666'} />
-          <Text style={[styles.tabText, (activeTab || '') === 'posts' && styles.activeTabText]}>
-            Посты
+          <Text style={[styles.tabText, activeTab === 'posts' && styles.activeTabText]}>
+            Посты ({posts?.length || 0})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, (activeTab || '') === 'messages' && styles.activeTab]}
+          style={[styles.tab, activeTab === 'messages' && styles.activeTab]}
           onPress={() => setActiveTab('messages')}
         >
-          <MessageCircle size={20} color={(activeTab || '') === 'messages' ? '#0066FF' : '#666'} />
-          <Text style={[styles.tabText, (activeTab || '') === 'messages' && styles.activeTabText]}>
-            Сообщения
+          <Text style={[styles.tabText, activeTab === 'messages' && styles.activeTabText]}>
+            Сообщения ({messages?.length || 0})
           </Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content}>
-        {(activeTab || '') === 'user-management' && (
-          <View style={styles.tabContent}>
-            <View style={styles.statsContainer}>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>{safeUserStats.total || 0}</Text>
-                <Text style={styles.statLabel}>Всего</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>{safeUserStats.founders || 0}</Text>
-                <Text style={styles.statLabel}>Основатели</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>{safeUserStats.admins || 0}</Text>
-                <Text style={styles.statLabel}>Админы</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>{safeUserStats.moderators || 0}</Text>
-                <Text style={styles.statLabel}>Модераторы</Text>
-              </View>
-            </View>
-            
-            {usersLoading ? (
-              <View style={styles.loadingContainer}>
-                <Text style={styles.loadingText}>Загрузка пользователей...</Text>
-              </View>
-            ) : (
-              <FlatList
-                data={safeManagedUsers}
-                renderItem={renderUser}
-                keyExtractor={(item) => {
-                  console.log('🔧 keyExtractor for user:', item);
-                  return item?.id || Math.random().toString();
-                }}
-                scrollEnabled={false}
-                showsVerticalScrollIndicator={false}
-              />
+      {/* Фильтр ролей для пользователей */}
+      {activeTab === 'users' && (
+        <View style={styles.filterContainer}>
+          <FlatList
+            horizontal
+            data={['ALL', 'FOUNDER', 'ADMIN', 'MODERATOR', 'USER']}
+            keyExtractor={(item) => item}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[styles.filterButton, selectedRole === item && styles.activeFilterButton]}
+                onPress={() => setSelectedRole(item)}
+              >
+                <Text style={[styles.filterText, selectedRole === item && styles.activeFilterText]}>
+                  {item === 'ALL' ? 'Все' : ROLES[item as keyof typeof ROLES]?.name || item}
+                </Text>
+              </TouchableOpacity>
             )}
-          </View>
-        )}
+            showsHorizontalScrollIndicator={false}
+          />
+        </View>
+      )}
 
-        {(activeTab || '') === 'posts' && (
-          <View style={styles.tabContent}>
-            <FlatList
-              data={safePosts}
-              renderItem={renderPost}
-              keyExtractor={(item) => {
-                console.log('🔧 keyExtractor for post:', item);
-                return item?.id || Math.random().toString();
-              }}
-              scrollEnabled={false}
-              showsVerticalScrollIndicator={false}
-            />
-          </View>
+      {/* Контент */}
+      <View style={styles.content}>
+        {activeTab === 'users' && (
+          <FlatList
+            data={filteredUsers}
+            keyExtractor={(item) => item.id}
+            renderItem={renderUser}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>Пользователи не найдены</Text>
+              </View>
+            }
+          />
         )}
-
-        {(activeTab || '') === 'messages' && (
-          <View style={styles.tabContent}>
-            <FlatList
-              data={safeMessages}
-              renderItem={renderMessage}
-              keyExtractor={(item) => {
-                console.log('🔧 keyExtractor for message:', item);
-                return item?.id || Math.random().toString();
-              }}
-              scrollEnabled={false}
-              showsVerticalScrollIndicator={false}
-            />
-          </View>
+        
+        {activeTab === 'posts' && (
+          <FlatList
+            data={posts || []}
+            keyExtractor={(item) => item.id}
+            renderItem={renderPost}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>Посты не найдены</Text>
+              </View>
+            }
+          />
         )}
-      </ScrollView>
+        
+        {activeTab === 'messages' && (
+          <FlatList
+            data={messages || []}
+            keyExtractor={(item) => item.id}
+            renderItem={renderMessage}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>Сообщения не найдены</Text>
+              </View>
+            }
+          />
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -538,149 +437,122 @@ export default function AdminScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e1e5e9',
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1a1a1a',
-  },
-  headerRight: {
-    minWidth: 80,
-    alignItems: 'flex-end',
-  },
-  userRole: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e1e5e9',
-  },
-  tab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#0066FF',
-  },
-  tabText: {
-    marginLeft: 6,
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-  },
-  activeTabText: {
-    color: '#0066FF',
-    fontWeight: '600',
-  },
-  content: {
-    flex: 1,
-  },
-  tabContent: {
-    padding: 16,
+    backgroundColor: '#1A1A1A',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 40,
   },
   loadingText: {
+    color: 'white',
+    marginTop: 16,
     fontSize: 16,
-    color: '#666',
   },
-  errorContainer: {
+  noAccessContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    padding: 20,
   },
-  errorText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#E74C3C',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  errorSubtext: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  statNumber: {
+  noAccessTitle: {
+    color: 'white',
     fontSize: 24,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 4,
+    fontWeight: 'bold',
+    marginTop: 16,
   },
-  statLabel: {
+  noAccessText: {
+    color: '#999',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#2A2A2A',
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+    flex: 1,
+    textAlign: 'center',
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#2A2A2A',
+    paddingHorizontal: 16,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
+    borderBottomColor: '#007AFF',
+  },
+  tabText: {
+    color: '#999',
+    fontSize: 14,
+  },
+  activeTabText: {
+    color: '#007AFF',
+    fontWeight: 'bold',
+  },
+  filterContainer: {
+    backgroundColor: '#2A2A2A',
+    paddingVertical: 12,
+  },
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginHorizontal: 4,
+    borderRadius: 20,
+    backgroundColor: '#3A3A3A',
+  },
+  activeFilterButton: {
+    backgroundColor: '#007AFF',
+  },
+  filterText: {
+    color: '#999',
     fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
+  },
+  activeFilterText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  content: {
+    flex: 1,
+    padding: 16,
   },
   userCard: {
-    backgroundColor: '#ffffff',
-    padding: 16,
+    backgroundColor: '#2A2A2A',
     borderRadius: 12,
+    padding: 16,
     marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
-  userAvatar: {
+  avatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#e1e5e9',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -691,110 +563,41 @@ const styles = StyleSheet.create({
     borderRadius: 24,
   },
   avatarText: {
+    color: 'white',
     fontSize: 18,
-    fontWeight: '600',
-    color: '#666',
+    fontWeight: 'bold',
   },
   userDetails: {
     flex: 1,
   },
   userName: {
+    color: 'white',
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    marginBottom: 2,
+    fontWeight: 'bold',
   },
   userUsername: {
+    color: '#999',
     fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
+    marginTop: 2,
   },
-  roleContainer: {
+  roleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 4,
+    alignSelf: 'flex-start',
   },
   roleText: {
+    color: 'white',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: 'bold',
     marginLeft: 4,
   },
   userActions: {
     flexDirection: 'row',
     gap: 8,
-  },
-  postCard: {
-    backgroundColor: '#ffffff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  postHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  postUser: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1a1a1a',
-  },
-  postTime: {
-    fontSize: 12,
-    color: '#666',
-  },
-  postDescription: {
-    fontSize: 14,
-    color: '#333',
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  postImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  postActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  messageCard: {
-    backgroundColor: '#ffffff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  messageHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  messageUser: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1a1a1a',
-  },
-  messageTime: {
-    fontSize: 12,
-    color: '#666',
-  },
-  messageText: {
-    fontSize: 14,
-    color: '#333',
-    lineHeight: 20,
-    marginBottom: 12,
   },
   actionButton: {
     flexDirection: 'row',
@@ -804,26 +607,94 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: 4,
   },
-  actionText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  approveButton: {
-    backgroundColor: '#E8F5E8',
-  },
-  rejectButton: {
-    backgroundColor: '#FFE8E8',
-  },
-  deleteButton: {
-    backgroundColor: '#FFE8E8',
-  },
   adminButton: {
-    backgroundColor: '#FFE8E8',
+    backgroundColor: '#FF4757',
   },
   moderatorButton: {
-    backgroundColor: '#E8F5F5',
+    backgroundColor: '#3742FA',
   },
   muteButton: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: '#FFA502',
+  },
+  unmuteButton: {
+    backgroundColor: '#2ED573',
+  },
+  actionText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  postCard: {
+    backgroundColor: '#2A2A2A',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  postHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  postAuthor: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  postDate: {
+    color: '#999',
+    fontSize: 12,
+  },
+  postContent: {
+    color: 'white',
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  postActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  approveButton: {
+    backgroundColor: '#2ED573',
+  },
+  rejectButton: {
+    backgroundColor: '#FF4757',
+  },
+  messageCard: {
+    backgroundColor: '#2A2A2A',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  messageHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  messageUser: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  messageDate: {
+    color: '#999',
+    fontSize: 12,
+  },
+  messageContent: {
+    color: 'white',
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  deleteButton: {
+    backgroundColor: '#FF4757',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    color: '#999',
+    fontSize: 16,
   },
 });
