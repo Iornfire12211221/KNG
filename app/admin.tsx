@@ -183,12 +183,12 @@ export default function AdminScreen() {
   // Синхронизируем данные обучения с постами
   React.useEffect(() => {
     // Записываем решения ИИ для новых постов
-    posts.forEach(post => {
-      if (post.autoApproved || post.rejectedByAI || post.needsModeration) {
-        const existingRecord = trainingData.find(item => item.postId === post.id);
+    (posts || []).forEach(post => {
+      if (post?.autoApproved || post?.rejectedByAI || post?.needsModeration) {
+        const existingRecord = trainingData.find(item => item.postId === post?.id);
         if (!existingRecord) {
-          const aiDecision = (post.autoApproved && !post.needsModeration) ? 'approve' : 'reject';
-          const confidence = post.autoApproved ? 0.9 : 0.7;
+          const aiDecision = (post?.autoApproved && !post?.needsModeration) ? 'approve' : 'reject';
+          const confidence = post?.autoApproved ? 0.9 : 0.7;
           recordAIDecision(post, aiDecision, confidence);
         }
       }
@@ -240,9 +240,9 @@ export default function AdminScreen() {
     );
   }
 
-  const pendingPosts = posts.filter(post => post.needsModeration);
-  const allMessages = messages.filter(msg => !msg.isDeleted);
-  const allUsers = users;
+  const pendingPosts = (posts || []).filter(post => post?.needsModeration);
+  const allMessages = (messages || []).filter(msg => !msg.isDeleted);
+  const allUsers = users || [];
 
   const filteredPosts = pendingPosts;
   const filteredMessages = allMessages;
@@ -471,43 +471,43 @@ export default function AdminScreen() {
                   <View style={[styles.moderationCard, { width: width - 48 }]}>
                     <View style={styles.moderationHeader}>
                       <View style={styles.userInfo}>
-                        <Text style={styles.userName}>{post.userName}</Text>
+                        <Text style={styles.userName}>{post?.userName || 'Пользователь'}</Text>
                         <Text style={styles.timestamp}>
-                          {new Date(post.timestamp).toLocaleString('ru-RU')}
+                          {new Date(post?.timestamp || Date.now()).toLocaleString('ru-RU')}
                         </Text>
                       </View>
                       <View style={styles.typeInfo}>
-                        <Text style={styles.postType}>{post.type}</Text>
-                        <Text style={styles.severity}>{post.severity}</Text>
+                        <Text style={styles.postType}>{post?.type || ''}</Text>
+                        <Text style={styles.severity}>{post?.severity || ''}</Text>
                       </View>
                     </View>
                     
-                    <Text style={styles.description}>{post.description}</Text>
+                    <Text style={styles.description}>{post?.description || ''}</Text>
                     
-                    {post.photo && (
+                    {post?.photo && (
                       <Image 
-                        source={{ uri: post.photo.startsWith('data:') ? post.photo : `data:image/jpeg;base64,${post.photo}` }} 
+                        source={{ uri: post?.photo?.startsWith('data:') ? post.photo : `data:image/jpeg;base64,${post.photo}` }} 
                         style={styles.postImage} 
                         resizeMode="cover"
                       />
                     )}
                     
                     <Text style={styles.coordinates}>
-                      📍 {post.latitude.toFixed(4)}, {post.longitude.toFixed(4)}
+                      📍 {post?.latitude?.toFixed(4) || '0.0000'}, {post?.longitude?.toFixed(4) || '0.0000'}
                     </Text>
                     
-                    {post.autoApproved && (
+                    {post?.autoApproved && (
                       <View style={styles.autoApprovedInfo}>
                         <View style={styles.aiStatusContainer}>
                           <Text style={styles.aiLabel}>AI одобрил</Text>
                         </View>
-                        {post.autoApprovalReason && (
+                        {post?.autoApprovalReason && (
                           <Text style={styles.autoApprovalReason}>{post.autoApprovalReason}</Text>
                         )}
                       </View>
                     )}
                     
-                    {post.rejectedByAI && (
+                    {post?.rejectedByAI && (
                       <View style={styles.aiRejectedInfo}>
                         <View style={styles.aiStatusContainer}>
                           <View style={styles.rejectContainer}>
@@ -515,7 +515,7 @@ export default function AdminScreen() {
                           </View>
                           <Text style={styles.aiRejectedLabel}>ИИ отклонил пост</Text>
                         </View>
-                        {post.aiRejectionReason && (
+                        {post?.aiRejectionReason && (
                           <View style={styles.rejectionReasonContainer}>
                             <Text style={styles.rejectionReasonTitle}>Причина отклонения:</Text>
                             <Text style={styles.aiRejectionReason}>{post.aiRejectionReason}</Text>
@@ -527,7 +527,7 @@ export default function AdminScreen() {
                     <View style={styles.moderationActions}>
                       <TouchableOpacity
                         style={styles.rejectButton}
-                        onPress={() => handleRejectPost(post.id)}
+                        onPress={() => handleRejectPost(post?.id || '')}
                       >
                         <X size={16} color="#FF3B30" />
                         <Text style={styles.rejectButtonText}>Отклонить</Text>
@@ -535,13 +535,13 @@ export default function AdminScreen() {
                       
                       <TouchableOpacity
                         style={styles.approveButton}
-                        onPress={() => handleApprovePost(post.id)}
+                        onPress={() => handleApprovePost(post?.id || '')}
                       >
                         <CheckCircle size={16} color="#FFFFFF" />
                         <Text style={styles.approveButtonText}>Одобрить</Text>
                       </TouchableOpacity>
                       
-                      {post.autoApproved && (
+                      {post?.autoApproved && (
                         <View style={styles.aiApprovedIndicator}>
                           <View style={styles.checkmarkContainer}>
                             <Text style={styles.checkmark}>✓</Text>
@@ -568,16 +568,16 @@ export default function AdminScreen() {
               </View>
             ) : (
               filteredMessages.map((message) => {
-                const messageUser = users.find(u => u.id === message.userId);
+                const messageUser = (users || []).find(u => u.id === message?.userId);
                 const isUserMuted = messageUser?.isMuted && messageUser.mutedUntil && messageUser.mutedUntil > Date.now();
                 
                 return (
-                  <View key={message.id} style={styles.messageCard}>
+                  <View key={message?.id || Math.random()} style={styles.messageCard}>
                     <View style={styles.messageHeader}>
                       <View style={styles.userInfo}>
-                        <Text style={styles.userName}>{message.userName || 'Пользователь'}</Text>
+                        <Text style={styles.userName}>{message?.userName || 'Пользователь'}</Text>
                         <Text style={styles.timestamp}>
-                          {new Date(message.timestamp).toLocaleString('ru-RU')}
+                          {new Date(message?.timestamp || Date.now()).toLocaleString('ru-RU')}
                         </Text>
                         {isUserMuted && (
                           <View style={styles.mutedBadge}>
@@ -587,12 +587,12 @@ export default function AdminScreen() {
                       </View>
                     </View>
                     
-                    <Text style={styles.messageText}>{message.text}</Text>
+                    <Text style={styles.messageText}>{message?.text || ''}</Text>
                     
                     <View style={styles.messageActions}>
                       <TouchableOpacity
                         style={styles.deleteButton}
-                        onPress={() => handleDeleteMessage(message.id)}
+                        onPress={() => handleDeleteMessage(message?.id || '')}
                       >
                         <X size={14} color="#FF3B30" />
                         <Text style={styles.deleteButtonText}>Удалить</Text>
@@ -602,7 +602,7 @@ export default function AdminScreen() {
                         isUserMuted ? (
                           <TouchableOpacity
                             style={styles.unmuteButton}
-                            onPress={() => handleUnmuteUser(messageUser.id, messageUser.name)}
+                            onPress={() => handleUnmuteUser(messageUser?.id || '', messageUser?.name || '')}
                           >
                             <Eye size={14} color="#34C759" />
                             <Text style={styles.unmuteButtonText}>Разглушить</Text>
@@ -610,7 +610,7 @@ export default function AdminScreen() {
                         ) : (
                           <TouchableOpacity
                             style={styles.muteButton}
-                            onPress={() => handleMuteUser(messageUser.id, messageUser.name)}
+                            onPress={() => handleMuteUser(messageUser?.id || '', messageUser?.name || '')}
                           >
                             <EyeOff size={14} color="#FF9500" />
                             <Text style={styles.muteButtonText}>Заглушить</Text>
@@ -636,39 +636,39 @@ export default function AdminScreen() {
               </View>
             ) : (
               filteredUsers.map((user) => (
-                <View key={user.id} style={styles.userCard}>
+                <View key={user?.id || Math.random()} style={styles.userCard}>
                   <View style={styles.userInfo}>
-                    <Text style={styles.userName}>{user.name || 'Пользователь'}</Text>
-                    <Text style={styles.userEmail}>{user.email}</Text>
+                    <Text style={styles.userName}>{user?.name || 'Пользователь'}</Text>
+                    <Text style={styles.userEmail}>{user?.email || ''}</Text>
                     <Text style={styles.userId}>
-                      Регистрация: {new Date(user.registeredAt).toLocaleDateString('ru-RU')}
+                      Регистрация: {new Date(user?.registeredAt || Date.now()).toLocaleDateString('ru-RU')}
                     </Text>
                     <View style={styles.userBadges}>
-                      {user.isAdmin && (
+                      {user?.isAdmin && (
                         <View style={styles.roleBadge}>
                           <Shield size={12} color="#FF9500" />
                           <Text style={styles.roleText}>Администратор</Text>
                         </View>
                       )}
-                      {user.isModerator && !user.isAdmin && (
+                      {user?.isModerator && !user?.isAdmin && (
                         <View style={styles.roleBadge}>
                           <Settings size={12} color="#0066FF" />
                           <Text style={styles.roleText}>Модератор</Text>
                         </View>
                       )}
-                      {user.isMuted && user.mutedUntil && user.mutedUntil > Date.now() && (
+                      {user?.isMuted && user?.mutedUntil && user.mutedUntil > Date.now() && (
                         <View style={styles.mutedBadge}>
                           <Text style={styles.mutedBadgeText}>Заглушен</Text>
                         </View>
                       )}
-                      {user.isBanned && (user.bannedUntil === -1 || (user.bannedUntil && user.bannedUntil > Date.now())) && (
+                      {user?.isBanned && (user?.bannedUntil === -1 || (user?.bannedUntil && user.bannedUntil > Date.now())) && (
                         <View style={styles.bannedBadge}>
                           <Text style={styles.bannedBadgeText}>
-                            {user.bannedUntil === -1 ? 'Забанен навсегда' : 'Забанен'}
+                            {user?.bannedUntil === -1 ? 'Забанен навсегда' : 'Забанен'}
                           </Text>
                         </View>
                       )}
-                      {user.isKicked && (
+                      {user?.isKicked && (
                         <View style={styles.kickedBadge}>
                           <Text style={styles.kickedBadgeText}>Исключен</Text>
                         </View>
@@ -676,13 +676,13 @@ export default function AdminScreen() {
                     </View>
                   </View>
                   
-                  {(currentUser?.isAdmin || currentUser?.isModerator) && user.id !== currentUser.id && (
+                  {(currentUser?.isAdmin || currentUser?.isModerator) && user?.id !== currentUser?.id && (
                     <View style={styles.userActions}>
                       {/* Mute/Unmute */}
-                      {user.isMuted && user.mutedUntil && user.mutedUntil > Date.now() ? (
+                      {user?.isMuted && user?.mutedUntil && user.mutedUntil > Date.now() ? (
                         <TouchableOpacity
                           style={styles.unmuteUserButton}
-                          onPress={() => handleUnmuteUser(user.id, user.name)}
+                          onPress={() => handleUnmuteUser(user?.id || '', user?.name || '')}
                         >
                           <Eye size={12} color="#34C759" />
                           <Text style={styles.unmuteUserButtonText}>Разглушить</Text>
@@ -690,7 +690,7 @@ export default function AdminScreen() {
                       ) : (
                         <TouchableOpacity
                           style={styles.muteUserButton}
-                          onPress={() => handleMuteUser(user.id, user.name)}
+                          onPress={() => handleMuteUser(user?.id || '', user?.name || '')}
                         >
                           <EyeOff size={12} color="#FF9500" />
                           <Text style={styles.muteUserButtonText}>Заглушить</Text>
@@ -698,10 +698,10 @@ export default function AdminScreen() {
                       )}
                       
                       {/* Ban/Unban */}
-                      {user.isBanned && (user.bannedUntil === -1 || (user.bannedUntil && user.bannedUntil > Date.now())) ? (
+                      {user?.isBanned && (user?.bannedUntil === -1 || (user?.bannedUntil && user.bannedUntil > Date.now())) ? (
                         <TouchableOpacity
                           style={styles.unbanUserButton}
-                          onPress={() => handleUnbanUser(user.id, user.name)}
+                          onPress={() => handleUnbanUser(user?.id || '', user?.name || '')}
                         >
                           <UserCheck size={12} color="#34C759" />
                           <Text style={styles.unbanUserButtonText}>Разбанить</Text>
@@ -709,7 +709,7 @@ export default function AdminScreen() {
                       ) : (
                         <TouchableOpacity
                           style={styles.banUserButton}
-                          onPress={() => handleBanUser(user.id, user.name)}
+                          onPress={() => handleBanUser(user?.id || '', user?.name || '')}
                         >
                           <Ban size={12} color="#FF3B30" />
                           <Text style={styles.banUserButtonText}>Забанить</Text>
@@ -717,10 +717,10 @@ export default function AdminScreen() {
                       )}
                       
                       {/* Kick/Unkick */}
-                      {user.isKicked ? (
+                      {user?.isKicked ? (
                         <TouchableOpacity
                           style={styles.unkickUserButton}
-                          onPress={() => handleUnkickUser(user.id, user.name)}
+                          onPress={() => handleUnkickUser(user?.id || '', user?.name || '')}
                         >
                           <UserCheck size={12} color="#007AFF" />
                           <Text style={styles.unkickUserButtonText}>Восстановить</Text>
@@ -728,7 +728,7 @@ export default function AdminScreen() {
                       ) : (
                         <TouchableOpacity
                           style={styles.kickUserButton}
-                          onPress={() => handleKickUser(user.id, user.name)}
+                          onPress={() => handleKickUser(user?.id || '', user?.name || '')}
                         >
                           <UserX size={12} color="#FF9500" />
                           <Text style={styles.kickUserButtonText}>Кикнуть</Text>
@@ -1203,20 +1203,20 @@ export default function AdminScreen() {
               ) : (
                 <ScrollView style={styles.usersList} showsVerticalScrollIndicator={false}>
                   {finalManagedUsers.map((user) => (
-                    <View key={user.id} style={styles.userCard}>
+                    <View key={user?.id || Math.random()} style={styles.userCard}>
                       <View style={styles.userInfo}>
                         <View style={styles.userAvatar}>
                           <Text style={styles.userAvatarText}>
-                            {(user.name || 'U').charAt(0).toUpperCase()}
+                            {(user?.name || 'U').charAt(0).toUpperCase()}
                           </Text>
                         </View>
                         <View style={styles.userDetails}>
-                          <Text style={styles.userName}>{user.name || 'Пользователь'}</Text>
-                          <Text style={styles.userTelegramId}>@{user.username || user.telegramId}</Text>
+                          <Text style={styles.userName}>{user?.name || 'Пользователь'}</Text>
+                          <Text style={styles.userTelegramId}>@{user?.username || user?.telegramId}</Text>
                           <View style={styles.userRoleContainer}>
-                            <Text style={styles.userRoleIcon}>{getRoleIcon(user.role || 'USER')}</Text>
-                            <Text style={[styles.userRole, { color: getRoleColor(user.role || 'USER') }]}>
-                              {getRoleName(user.role || 'USER')}
+                            <Text style={styles.userRoleIcon}>{getRoleIcon(user?.role || 'USER')}</Text>
+                            <Text style={[styles.userRole, { color: getRoleColor(user?.role || 'USER') }]}>
+                              {getRoleName(user?.role || 'USER')}
                             </Text>
                           </View>
                         </View>

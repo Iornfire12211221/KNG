@@ -138,18 +138,17 @@ export const useTelegram = () => {
         
         setIsReady(true);
         
-        console.log('Telegram WebApp готов:', {
+        console.log('✅ Telegram WebApp готов:', {
           user: tg.initDataUnsafe?.user,
           platform: tg.platform,
           version: tg.version,
           colorScheme: tg.colorScheme
         });
       } else {
-        console.log('Не запущено в Telegram WebApp');
+        console.log('ℹ️ Telegram WebApp не найден, проверяем URL данные');
         
         // Fallback: парсим данные из URL
         try {
-          console.log('ℹ️ Telegram WebApp не найден, пытаемся парсить из URL');
           console.log('🔍 Current URL:', window.location.href);
           console.log('🔍 Current hash:', window.location.hash);
           
@@ -157,7 +156,7 @@ export const useTelegram = () => {
           const tgWebAppData = urlParams.get('tgWebAppData');
           
           if (tgWebAppData) {
-            console.log('📱 Найдены данные Telegram в URL');
+            console.log('📱 Найдены данные Telegram в URL - работаем в Telegram WebApp');
             
             // Парсим данные пользователя из URL
             console.log('🔍 Parsing tgWebAppData:', tgWebAppData);
@@ -182,9 +181,17 @@ export const useTelegram = () => {
                 initData: tgWebAppData,
                 initDataUnsafe: { user: userData },
                 version: '9.1',
-                platform: 'weba',
+                platform: 'web',
                 colorScheme: 'light' as const,
-                themeParams: {},
+                themeParams: {
+                  bg_color: '#ffffff',
+                  text_color: '#000000',
+                  hint_color: '#707579',
+                  link_color: '#00488f',
+                  button_color: '#3390ec',
+                  button_text_color: '#ffffff',
+                  secondary_bg_color: '#f4f4f5'
+                },
                 isExpanded: true,
                 viewportHeight: window.innerHeight,
                 viewportStableHeight: window.innerHeight,
@@ -236,7 +243,11 @@ export const useTelegram = () => {
               };
               
               setWebApp(mockWebApp as any);
-              console.log('✅ Mock Telegram WebApp создан');
+              console.log('✅ Mock Telegram WebApp создан с данными:', {
+                user: userData,
+                platform: 'web',
+                version: '9.1'
+              });
               
               // Автоматически авторизуем пользователя
               console.log('🔄 Вызываем loginWithTelegram из useTelegram...');
