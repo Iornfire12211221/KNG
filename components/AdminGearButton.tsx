@@ -9,43 +9,8 @@ interface AdminGearButtonProps {
 }
 
 export default function AdminGearButton({ style }: AdminGearButtonProps) {
-  const { currentUser } = useApp();
-
-  // Отладочная информация
-  console.log('🔧 AdminGearButton - currentUser:', currentUser);
-  console.log('🔧 AdminGearButton - isAdmin:', currentUser?.isAdmin);
-  console.log('🔧 AdminGearButton - isModerator:', currentUser?.isModerator);
-  console.log('🔧 AdminGearButton - role:', currentUser?.role);
-
-  // Показываем кнопку только админам, модераторам и основателям
-  if (!currentUser || (!currentUser.isAdmin && !currentUser.isModerator && currentUser.role !== 'FOUNDER')) {
-    console.log('🔧 AdminGearButton - кнопка скрыта, пользователь не имеет прав');
-    return null;
-  }
-
-  console.log('🔧 AdminGearButton - кнопка показана!');
-
-  const handlePress = () => {
-    try {
-      console.log('🔧 AdminGearButton - нажатие на кнопку админа');
-      router.push('/admin');
-    } catch (error) {
-      console.error('🔧 AdminGearButton - ошибка при нажатии:', error);
-    }
-  };
-
-  return (
-    <TouchableOpacity
-      style={[styles.container, style]}
-      onPress={handlePress}
-      activeOpacity={0.7}
-      accessibilityRole="button"
-      accessibilityLabel="Открыть админ панель"
-      testID="admin-gear-button"
-    >
-      <Settings size={20} color="#007AFF" />
-    </TouchableOpacity>
-  );
+  // Шестеренка полностью скрыта
+  return null;
 }
 
 const styles = StyleSheet.create({
