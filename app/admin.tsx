@@ -277,7 +277,7 @@ export default function AdminScreen() {
     }
     
     return (
-      <View style={styles.userCard} key={user.id}>
+      <View style={styles.userCard} key={user.id || Math.random().toString()}>
         <View style={styles.userInfo}>
           <View style={styles.userAvatar}>
             {userPhotoUrl ? (
@@ -305,7 +305,7 @@ export default function AdminScreen() {
               {userRole !== 'ADMIN' && (
                 <TouchableOpacity
                   style={[styles.actionButton, styles.adminButton]}
-                  onPress={() => handleMakeAdmin(user.id)}
+                  onPress={() => handleMakeAdmin(user.id || '')}
                 >
                   <Shield size={16} color="#FF6B6B" />
                 </TouchableOpacity>
@@ -313,14 +313,14 @@ export default function AdminScreen() {
               {userRole !== 'MODERATOR' && (
                 <TouchableOpacity
                   style={[styles.actionButton, styles.moderatorButton]}
-                  onPress={() => handleMakeModerator(user.id)}
+                  onPress={() => handleMakeModerator(user.id || '')}
                 >
                   <UserShield size={16} color="#4ECDC4" />
                 </TouchableOpacity>
               )}
               <TouchableOpacity
                 style={[styles.actionButton, styles.muteButton]}
-                onPress={() => (user.isMuted || false) ? handleUnmuteUser(user.id) : handleMuteUser(user.id)}
+                onPress={() => (user.isMuted || false) ? handleUnmuteUser(user.id || '') : handleMuteUser(user.id || '')}
               >
                 {(user.isMuted || false) ? <Eye size={16} color="#27AE60" /> : <EyeOff size={16} color="#E74C3C" />}
               </TouchableOpacity>
