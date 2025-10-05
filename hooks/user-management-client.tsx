@@ -303,10 +303,10 @@ export const useUserManagement = () => {
   };
 
   return {
-    users,
+    managedUsers: users,
     userStats: stats,
     selectedRole,
-    isLoading,
+    usersLoading: isLoading,
     error,
     loadUsers,
     loadStats,
