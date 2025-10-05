@@ -238,33 +238,54 @@ export default function AdminScreen() {
       return null;
     }
     
+    // Детальное логирование всех значений
+    const userName = user.name || user.firstName || 'Пользователь';
+    const userRole = user.role || 'USER';
+    const userUsername = user.username || 'без_username';
+    const userPhotoUrl = user.photoUrl;
+    const avatarText = (userName || 'П').charAt(0).toUpperCase();
+    const roleName = getRoleName(userRole);
+    const roleColor = getRoleColor(userRole);
+    const roleIcon = getRoleIcon(userRole);
+    
+    console.log('🔧 renderUser values:', {
+      userName,
+      userRole,
+      userUsername,
+      userPhotoUrl,
+      avatarText,
+      roleName,
+      roleColor,
+      roleIcon
+    });
+    
     return (
       <View style={styles.userCard} key={user.id}>
         <View style={styles.userInfo}>
           <View style={styles.userAvatar}>
-            {user.photoUrl ? (
-              <Image source={{ uri: user.photoUrl }} style={styles.avatarImage} />
+            {userPhotoUrl ? (
+              <Image source={{ uri: userPhotoUrl }} style={styles.avatarImage} />
             ) : (
               <Text style={styles.avatarText}>
-                {(user.name || user.firstName || 'П').charAt(0).toUpperCase()}
+                {avatarText}
               </Text>
             )}
           </View>
           <View style={styles.userDetails}>
-            <Text style={styles.userName}>{user.name || user.firstName || 'Пользователь'}</Text>
-            <Text style={styles.userUsername}>@{user.username || 'без_username'}</Text>
+            <Text style={styles.userName}>{userName}</Text>
+            <Text style={styles.userUsername}>@{userUsername}</Text>
             <View style={styles.roleContainer}>
-              {getRoleIcon(user.role || 'USER')}
-              <Text style={[styles.roleText, { color: getRoleColor(user.role || 'USER') }]}>
-                {getRoleName(user.role || 'USER')}
+              {roleIcon}
+              <Text style={[styles.roleText, { color: roleColor }]}>
+                {roleName}
               </Text>
             </View>
           </View>
         </View>
         <View style={styles.userActions}>
-          {user.role !== 'FOUNDER' && (
+          {userRole !== 'FOUNDER' && (
             <>
-              {user.role !== 'ADMIN' && (
+              {userRole !== 'ADMIN' && (
                 <TouchableOpacity
                   style={[styles.actionButton, styles.adminButton]}
                   onPress={() => handleMakeAdmin(user.id)}
@@ -272,7 +293,7 @@ export default function AdminScreen() {
                   <Shield size={16} color="#FF6B6B" />
                 </TouchableOpacity>
               )}
-              {user.role !== 'MODERATOR' && (
+              {userRole !== 'MODERATOR' && (
                 <TouchableOpacity
                   style={[styles.actionButton, styles.moderatorButton]}
                   onPress={() => handleMakeModerator(user.id)}
