@@ -9,7 +9,7 @@ export interface User {
   id: string;
   telegramId: string;
   name: string;
-  username?: string;
+  telegramUsername?: string;
   photoUrl?: string;
   role: 'USER' | 'MODERATOR' | 'ADMIN' | 'FOUNDER';
   isMuted: boolean;
@@ -55,7 +55,7 @@ export const useUserManagement = () => {
           id: '1',
           telegramId: '6014412239',
           name: 'Основатель',
-          username: 'herlabsn',
+          telegramUsername: 'herlabsn',
           role: 'FOUNDER',
           isMuted: false,
           isBanned: false,
@@ -68,7 +68,7 @@ export const useUserManagement = () => {
           id: '2',
           telegramId: '123456789',
           name: 'Админ',
-          username: 'admin',
+          telegramUsername: 'admin',
           role: 'ADMIN',
           isMuted: false,
           isBanned: false,
@@ -108,7 +108,7 @@ export const useUserManagement = () => {
           id: 'fallback-1',
           telegramId: '6014412239',
           name: 'Основатель',
-          username: 'herlabsn',
+          telegramUsername: 'herlabsn',
           role: 'FOUNDER',
           isMuted: false,
           isBanned: false,
@@ -231,7 +231,7 @@ export const useUserManagement = () => {
         id: 'default-1',
         telegramId: '6014412239',
         name: 'Основатель',
-        username: 'herlabsn',
+        telegramUsername: 'herlabsn',
         role: 'FOUNDER',
         isMuted: false,
         isBanned: false,
