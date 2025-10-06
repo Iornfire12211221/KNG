@@ -13,12 +13,58 @@ import {
   Switch,
   TextInput,
   ScrollView,
-  Slider,
+  PanGestureHandler,
+  State,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useApp } from '../hooks/app-store';
+
+// Кастомный слайдер компонент
+const CustomSlider = ({ value, onValueChange, style }: { value: number; onValueChange: (value: number) => void; style?: any }) => {
+  const [sliderWidth, setSliderWidth] = useState(200);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handlePress = (event: any) => {
+    const { locationX } = event.nativeEvent;
+    const newValue = Math.max(0, Math.min(1, locationX / sliderWidth));
+    onValueChange(newValue);
+  };
+
+  const handleGestureEvent = (event: any) => {
+    const { translationX } = event.nativeEvent;
+    const newValue = Math.max(0, Math.min(1, (translationX + value * sliderWidth) / sliderWidth));
+    onValueChange(newValue);
+  };
+
+  const handleStateChange = (event: any) => {
+    if (event.nativeEvent.state === State.BEGAN) {
+      setIsDragging(true);
+    } else if (event.nativeEvent.state === State.END || event.nativeEvent.state === State.CANCELLED) {
+      setIsDragging(false);
+    }
+  };
+
+  return (
+    <View style={[styles.customSliderContainer, style]}>
+      <TouchableOpacity
+        style={styles.customSliderTrack}
+        onPress={handlePress}
+        onLayout={(event) => setSliderWidth(event.nativeEvent.layout.width)}
+        activeOpacity={1}
+      >
+        <View style={[styles.customSliderProgress, { width: `${value * 100}%` }]} />
+        <PanGestureHandler
+          onGestureEvent={handleGestureEvent}
+          onHandlerStateChange={handleStateChange}
+        >
+          <View style={[styles.customSliderThumb, { left: `${value * 100}%` }]} />
+        </PanGestureHandler>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 // Типы данных
 interface User {
@@ -420,15 +466,10 @@ export default function AdminScreen() {
             <Text style={styles.sliderValue}>
               {Math.round(aiSettings.moderationThreshold * 100)}%
             </Text>
-            <Slider
-              style={styles.slider}
-              minimumValue={0}
-              maximumValue={1}
+            <CustomSlider
               value={aiSettings.moderationThreshold}
               onValueChange={(value) => saveAISettings({ ...aiSettings, moderationThreshold: value })}
-              minimumTrackTintColor="#3390EC"
-              maximumTrackTintColor="#E5E5E5"
-              thumbStyle={styles.sliderThumb}
+              style={styles.slider}
             />
           </View>
         </View>
@@ -439,15 +480,10 @@ export default function AdminScreen() {
             <Text style={styles.sliderValue}>
               {Math.round(aiSettings.spamThreshold * 100)}%
             </Text>
-            <Slider
-              style={styles.slider}
-              minimumValue={0}
-              maximumValue={1}
+            <CustomSlider
               value={aiSettings.spamThreshold}
               onValueChange={(value) => saveAISettings({ ...aiSettings, spamThreshold: value })}
-              minimumTrackTintColor="#3390EC"
-              maximumTrackTintColor="#E5E5E5"
-              thumbStyle={styles.sliderThumb}
+              style={styles.slider}
             />
           </View>
         </View>
@@ -458,15 +494,10 @@ export default function AdminScreen() {
             <Text style={styles.sliderValue}>
               {Math.round(aiSettings.toxicityThreshold * 100)}%
             </Text>
-            <Slider
-              style={styles.slider}
-              minimumValue={0}
-              maximumValue={1}
+            <CustomSlider
               value={aiSettings.toxicityThreshold}
               onValueChange={(value) => saveAISettings({ ...aiSettings, toxicityThreshold: value })}
-              minimumTrackTintColor="#3390EC"
-              maximumTrackTintColor="#E5E5E5"
-              thumbStyle={styles.sliderThumb}
+              style={styles.slider}
             />
           </View>
         </View>
@@ -477,15 +508,10 @@ export default function AdminScreen() {
             <Text style={styles.sliderValue}>
               {Math.round(aiSettings.sensitivityLevel * 100)}%
             </Text>
-            <Slider
-              style={styles.slider}
-              minimumValue={0}
-              maximumValue={1}
+            <CustomSlider
               value={aiSettings.sensitivityLevel}
               onValueChange={(value) => saveAISettings({ ...aiSettings, sensitivityLevel: value })}
-              minimumTrackTintColor="#3390EC"
-              maximumTrackTintColor="#E5E5E5"
-              thumbStyle={styles.sliderThumb}
+              style={styles.slider}
             />
           </View>
         </View>
@@ -1055,10 +1081,38 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 40,
   },
-  sliderThumb: {
+  customSliderContainer: {
+    flex: 1,
+    height: 40,
+    justifyContent: 'center',
+  },
+  customSliderTrack: {
+    height: 8,
+    backgroundColor: '#E5E5E5',
+    borderRadius: 4,
+    position: 'relative',
+  },
+  customSliderProgress: {
+    height: '100%',
     backgroundColor: '#3390EC',
+    borderRadius: 4,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  customSliderThumb: {
+    position: 'absolute',
+    top: -6,
     width: 20,
     height: 20,
+    backgroundColor: '#3390EC',
+    borderRadius: 10,
+    marginLeft: -10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
   resetButton: {
     flexDirection: 'row',
