@@ -197,7 +197,7 @@ export default function AdminScreen() {
   const renderUser = useCallback(({ item: user }: { item: User }) => {
     const userName = user.name || 'Без имени';
     const userUsername = user.username || 'без username';
-    const avatarText = userName.charAt(0).toUpperCase();
+    const avatarText = userName && userName.length > 0 ? userName.charAt(0).toUpperCase() : '?';
     const isMuted = Boolean(user.isMuted);
     const canManage = currentUser?.role === 'FOUNDER';
 
@@ -249,7 +249,9 @@ export default function AdminScreen() {
             {post.authorPhoto ? (
               <Image source={{ uri: post.authorPhoto }} style={styles.postAuthorAvatarImage} />
             ) : (
-              <Text style={styles.postAuthorAvatarText}>{post.author.charAt(0).toUpperCase()}</Text>
+              <Text style={styles.postAuthorAvatarText}>
+                {post.author && post.author.length > 0 ? post.author.charAt(0).toUpperCase() : '?'}
+              </Text>
             )}
           </View>
           <View>
@@ -293,7 +295,9 @@ export default function AdminScreen() {
             {message.userPhoto ? (
               <Image source={{ uri: message.userPhoto }} style={styles.messageUserAvatarImage} />
             ) : (
-              <Text style={styles.messageUserAvatarText}>{message.userName.charAt(0).toUpperCase()}</Text>
+              <Text style={styles.messageUserAvatarText}>
+                {message.userName && message.userName.length > 0 ? message.userName.charAt(0).toUpperCase() : '?'}
+              </Text>
             )}
           </View>
           <View>
