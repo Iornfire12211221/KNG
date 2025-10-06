@@ -12,6 +12,7 @@ import {
   Image,
   Switch,
   TextInput,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,6 +41,8 @@ interface Post {
   createdAt: string;
   location?: string;
   imageUrl?: string;
+  type?: string;
+  verified?: boolean;
 }
 
 interface Message {
@@ -53,81 +56,104 @@ interface Message {
 interface AISettings {
   autoModeration: boolean;
   smartFiltering: boolean;
-  contentAnalysis: boolean;
-  spamDetection: boolean;
+  imageAnalysis: boolean;
+  spamProtection: boolean;
   toxicityFilter: boolean;
-  imageModeration: boolean;
-  locationFiltering: boolean;
-  sentimentAnalysis: boolean;
-  autoApprove: boolean;
   moderationThreshold: number;
   spamThreshold: number;
   toxicityThreshold: number;
+  sensitivityLevel: number;
 }
 
 export default function AdminScreen() {
   const router = useRouter();
-  const { currentUser, posts, messages } = useApp();
+  const { currentUser, posts, messages, clearExpiredPosts } = useApp();
   
   // Состояние
+  const [activeTab, setActiveTab] = useState('users');
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'users' | 'posts' | 'messages' | 'ai'>('users');
-  const [selectedRole, setSelectedRole] = useState<string>('ALL');
-  const [aiSettings, setAiSettings] = useState<AISettings>({
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [aiSettings, setAISettings] = useState<AISettings>({
     autoModeration: false,
     smartFiltering: false,
-    contentAnalysis: false,
-    spamDetection: false,
+    imageAnalysis: false,
+    spamProtection: false,
     toxicityFilter: false,
-    imageModeration: false,
-    locationFiltering: false,
-    sentimentAnalysis: false,
-    autoApprove: false,
     moderationThreshold: 0.7,
     spamThreshold: 0.8,
     toxicityThreshold: 0.6,
+    sensitivityLevel: 0.5,
   });
 
   // Проверка доступа
-  const hasAccess = useMemo(() => {
-    if (!currentUser) return false;
-    return ['FOUNDER', 'ADMIN', 'MODERATOR'].includes(currentUser.role);
-  }, [currentUser]);
+  if (!currentUser || (currentUser.role !== 'FOUNDER' && currentUser.role !== 'ADMIN' && currentUser.role !== 'MODERATOR')) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <View style={styles.accessDenied}>
+          <Ionicons name="lock-closed" size={48} color="#FF4757" />
+          <Text style={styles.accessDeniedTitle}>Доступ запрещен</Text>
+          <Text style={styles.accessDeniedText}>
+            У вас нет прав для доступа к админ панели
+          </Text>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Text style={styles.backButtonText}>Назад</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   // Загрузка пользователей
   const loadUsers = useCallback(async () => {
+    setUsersLoading(true);
     try {
-      setLoading(true);
-      
-      // Создаем только основателя с реальными данными
-      const founderUser: User = {
-        id: 'founder-1',
-        name: currentUser?.name || 'Основатель',
-        username: currentUser?.username || 'founder',
-        role: 'FOUNDER',
-        isMuted: false,
-        isBanned: false,
-        isKicked: false,
-        photoUrl: currentUser?.photoUrl,
-        telegramId: currentUser?.telegramId || 6014412239,
-      };
-      
-      setUsers([founderUser]);
+      // Создаем демо-пользователей
+      const demoUsers: User[] = [
+        {
+          id: currentUser.id,
+          name: currentUser.name || 'Основатель',
+          username: currentUser.username || 'founder',
+          role: 'FOUNDER',
+          isMuted: false,
+          isBanned: false,
+          isKicked: false,
+          photoUrl: currentUser.photoUrl,
+          telegramId: currentUser.telegramId,
+        },
+        {
+          id: 'user_2',
+          name: 'Алексей Петров',
+          username: 'alex_petrov',
+          role: 'USER',
+          isMuted: false,
+          isBanned: false,
+          isKicked: false,
+        },
+        {
+          id: 'user_3',
+          name: 'Мария Сидорова',
+          username: 'maria_sid',
+          role: 'USER',
+          isMuted: true,
+          isBanned: false,
+          isKicked: false,
+        },
+      ];
+      setUsers(demoUsers);
     } catch (error) {
       console.error('Ошибка загрузки пользователей:', error);
-      setUsers([]);
     } finally {
-      setLoading(false);
+      setUsersLoading(false);
     }
   }, [currentUser]);
 
   // Загрузка настроек ИИ
   const loadAISettings = useCallback(async () => {
     try {
-      const stored = await AsyncStorage.getItem('aiSettings');
-      if (stored) {
-        setAiSettings(JSON.parse(stored));
+      const saved = await AsyncStorage.getItem('ai_settings');
+      if (saved) {
+        setAISettings(JSON.parse(saved));
       }
     } catch (error) {
       console.error('Ошибка загрузки настроек ИИ:', error);
@@ -137,10 +163,12 @@ export default function AdminScreen() {
   // Сохранение настроек ИИ
   const saveAISettings = useCallback(async (newSettings: AISettings) => {
     try {
-      setAiSettings(newSettings);
-      await AsyncStorage.setItem('aiSettings', JSON.stringify(newSettings));
+      await AsyncStorage.setItem('ai_settings', JSON.stringify(newSettings));
+      setAISettings(newSettings);
+      Alert.alert('✅ Успех', 'Настройки ИИ сохранены');
     } catch (error) {
       console.error('Ошибка сохранения настроек ИИ:', error);
+      Alert.alert('❌ Ошибка', 'Не удалось сохранить настройки');
     }
   }, []);
 
@@ -150,48 +178,34 @@ export default function AdminScreen() {
     loadAISettings();
   }, [loadUsers, loadAISettings]);
 
-  // Фильтрация пользователей
-  const filteredUsers = useMemo(() => {
-    if (selectedRole === 'ALL') return users;
-    return users.filter(user => user.role === selectedRole);
-  }, [users, selectedRole]);
+  // Управление пользователями
+  const handleMakeAdmin = useCallback((userId: string) => {
+    setUsers(prev => prev.map(user => 
+      user.id === userId ? { ...user, role: 'ADMIN' as const } : user
+    ));
+    Alert.alert('✅ Успех', 'Пользователь назначен администратором');
+  }, []);
 
-  // Обработчики действий
-  const handleMakeModerator = useCallback(async (userId: string) => {
-    try {
-      const updatedUsers = users.map(user =>
-        user.id === userId ? { ...user, role: 'MODERATOR' as const } : user
-      );
-      setUsers(updatedUsers);
-      Alert.alert('✅ Успех', 'Пользователь назначен модератором');
-    } catch (error) {
-      Alert.alert('❌ Ошибка', 'Не удалось назначить модератора');
-    }
-  }, [users]);
+  const handleMakeModerator = useCallback((userId: string) => {
+    setUsers(prev => prev.map(user => 
+      user.id === userId ? { ...user, role: 'MODERATOR' as const } : user
+    ));
+    Alert.alert('✅ Успех', 'Пользователь назначен модератором');
+  }, []);
 
-  const handleMuteUser = useCallback(async (userId: string) => {
-    try {
-      const updatedUsers = users.map(user =>
-        user.id === userId ? { ...user, isMuted: true } : user
-      );
-      setUsers(updatedUsers);
-      Alert.alert('🔇 Пользователь заглушен');
-    } catch (error) {
-      Alert.alert('❌ Ошибка', 'Не удалось заглушить пользователя');
-    }
-  }, [users]);
+  const handleMuteUser = useCallback((userId: string) => {
+    setUsers(prev => prev.map(user => 
+      user.id === userId ? { ...user, isMuted: true } : user
+    ));
+    Alert.alert('✅ Успех', 'Пользователь заглушен');
+  }, []);
 
-  const handleUnmuteUser = useCallback(async (userId: string) => {
-    try {
-      const updatedUsers = users.map(user =>
-        user.id === userId ? { ...user, isMuted: false } : user
-      );
-      setUsers(updatedUsers);
-      Alert.alert('🔊 Пользователь разглушен');
-    } catch (error) {
-      Alert.alert('❌ Ошибка', 'Не удалось разглушить пользователя');
-    }
-  }, [users]);
+  const handleUnmuteUser = useCallback((userId: string) => {
+    setUsers(prev => prev.map(user => 
+      user.id === userId ? { ...user, isMuted: false } : user
+    ));
+    Alert.alert('✅ Успех', 'Пользователь разглушен');
+  }, []);
 
   // Рендер пользователя
   const renderUser = useCallback(({ item: user }: { item: User }) => {
@@ -204,41 +218,57 @@ export default function AdminScreen() {
     return (
       <View style={styles.userCard} key={user.id}>
         <View style={styles.userInfo}>
-          <View style={styles.avatar}>
+          <View style={styles.userAvatar}>
             {user.photoUrl ? (
-              <Image source={{ uri: user.photoUrl }} style={styles.avatarImage} />
+              <Image source={{ uri: user.photoUrl }} style={styles.userAvatarImage} />
             ) : (
-              <Text style={styles.avatarText}>{avatarText}</Text>
+              <Text style={styles.userAvatarText}>{avatarText}</Text>
             )}
           </View>
           <View style={styles.userDetails}>
             <Text style={styles.userName}>{userName}</Text>
             <Text style={styles.userUsername}>@{userUsername}</Text>
-            <View style={styles.roleBadge}>
-              <Text style={styles.roleText}>{user.role === 'FOUNDER' ? 'Основатель' : user.role}</Text>
+            <View style={styles.userRole}>
+              <Text style={[styles.roleText, { color: getRoleColor(user.role) }]}>
+                {getRoleName(user.role)}
+              </Text>
+              {isMuted && <Text style={styles.mutedText}>🔇 Заглушен</Text>}
             </View>
           </View>
         </View>
         
-        {canManage && user.role !== 'FOUNDER' && (
+        {canManage && user.id !== currentUser?.id && (
           <View style={styles.userActions}>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.moderatorButton]}
-              onPress={() => handleMakeModerator(user.id)}
-            >
-              <Ionicons name="checkmark-circle" size={16} color="white" />
-            </TouchableOpacity>
+            {user.role === 'USER' && (
+              <>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.adminButton]}
+                  onPress={() => handleMakeAdmin(user.id)}
+                >
+                  <Ionicons name="shield" size={16} color="#FFFFFF" />
+                  <Text style={styles.actionButtonText}>Админ</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.moderatorButton]}
+                  onPress={() => handleMakeModerator(user.id)}
+                >
+                  <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
+                  <Text style={styles.actionButtonText}>Модер</Text>
+                </TouchableOpacity>
+              </>
+            )}
             <TouchableOpacity
               style={[styles.actionButton, isMuted ? styles.unmuteButton : styles.muteButton]}
               onPress={() => isMuted ? handleUnmuteUser(user.id) : handleMuteUser(user.id)}
             >
-              <Ionicons name={isMuted ? "volume-high" : "volume-mute"} size={16} color="white" />
+              <Ionicons name={isMuted ? "volume-high" : "volume-mute"} size={16} color="#FFFFFF" />
+              <Text style={styles.actionButtonText}>{isMuted ? "Разглушить" : "Заглушить"}</Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
     );
-  }, [currentUser, handleMakeModerator, handleMuteUser, handleUnmuteUser]);
+  }, [currentUser, handleMakeAdmin, handleMakeModerator, handleMuteUser, handleUnmuteUser]);
 
   // Рендер поста
   const renderPost = useCallback(({ item: post }: { item: Post }) => (
@@ -259,29 +289,28 @@ export default function AdminScreen() {
             <Text style={styles.postDate}>{new Date(post.createdAt).toLocaleDateString()}</Text>
           </View>
         </View>
-        {post.location && (
-          <View style={styles.postLocation}>
-            <Ionicons name="location" size={12} color="#707579" />
-            <Text style={styles.postLocationText}>{post.location}</Text>
+        <View style={styles.postStatus}>
+          <View style={[styles.statusBadge, post.verified ? styles.verifiedBadge : styles.pendingBadge]}>
+            <Ionicons 
+              name={post.verified ? "checkmark-circle" : "time"} 
+              size={14} 
+              color={post.verified ? "#34C759" : "#FF9500"} 
+            />
+            <Text style={[styles.statusText, { color: post.verified ? "#34C759" : "#FF9500" }]}>
+              {post.verified ? "Проверено" : "Ожидает"}
+            </Text>
           </View>
-        )}
+        </View>
       </View>
       
-      <Text style={styles.postContent}>{post.content}</Text>
-      
-      {post.imageUrl && (
-        <Image source={{ uri: post.imageUrl }} style={styles.postImage} />
-      )}
-      
-      <View style={styles.postActions}>
-        <TouchableOpacity style={[styles.actionButton, styles.approveButton]}>
-          <Ionicons name="checkmark" size={16} color="white" />
-          <Text style={styles.actionText}>Одобрить</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionButton, styles.rejectButton]}>
-          <Ionicons name="close" size={16} color="white" />
-          <Text style={styles.actionText}>Отклонить</Text>
-        </TouchableOpacity>
+      <View style={styles.postContent}>
+        <Text style={styles.postText}>{post.content}</Text>
+        {post.imageUrl && (
+          <Image source={{ uri: post.imageUrl }} style={styles.postImage} />
+        )}
+        {post.location && (
+          <Text style={styles.postLocation}>📍 {post.location}</Text>
+        )}
       </View>
     </View>
   ), []);
@@ -307,28 +336,24 @@ export default function AdminScreen() {
         </View>
       </View>
       <Text style={styles.messageContent}>{message.content}</Text>
-      <TouchableOpacity style={[styles.actionButton, styles.deleteButton]}>
-        <Ionicons name="trash" size={16} color="white" />
-        <Text style={styles.actionText}>Удалить</Text>
-      </TouchableOpacity>
     </View>
   ), []);
 
   // Рендер настроек ИИ
   const renderAISettings = useCallback(() => (
-    <View style={styles.aiSettingsContainer}>
+    <ScrollView style={styles.aiSettingsContainer} showsVerticalScrollIndicator={false}>
       <View style={styles.sectionHeader}>
         <Ionicons name="settings" size={20} color="#3390EC" />
         <Text style={styles.sectionTitle}>Настройки ИИ</Text>
       </View>
-      
-      {/* Основные настройки */}
-      <View style={styles.settingsGroup}>
-        <Text style={styles.groupTitle}>Основные функции</Text>
+
+      {/* Основные функции */}
+      <View style={styles.settingsSection}>
+        <Text style={styles.settingsSubtitle}>Основные функции</Text>
         
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
-            <Text style={styles.settingName}>Автомодерация</Text>
+            <Text style={styles.settingTitle}>Автомодерация</Text>
             <Text style={styles.settingDescription}>Автоматическое удаление нежелательного контента</Text>
           </View>
           <Switch
@@ -341,7 +366,7 @@ export default function AdminScreen() {
 
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
-            <Text style={styles.settingName}>Умная фильтрация</Text>
+            <Text style={styles.settingTitle}>Умная фильтрация</Text>
             <Text style={styles.settingDescription}>Интеллектуальный анализ контента</Text>
           </View>
           <Switch
@@ -354,127 +379,182 @@ export default function AdminScreen() {
 
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
-            <Text style={styles.settingName}>Анализ изображений</Text>
+            <Text style={styles.settingTitle}>Анализ изображений</Text>
             <Text style={styles.settingDescription}>Модерация фотографий и картинок</Text>
           </View>
           <Switch
-            value={aiSettings.imageModeration}
-            onValueChange={(value) => saveAISettings({ ...aiSettings, imageModeration: value })}
+            value={aiSettings.imageAnalysis}
+            onValueChange={(value) => saveAISettings({ ...aiSettings, imageAnalysis: value })}
             trackColor={{ false: '#E5E5E5', true: '#3390EC' }}
-            thumbColor={aiSettings.imageModeration ? '#FFFFFF' : '#FFFFFF'}
+            thumbColor={aiSettings.imageAnalysis ? '#FFFFFF' : '#FFFFFF'}
+          />
+        </View>
+
+        <View style={styles.settingItem}>
+          <View style={styles.settingInfo}>
+            <Text style={styles.settingTitle}>Защита от спама</Text>
+            <Text style={styles.settingDescription}>Автоматическое обнаружение спама</Text>
+          </View>
+          <Switch
+            value={aiSettings.spamProtection}
+            onValueChange={(value) => saveAISettings({ ...aiSettings, spamProtection: value })}
+            trackColor={{ false: '#E5E5E5', true: '#3390EC' }}
+            thumbColor={aiSettings.spamProtection ? '#FFFFFF' : '#FFFFFF'}
+          />
+        </View>
+
+        <View style={styles.settingItem}>
+          <View style={styles.settingInfo}>
+            <Text style={styles.settingTitle}>Фильтр токсичности</Text>
+            <Text style={styles.settingDescription}>Обнаружение оскорбительного контента</Text>
+          </View>
+          <Switch
+            value={aiSettings.toxicityFilter}
+            onValueChange={(value) => saveAISettings({ ...aiSettings, toxicityFilter: value })}
+            trackColor={{ false: '#E5E5E5', true: '#3390EC' }}
+            thumbColor={aiSettings.toxicityFilter ? '#FFFFFF' : '#FFFFFF'}
           />
         </View>
       </View>
 
       {/* Пороги чувствительности */}
-      <View style={styles.settingsGroup}>
-        <Text style={styles.groupTitle}>Пороги чувствительности</Text>
+      <View style={styles.settingsSection}>
+        <Text style={styles.settingsSubtitle}>Пороги чувствительности</Text>
         
-        <View style={styles.settingItem}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingName}>Порог модерации</Text>
-            <Text style={styles.settingDescription}>Чувствительность к нежелательному контенту</Text>
-          </View>
-          <View style={styles.sliderContainer}>
-            <Text style={styles.sliderValue}>{Math.round(aiSettings.moderationThreshold * 100)}%</Text>
+        <View style={styles.sliderContainer}>
+          <Text style={styles.sliderLabel}>Модерация</Text>
+          <View style={styles.sliderRow}>
+            <Text style={styles.sliderValue}>
+              {Math.round(aiSettings.moderationThreshold * 100)}%
+            </Text>
             <View style={styles.slider}>
               <View style={[styles.sliderTrack, { width: `${aiSettings.moderationThreshold * 100}%` }]} />
             </View>
           </View>
         </View>
 
-        <View style={styles.settingItem}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingName}>Порог спама</Text>
-            <Text style={styles.settingDescription}>Чувствительность к спаму</Text>
-          </View>
-          <View style={styles.sliderContainer}>
-            <Text style={styles.sliderValue}>{Math.round(aiSettings.spamThreshold * 100)}%</Text>
+        <View style={styles.sliderContainer}>
+          <Text style={styles.sliderLabel}>Спам</Text>
+          <View style={styles.sliderRow}>
+            <Text style={styles.sliderValue}>
+              {Math.round(aiSettings.spamThreshold * 100)}%
+            </Text>
             <View style={styles.slider}>
               <View style={[styles.sliderTrack, { width: `${aiSettings.spamThreshold * 100}%` }]} />
             </View>
           </View>
         </View>
 
-        <View style={styles.settingItem}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingName}>Порог токсичности</Text>
-            <Text style={styles.settingDescription}>Чувствительность к оскорблениям</Text>
-          </View>
-          <View style={styles.sliderContainer}>
-            <Text style={styles.sliderValue}>{Math.round(aiSettings.toxicityThreshold * 100)}%</Text>
+        <View style={styles.sliderContainer}>
+          <Text style={styles.sliderLabel}>Токсичность</Text>
+          <View style={styles.sliderRow}>
+            <Text style={styles.sliderValue}>
+              {Math.round(aiSettings.toxicityThreshold * 100)}%
+            </Text>
             <View style={styles.slider}>
               <View style={[styles.sliderTrack, { width: `${aiSettings.toxicityThreshold * 100}%` }]} />
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.sliderContainer}>
+          <Text style={styles.sliderLabel}>Общая чувствительность</Text>
+          <View style={styles.sliderRow}>
+            <Text style={styles.sliderValue}>
+              {Math.round(aiSettings.sensitivityLevel * 100)}%
+            </Text>
+            <View style={styles.slider}>
+              <View style={[styles.sliderTrack, { width: `${aiSettings.sensitivityLevel * 100}%` }]} />
             </View>
           </View>
         </View>
       </View>
 
       {/* Дополнительные настройки */}
-      <View style={styles.settingsGroup}>
-        <Text style={styles.groupTitle}>Дополнительно</Text>
+      <View style={styles.settingsSection}>
+        <Text style={styles.settingsSubtitle}>Дополнительно</Text>
         
-        <View style={styles.settingItem}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingName}>Автоодобрение</Text>
-            <Text style={styles.settingDescription}>Автоматически одобрять безопасный контент</Text>
-          </View>
-          <Switch
-            value={aiSettings.autoApprove}
-            onValueChange={(value) => saveAISettings({ ...aiSettings, autoApprove: value })}
-            trackColor={{ false: '#E5E5E5', true: '#3390EC' }}
-            thumbColor={aiSettings.autoApprove ? '#FFFFFF' : '#FFFFFF'}
-          />
-        </View>
-
-        <View style={styles.settingItem}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingName}>Анализ настроений</Text>
-            <Text style={styles.settingDescription}>Определение эмоциональной окраски сообщений</Text>
-          </View>
-          <Switch
-            value={aiSettings.sentimentAnalysis}
-            onValueChange={(value) => saveAISettings({ ...aiSettings, sentimentAnalysis: value })}
-            trackColor={{ false: '#E5E5E5', true: '#3390EC' }}
-            thumbColor={aiSettings.sentimentAnalysis ? '#FFFFFF' : '#FFFFFF'}
-          />
-        </View>
+        <TouchableOpacity style={styles.resetButton} onPress={() => {
+          const defaultSettings: AISettings = {
+            autoModeration: false,
+            smartFiltering: false,
+            imageAnalysis: false,
+            spamProtection: false,
+            toxicityFilter: false,
+            moderationThreshold: 0.7,
+            spamThreshold: 0.8,
+            toxicityThreshold: 0.6,
+            sensitivityLevel: 0.5,
+          };
+          saveAISettings(defaultSettings);
+        }}>
+          <Ionicons name="refresh" size={16} color="#FF4757" />
+          <Text style={styles.resetButtonText}>Сбросить настройки</Text>
+        </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   ), [aiSettings, saveAISettings]);
 
-  // Загрузка
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3390EC" />
-          <Text style={styles.loadingText}>Загрузка...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  // Вспомогательные функции
+  const getRoleName = (role: string) => {
+    switch (role) {
+      case 'FOUNDER': return 'Основатель';
+      case 'ADMIN': return 'Администратор';
+      case 'MODERATOR': return 'Модератор';
+      default: return 'Пользователь';
+    }
+  };
 
-  // Нет доступа
-  if (!hasAccess) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.noAccessContainer}>
-          <Ionicons name="lock-closed" size={64} color="#FF4757" />
-          <Text style={styles.noAccessTitle}>Нет доступа</Text>
-          <Text style={styles.noAccessText}>
-            У вас нет прав для доступа к админ панели
-          </Text>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.backButtonText}>Назад</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'FOUNDER': return '#FF6B35';
+      case 'ADMIN': return '#3390EC';
+      case 'MODERATOR': return '#34C759';
+      default: return '#8E8E93';
+    }
+  };
+
+  // Рендер контента
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'users':
+        return (
+          <FlatList
+            data={users}
+            renderItem={renderUser}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContainer}
+            refreshing={usersLoading}
+            onRefresh={loadUsers}
+          />
+        );
+      case 'posts':
+        return (
+          <FlatList
+            data={posts}
+            renderItem={renderPost}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContainer}
+          />
+        );
+      case 'messages':
+        return (
+          <FlatList
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContainer}
+          />
+        );
+      case 'ai':
+        return renderAISettings();
+      default:
+        return null;
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -489,11 +569,16 @@ export default function AdminScreen() {
           <Ionicons name="arrow-back" size={24} color="#000000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Админ панель</Text>
-        <View style={styles.headerSpacer} />
+        <TouchableOpacity
+          style={styles.cleanupButton}
+          onPress={clearExpiredPosts}
+        >
+          <Ionicons name="trash" size={20} color="#FF4757" />
+        </TouchableOpacity>
       </View>
 
-      {/* Табы */}
-      <View style={styles.tabContainer}>
+      {/* Вкладки */}
+      <View style={styles.tabBar}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'users' && styles.activeTab]}
           onPress={() => setActiveTab('users')}
@@ -507,7 +592,7 @@ export default function AdminScreen() {
           onPress={() => setActiveTab('posts')}
         >
           <Text style={[styles.tabText, activeTab === 'posts' && styles.activeTabText]}>
-            Посты ({posts?.length || 0})
+            Посты ({posts.length})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -515,7 +600,7 @@ export default function AdminScreen() {
           onPress={() => setActiveTab('messages')}
         >
           <Text style={[styles.tabText, activeTab === 'messages' && styles.activeTabText]}>
-            Сообщения ({messages?.length || 0})
+            Сообщения ({messages.length})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -528,74 +613,8 @@ export default function AdminScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Фильтр ролей для пользователей */}
-      {activeTab === 'users' && (
-        <View style={styles.filterContainer}>
-          <FlatList
-            horizontal
-            data={['ALL', 'FOUNDER']}
-            keyExtractor={(item) => item}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[styles.filterButton, selectedRole === item && styles.activeFilterButton]}
-                onPress={() => setSelectedRole(item)}
-              >
-                <Text style={[styles.filterText, selectedRole === item && styles.activeFilterText]}>
-                  {item === 'ALL' ? 'Все' : 'Основатель'}
-                </Text>
-              </TouchableOpacity>
-            )}
-            showsHorizontalScrollIndicator={false}
-          />
-        </View>
-      )}
-
       {/* Контент */}
-      <View style={styles.content}>
-        {activeTab === 'users' && (
-          <FlatList
-            data={filteredUsers}
-            keyExtractor={(item) => item.id}
-            renderItem={renderUser}
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>Пользователи не найдены</Text>
-              </View>
-            }
-          />
-        )}
-        
-        {activeTab === 'posts' && (
-          <FlatList
-            data={posts || []}
-            keyExtractor={(item) => item.id}
-            renderItem={renderPost}
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>Посты не найдены</Text>
-              </View>
-            }
-          />
-        )}
-        
-        {activeTab === 'messages' && (
-          <FlatList
-            data={messages || []}
-            keyExtractor={(item) => item.id}
-            renderItem={renderMessage}
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>Сообщения не найдены</Text>
-              </View>
-            }
-          />
-        )}
-
-        {activeTab === 'ai' && renderAISettings()}
-      </View>
+      {renderContent()}
     </SafeAreaView>
   );
 }
@@ -605,39 +624,31 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: '#000000',
-    marginTop: 16,
-    fontSize: 16,
-  },
-  noAccessContainer: {
+  accessDenied: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
-  noAccessTitle: {
-    color: '#000000',
+  accessDeniedTitle: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: '#FF4757',
     marginTop: 16,
+    marginBottom: 8,
   },
-  noAccessText: {
-    color: '#707579',
+  accessDeniedText: {
     fontSize: 16,
+    color: '#8E8E93',
     textAlign: 'center',
-    marginTop: 8,
+    marginBottom: 24,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#FFFFFF',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E5',
   },
@@ -645,21 +656,17 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   headerTitle: {
-    color: '#000000',
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    flex: 1,
-    textAlign: 'center',
+    color: '#000000',
   },
-  headerSpacer: {
-    width: 40,
+  cleanupButton: {
+    padding: 8,
   },
-  tabContainer: {
+  tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8F9FA',
     paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
   },
   tab: {
     flex: 1,
@@ -672,133 +679,119 @@ const styles = StyleSheet.create({
     borderBottomColor: '#3390EC',
   },
   tabText: {
-    color: '#707579',
     fontSize: 14,
+    color: '#8E8E93',
+    fontWeight: '500',
   },
   activeTabText: {
     color: '#3390EC',
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-  filterContainer: {
-    backgroundColor: '#F4F4F5',
-    paddingVertical: 12,
-  },
-  filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginHorizontal: 4,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-  },
-  activeFilterButton: {
-    backgroundColor: '#3390EC',
-    borderColor: '#3390EC',
-  },
-  filterText: {
-    color: '#707579',
-    fontSize: 12,
-  },
-  activeFilterText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
-  content: {
-    flex: 1,
+  listContainer: {
     padding: 16,
-    backgroundColor: '#F4F4F5',
   },
   userCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
-    marginBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    marginBottom: 12,
   },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  userAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#3390EC',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
-  avatarImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  userAvatarImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
-  avatarText: {
-    color: 'white',
-    fontSize: 16,
+  userAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 18,
     fontWeight: 'bold',
   },
   userDetails: {
     flex: 1,
   },
   userName: {
-    color: '#000000',
     fontSize: 16,
     fontWeight: '600',
+    color: '#000000',
+    marginBottom: 2,
   },
   userUsername: {
-    color: '#707579',
     fontSize: 14,
-    marginTop: 2,
+    color: '#8E8E93',
+    marginBottom: 4,
   },
-  roleBadge: {
-    backgroundColor: '#3390EC',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginTop: 4,
-    alignSelf: 'flex-start',
+  userRole: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   roleText: {
-    color: 'white',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  mutedText: {
+    fontSize: 12,
+    color: '#FF9500',
   },
   userActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
+    paddingVertical: 6,
+    borderRadius: 8,
     gap: 4,
   },
-  moderatorButton: {
+  actionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  adminButton: {
     backgroundColor: '#3390EC',
   },
+  moderatorButton: {
+    backgroundColor: '#34C759',
+  },
   muteButton: {
-    backgroundColor: '#FFA502',
+    backgroundColor: '#FF9500',
   },
   unmuteButton: {
-    backgroundColor: '#2ED573',
-  },
-  actionText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
+    backgroundColor: '#34C759',
   },
   postCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
-    marginBottom: 8,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   postHeader: {
     flexDirection: 'row',
@@ -812,73 +805,90 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   postAuthorAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#3390EC',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    marginRight: 12,
   },
   postAuthorAvatarImage: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   postAuthorAvatarText: {
-    color: 'white',
-    fontSize: 14,
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: 'bold',
   },
   postAuthor: {
-    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
+    color: '#000000',
+    marginBottom: 2,
   },
   postDate: {
-    color: '#707579',
     fontSize: 12,
+    color: '#8E8E93',
   },
-  postLocation: {
+  postStatus: {
+    marginTop: 8,
+  },
+  statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
   },
-  postLocationText: {
-    color: '#707579',
+  verifiedBadge: {
+    backgroundColor: 'rgba(52, 199, 89, 0.1)',
+  },
+  pendingBadge: {
+    backgroundColor: 'rgba(255, 149, 0, 0.1)',
+  },
+  statusText: {
     fontSize: 12,
+    fontWeight: '500',
   },
   postContent: {
-    color: '#000000',
+    marginTop: 8,
+  },
+  postText: {
     fontSize: 14,
-    marginBottom: 12,
+    color: '#000000',
     lineHeight: 20,
+    marginBottom: 8,
   },
   postImage: {
     width: '100%',
     height: 200,
     borderRadius: 8,
-    marginBottom: 12,
+    marginBottom: 8,
   },
-  postActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  approveButton: {
-    backgroundColor: '#2ED573',
-  },
-  rejectButton: {
-    backgroundColor: '#FF4757',
+  postLocation: {
+    fontSize: 12,
+    color: '#8E8E93',
   },
   messageCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
-    marginBottom: 8,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   messageHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
   },
   messageUserInfo: {
@@ -900,106 +910,118 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   messageUserAvatarText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: 'bold',
   },
   messageUser: {
-    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
+    color: '#000000',
   },
   messageDate: {
-    color: '#707579',
     fontSize: 12,
+    color: '#8E8E93',
   },
   messageContent: {
-    color: '#000000',
     fontSize: 14,
-    marginBottom: 12,
+    color: '#000000',
     lineHeight: 20,
   },
-  deleteButton: {
-    backgroundColor: '#FF4757',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyText: {
-    color: '#707579',
-    fontSize: 16,
-  },
-  // Настройки ИИ
   aiSettingsContainer: {
     flex: 1,
+    padding: 16,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
+    gap: 8,
   },
   sectionTitle: {
-    color: '#000000',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginLeft: 8,
+    color: '#000000',
   },
-  settingsGroup: {
+  settingsSection: {
     marginBottom: 24,
   },
-  groupTitle: {
-    color: '#000000',
+  settingsSubtitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 12,
+    color: '#000000',
+    marginBottom: 16,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 8,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   settingInfo: {
     flex: 1,
     marginRight: 16,
   },
-  settingName: {
-    color: '#000000',
+  settingTitle: {
     fontSize: 16,
     fontWeight: '600',
+    color: '#000000',
     marginBottom: 4,
   },
   settingDescription: {
-    color: '#707579',
     fontSize: 14,
-    lineHeight: 20,
+    color: '#8E8E93',
+    lineHeight: 18,
   },
   sliderContainer: {
+    marginBottom: 16,
+  },
+  sliderLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
+  },
+  sliderRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    width: 80,
+    gap: 12,
   },
   sliderValue: {
-    color: '#3390EC',
     fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 4,
+    fontWeight: '600',
+    color: '#3390EC',
+    minWidth: 40,
   },
   slider: {
-    width: 60,
-    height: 4,
+    flex: 1,
+    height: 8,
     backgroundColor: '#E5E5E5',
-    borderRadius: 2,
+    borderRadius: 4,
     overflow: 'hidden',
   },
   sliderTrack: {
     height: '100%',
     backgroundColor: '#3390EC',
-    borderRadius: 2,
+    borderRadius: 4,
+  },
+  resetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFF5F5',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFE5E5',
+    gap: 8,
+  },
+  resetButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FF4757',
   },
 });
