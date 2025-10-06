@@ -13,37 +13,20 @@ import {
   Switch,
   TextInput,
   ScrollView,
-  PanGestureHandler,
-  State,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useApp } from '../hooks/app-store';
 
-// Кастомный слайдер компонент
+// Простой слайдер компонент
 const CustomSlider = ({ value, onValueChange, style }: { value: number; onValueChange: (value: number) => void; style?: any }) => {
   const [sliderWidth, setSliderWidth] = useState(200);
-  const [isDragging, setIsDragging] = useState(false);
 
   const handlePress = (event: any) => {
     const { locationX } = event.nativeEvent;
     const newValue = Math.max(0, Math.min(1, locationX / sliderWidth));
     onValueChange(newValue);
-  };
-
-  const handleGestureEvent = (event: any) => {
-    const { translationX } = event.nativeEvent;
-    const newValue = Math.max(0, Math.min(1, (translationX + value * sliderWidth) / sliderWidth));
-    onValueChange(newValue);
-  };
-
-  const handleStateChange = (event: any) => {
-    if (event.nativeEvent.state === State.BEGAN) {
-      setIsDragging(true);
-    } else if (event.nativeEvent.state === State.END || event.nativeEvent.state === State.CANCELLED) {
-      setIsDragging(false);
-    }
   };
 
   return (
@@ -55,12 +38,7 @@ const CustomSlider = ({ value, onValueChange, style }: { value: number; onValueC
         activeOpacity={1}
       >
         <View style={[styles.customSliderProgress, { width: `${value * 100}%` }]} />
-        <PanGestureHandler
-          onGestureEvent={handleGestureEvent}
-          onHandlerStateChange={handleStateChange}
-        >
-          <View style={[styles.customSliderThumb, { left: `${value * 100}%` }]} />
-        </PanGestureHandler>
+        <View style={[styles.customSliderThumb, { left: `${value * 100}%` }]} />
       </TouchableOpacity>
     </View>
   );
