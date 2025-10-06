@@ -13,6 +13,7 @@ import {
   Switch,
   TextInput,
   ScrollView,
+  Slider,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -193,19 +194,6 @@ export default function AdminScreen() {
     Alert.alert('✅ Успех', 'Пользователь назначен модератором');
   }, []);
 
-  const handleMuteUser = useCallback((userId: string) => {
-    setUsers(prev => prev.map(user => 
-      user.id === userId ? { ...user, isMuted: true } : user
-    ));
-    Alert.alert('✅ Успех', 'Пользователь заглушен');
-  }, []);
-
-  const handleUnmuteUser = useCallback((userId: string) => {
-    setUsers(prev => prev.map(user => 
-      user.id === userId ? { ...user, isMuted: false } : user
-    ));
-    Alert.alert('✅ Успех', 'Пользователь разглушен');
-  }, []);
 
   // Рендер пользователя
   const renderUser = useCallback(({ item: user }: { item: User }) => {
@@ -237,38 +225,27 @@ export default function AdminScreen() {
           </View>
         </View>
         
-        {canManage && user.id !== currentUser?.id && (
+        {canManage && user.id !== currentUser?.id && user.role === 'USER' && (
           <View style={styles.userActions}>
-            {user.role === 'USER' && (
-              <>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.adminButton]}
-                  onPress={() => handleMakeAdmin(user.id)}
-                >
-                  <Ionicons name="shield" size={16} color="#FFFFFF" />
-                  <Text style={styles.actionButtonText}>Админ</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.moderatorButton]}
-                  onPress={() => handleMakeModerator(user.id)}
-                >
-                  <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
-                  <Text style={styles.actionButtonText}>Модер</Text>
-                </TouchableOpacity>
-              </>
-            )}
             <TouchableOpacity
-              style={[styles.actionButton, isMuted ? styles.unmuteButton : styles.muteButton]}
-              onPress={() => isMuted ? handleUnmuteUser(user.id) : handleMuteUser(user.id)}
+              style={[styles.actionButton, styles.adminButton]}
+              onPress={() => handleMakeAdmin(user.id)}
             >
-              <Ionicons name={isMuted ? "volume-high" : "volume-mute"} size={16} color="#FFFFFF" />
-              <Text style={styles.actionButtonText}>{isMuted ? "Разглушить" : "Заглушить"}</Text>
+              <Ionicons name="shield" size={16} color="#FFFFFF" />
+              <Text style={styles.actionButtonText}>Админ</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.moderatorButton]}
+              onPress={() => handleMakeModerator(user.id)}
+            >
+              <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
+              <Text style={styles.actionButtonText}>Модер</Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
     );
-  }, [currentUser, handleMakeAdmin, handleMakeModerator, handleMuteUser, handleUnmuteUser]);
+  }, [currentUser, handleMakeAdmin, handleMakeModerator]);
 
   // Рендер поста
   const renderPost = useCallback(({ item: post }: { item: Post }) => (
@@ -284,9 +261,22 @@ export default function AdminScreen() {
               </Text>
             )}
           </View>
-          <View>
+          <View style={styles.postAuthorDetails}>
             <Text style={styles.postAuthor}>{post.author}</Text>
-            <Text style={styles.postDate}>{new Date(post.createdAt).toLocaleDateString()}</Text>
+            <Text style={styles.postDate}>
+              {new Date(post.createdAt).toLocaleDateString('ru-RU', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </Text>
+            {post.type && (
+              <View style={[styles.postTypeBadge, { backgroundColor: getTypeColor(post.type) }]}>
+                <Text style={styles.postTypeText}>{getTypeLabel(post.type)}</Text>
+              </View>
+            )}
           </View>
         </View>
         <View style={styles.postStatus}>
@@ -309,7 +299,10 @@ export default function AdminScreen() {
           <Image source={{ uri: post.imageUrl }} style={styles.postImage} />
         )}
         {post.location && (
-          <Text style={styles.postLocation}>📍 {post.location}</Text>
+          <View style={styles.postLocationContainer}>
+            <Ionicons name="location" size={16} color="#8E8E93" />
+            <Text style={styles.postLocation}>{post.location}</Text>
+          </View>
         )}
       </View>
     </View>
@@ -427,9 +420,16 @@ export default function AdminScreen() {
             <Text style={styles.sliderValue}>
               {Math.round(aiSettings.moderationThreshold * 100)}%
             </Text>
-            <View style={styles.slider}>
-              <View style={[styles.sliderTrack, { width: `${aiSettings.moderationThreshold * 100}%` }]} />
-            </View>
+            <Slider
+              style={styles.slider}
+              minimumValue={0}
+              maximumValue={1}
+              value={aiSettings.moderationThreshold}
+              onValueChange={(value) => saveAISettings({ ...aiSettings, moderationThreshold: value })}
+              minimumTrackTintColor="#3390EC"
+              maximumTrackTintColor="#E5E5E5"
+              thumbStyle={styles.sliderThumb}
+            />
           </View>
         </View>
 
@@ -439,9 +439,16 @@ export default function AdminScreen() {
             <Text style={styles.sliderValue}>
               {Math.round(aiSettings.spamThreshold * 100)}%
             </Text>
-            <View style={styles.slider}>
-              <View style={[styles.sliderTrack, { width: `${aiSettings.spamThreshold * 100}%` }]} />
-            </View>
+            <Slider
+              style={styles.slider}
+              minimumValue={0}
+              maximumValue={1}
+              value={aiSettings.spamThreshold}
+              onValueChange={(value) => saveAISettings({ ...aiSettings, spamThreshold: value })}
+              minimumTrackTintColor="#3390EC"
+              maximumTrackTintColor="#E5E5E5"
+              thumbStyle={styles.sliderThumb}
+            />
           </View>
         </View>
 
@@ -451,9 +458,16 @@ export default function AdminScreen() {
             <Text style={styles.sliderValue}>
               {Math.round(aiSettings.toxicityThreshold * 100)}%
             </Text>
-            <View style={styles.slider}>
-              <View style={[styles.sliderTrack, { width: `${aiSettings.toxicityThreshold * 100}%` }]} />
-            </View>
+            <Slider
+              style={styles.slider}
+              minimumValue={0}
+              maximumValue={1}
+              value={aiSettings.toxicityThreshold}
+              onValueChange={(value) => saveAISettings({ ...aiSettings, toxicityThreshold: value })}
+              minimumTrackTintColor="#3390EC"
+              maximumTrackTintColor="#E5E5E5"
+              thumbStyle={styles.sliderThumb}
+            />
           </View>
         </View>
 
@@ -463,9 +477,16 @@ export default function AdminScreen() {
             <Text style={styles.sliderValue}>
               {Math.round(aiSettings.sensitivityLevel * 100)}%
             </Text>
-            <View style={styles.slider}>
-              <View style={[styles.sliderTrack, { width: `${aiSettings.sensitivityLevel * 100}%` }]} />
-            </View>
+            <Slider
+              style={styles.slider}
+              minimumValue={0}
+              maximumValue={1}
+              value={aiSettings.sensitivityLevel}
+              onValueChange={(value) => saveAISettings({ ...aiSettings, sensitivityLevel: value })}
+              minimumTrackTintColor="#3390EC"
+              maximumTrackTintColor="#E5E5E5"
+              thumbStyle={styles.sliderThumb}
+            />
           </View>
         </View>
       </View>
@@ -511,6 +532,26 @@ export default function AdminScreen() {
       case 'ADMIN': return '#3390EC';
       case 'MODERATOR': return '#34C759';
       default: return '#8E8E93';
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'dps': return '#FF3B30';
+      case 'patrol': return '#007AFF';
+      case 'emergency': return '#FF9500';
+      case 'info': return '#34C759';
+      default: return '#8E8E93';
+    }
+  };
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'dps': return 'ДПС';
+      case 'patrol': return 'Патруль';
+      case 'emergency': return 'Экстренная';
+      case 'info': return 'Информация';
+      default: return 'Пост';
     }
   };
 
@@ -776,12 +817,6 @@ const styles = StyleSheet.create({
   moderatorButton: {
     backgroundColor: '#34C759',
   },
-  muteButton: {
-    backgroundColor: '#FF9500',
-  },
-  unmuteButton: {
-    backgroundColor: '#34C759',
-  },
   postCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
@@ -823,6 +858,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  postAuthorDetails: {
+    flex: 1,
+  },
   postAuthor: {
     fontSize: 14,
     fontWeight: '600',
@@ -832,6 +870,18 @@ const styles = StyleSheet.create({
   postDate: {
     fontSize: 12,
     color: '#8E8E93',
+    marginBottom: 4,
+  },
+  postTypeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  postTypeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   postStatus: {
     marginTop: 8,
@@ -869,6 +919,12 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 8,
     marginBottom: 8,
+  },
+  postLocationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 4,
   },
   postLocation: {
     fontSize: 12,
@@ -997,15 +1053,12 @@ const styles = StyleSheet.create({
   },
   slider: {
     flex: 1,
-    height: 8,
-    backgroundColor: '#E5E5E5',
-    borderRadius: 4,
-    overflow: 'hidden',
+    height: 40,
   },
-  sliderTrack: {
-    height: '100%',
+  sliderThumb: {
     backgroundColor: '#3390EC',
-    borderRadius: 4,
+    width: 20,
+    height: 20,
   },
   resetButton: {
     flexDirection: 'row',
