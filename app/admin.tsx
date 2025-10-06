@@ -168,22 +168,23 @@ export default function AdminScreen() {
     Alert.alert('✅ Успех', 'Пользователь назначен модератором');
   }, []);
 
+  const handleDeleteMessage = useCallback((messageId: string) => {
+    Alert.alert('✅ Успех', 'Сообщение удалено');
+  }, []);
+
 
   // Рендер пользователя
   const renderUser = useCallback(({ item: user }: { item: User }) => {
     const userName = user.name || 'Без имени';
     const userUsername = user.telegramUsername || 'без username';
     const avatarText = userName && userName.length > 0 ? userName.charAt(0).toUpperCase() : '?';
-    const isMuted = Boolean(user.isMuted);
     const canManage = currentUser?.isAdmin || currentUser?.isModerator;
-    
-    // Используем роль из User
     const userRole = user.role;
 
   return (
       <View style={styles.userCard} key={user.id}>
         <View style={styles.userInfo}>
-          <View style={styles.userAvatar}>
+          <View style={[styles.userAvatar, { backgroundColor: getRoleColor(userRole) }]}>
             {user.photoUrl ? (
               <Image source={{ uri: user.photoUrl }} style={styles.userAvatarImage} />
             ) : (
@@ -193,30 +194,27 @@ export default function AdminScreen() {
           <View style={styles.userDetails}>
             <Text style={styles.userName}>{userName}</Text>
             <Text style={styles.userUsername}>@{userUsername}</Text>
-            <View style={styles.userRole}>
-              <Text style={[styles.roleText, { color: getRoleColor(userRole) }]}>
-                {getRoleName(userRole)}
-          </Text>
-              {isMuted && <Text style={styles.mutedText}>🔇 Заглушен</Text>}
+            {user.isMuted && (
+              <View style={styles.mutedIndicator}>
+                <Ionicons name="volume-mute" size={12} color="#FF4757" />
             </View>
+          )}
           </View>
           </View>
         
         {canManage && user.id !== currentUser?.id && userRole === 'USER' && (
           <View style={styles.userActions}>
             <TouchableOpacity
-              style={[styles.actionButton, styles.adminButton]}
+              style={styles.actionButton}
               onPress={() => handleMakeAdmin(user.id)}
             >
-              <Ionicons name="shield" size={16} color="#FFFFFF" />
-              <Text style={styles.actionButtonText}>Админ</Text>
+              <Ionicons name="shield" size={14} color="#3390EC" />
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.actionButton, styles.moderatorButton]}
+              style={styles.actionButton}
               onPress={() => handleMakeModerator(user.id)}
             >
-              <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
-              <Text style={styles.actionButtonText}>Модер</Text>
+              <Ionicons name="checkmark-circle" size={14} color="#34C759" />
             </TouchableOpacity>
           </View>
         )}
@@ -235,88 +233,38 @@ export default function AdminScreen() {
             ) : (
               <Text style={styles.postAuthorAvatarText}>
                 {post.author && post.author.length > 0 ? post.author.charAt(0).toUpperCase() : '?'}
-              </Text>
-            )}
-                </View>
-          <View style={styles.postAuthorDetails}>
-            <View style={styles.postAuthorRow}>
-              <Text style={styles.postAuthor}>{post.author || 'Неизвестный автор'}</Text>
-              {post.type && (
-                <View style={[styles.postTypeBadge, { backgroundColor: getTypeColor(post.type) }]}>
-                  <Text style={styles.postTypeText}>{getTypeLabel(post.type)}</Text>
-              </View>
-              )}
-            </View>
-            <Text style={styles.postTimeAgo}>{getTimeAgo(post.createdAt)}</Text>
-            <Text style={styles.postFullDate}>
-              {new Date(post.createdAt).toLocaleDateString('ru-RU', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
                         </Text>
+            )}
                       </View>
+          <View style={styles.postAuthorDetails}>
+            <Text style={styles.postAuthor}>{post.author || 'Неизвестный автор'}</Text>
+            <Text style={styles.postTimeAgo}>{getTimeAgo(post.createdAt)}</Text>
+          </View>
         </View>
         <View style={styles.postStatus}>
-          <View style={[styles.statusBadge, post.verified ? styles.verifiedBadge : styles.pendingBadge]}>
-            <Ionicons 
-              name={post.verified ? "checkmark-circle" : "time"} 
-              size={14} 
-              color={post.verified ? "#34C759" : "#FF9500"} 
-            />
-            <Text style={[styles.statusText, { color: post.verified ? "#34C759" : "#FF9500" }]}>
-              {post.verified ? "Проверено" : "Ожидает"}
-            </Text>
-          </View>
+          <Ionicons 
+            name={post.verified ? "checkmark-circle" : "time"} 
+            size={16} 
+            color={post.verified ? "#34C759" : "#FF9500"} 
+          />
                       </View>
                     </View>
                     
-      <View style={styles.postContent}>
-        {post.content && (
-          <View style={styles.postTextContainer}>
-            <Text style={styles.postText}>{post.content}</Text>
-          </View>
-        )}
-        
-        {post.imageUrl && (
-          <View style={styles.postImageContainer}>
-            <Image source={{ uri: post.imageUrl }} style={styles.postImage} />
-            <View style={styles.postImageOverlay}>
-              <Ionicons name="image" size={16} color="#FFFFFF" />
-              <Text style={styles.postImageText}>Фото</Text>
+      {post.content && (
+        <Text style={styles.postText}>{post.content}</Text>
+      )}
+      
+      {post.imageUrl && (
+        <Image source={{ uri: post.imageUrl }} style={styles.postImage} />
+      )}
+      
+      {post.location && (
+        <View style={styles.postLocationContainer}>
+          <Ionicons name="location" size={14} color="#8E8E93" />
+          <Text style={styles.postLocation}>{post.location}</Text>
                         </View>
-          </View>
-                        )}
-        
-        {post.location && (
-          <View style={styles.postLocationContainer}>
-            <Ionicons name="location" size={16} color="#8E8E93" />
-            <Text style={styles.postLocation}>{post.location}</Text>
-                      </View>
-                    )}
-                    
-        <View style={styles.postMeta}>
-          <View style={styles.postMetaItem}>
-            <Ionicons name="id-card" size={14} color="#8E8E93" />
-            <Text style={styles.postMetaText}>ID: {post.id}</Text>
-                          </View>
-          {post.isApproved !== undefined && (
-            <View style={styles.postMetaItem}>
-              <Ionicons 
-                name={post.isApproved ? "checkmark" : "close"} 
-                size={14} 
-                color={post.isApproved ? "#34C759" : "#FF4757"} 
-              />
-              <Text style={[styles.postMetaText, { color: post.isApproved ? "#34C759" : "#FF4757" }]}>
-                {post.isApproved ? "Одобрено" : "Отклонено"}
-              </Text>
-                          </View>
                         )}
                       </View>
-      </View>
-    </View>
   ), []);
 
   // Рендер сообщения
@@ -325,23 +273,25 @@ export default function AdminScreen() {
       <View style={styles.messageHeader}>
         <View style={styles.messageUserInfo}>
           <View style={styles.messageUserAvatar}>
-            {message.userPhoto ? (
-              <Image source={{ uri: message.userPhoto }} style={styles.messageUserAvatarImage} />
-            ) : (
-              <Text style={styles.messageUserAvatarText}>
-                {message.userName && message.userName.length > 0 ? message.userName.charAt(0).toUpperCase() : '?'}
-              </Text>
-            )}
-          </View>
+            <Text style={styles.messageUserAvatarText}>
+              {message.userName && message.userName.length > 0 ? message.userName.charAt(0).toUpperCase() : '?'}
+            </Text>
+                          </View>
           <View>
             <Text style={styles.messageUser}>{message.userName}</Text>
-            <Text style={styles.messageDate}>{new Date(message.createdAt).toLocaleDateString()}</Text>
-          </View>
-        </View>
+            <Text style={styles.messageDate}>{getTimeAgo(message.createdAt)}</Text>
+                        </View>
+                          </View>
+                      <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => handleDeleteMessage(message.id)}
+                      >
+          <Ionicons name="trash" size={14} color="#FF4757" />
+                      </TouchableOpacity>
       </View>
       <Text style={styles.messageContent}>{message.content}</Text>
     </View>
-  ), []);
+  ), [handleDeleteMessage]);
 
   // Рендер настроек ИИ
   const renderAISettings = useCallback(() => (
@@ -749,52 +699,50 @@ const styles = StyleSheet.create({
   },
   userCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    flex: 1,
   },
   userAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#3390EC',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   userAvatarImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   userAvatarText: {
     color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '600',
   },
   userDetails: {
     flex: 1,
   },
   userName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#000000',
     marginBottom: 2,
   },
   userUsername: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#8E8E93',
-    marginBottom: 4,
+  },
+  mutedIndicator: {
+    marginTop: 4,
   },
   userRole: {
     flexDirection: 'row',
@@ -811,21 +759,17 @@ const styles = StyleSheet.create({
   },
   userActions: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 8,
   },
   actionButton: {
-    flexDirection: 'row',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F8F9FA',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    gap: 4,
-  },
-  actionButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
   },
   adminButton: {
     backgroundColor: '#3390EC',
@@ -835,20 +779,17 @@ const styles = StyleSheet.create({
   },
   postCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   postHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+    alignItems: 'center',
+    marginBottom: 8,
   },
   postAuthorInfo: {
     flexDirection: 'row',
@@ -856,23 +797,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   postAuthorAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#3390EC',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   postAuthorAvatarImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   postAuthorAvatarText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 12,
+    fontWeight: '600',
   },
   postAuthorDetails: {
     flex: 1,
@@ -884,15 +825,14 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   postAuthor: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#000000',
+    marginBottom: 2,
   },
   postTimeAgo: {
-    fontSize: 12,
-    color: '#3390EC',
-    fontWeight: '500',
-    marginBottom: 2,
+    fontSize: 11,
+    color: '#8E8E93',
   },
   postFullDate: {
     fontSize: 11,
@@ -938,9 +878,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   postText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#000000',
-    lineHeight: 20,
+    lineHeight: 18,
+    marginBottom: 8,
   },
   postImageContainer: {
     position: 'relative',
@@ -948,8 +889,9 @@ const styles = StyleSheet.create({
   },
   postImage: {
     width: '100%',
-    height: 200,
-    borderRadius: 8,
+    height: 150,
+    borderRadius: 6,
+    marginBottom: 8,
   },
   postImageOverlay: {
     position: 'absolute',
@@ -971,11 +913,10 @@ const styles = StyleSheet.create({
   postLocationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
     gap: 4,
   },
   postLocation: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#8E8E93',
   },
   postMeta: {
@@ -999,14 +940,11 @@ const styles = StyleSheet.create({
   },
   messageCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   messageHeader: {
     flexDirection: 'row',
@@ -1019,37 +957,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   messageUserAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: '#3390EC',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
   },
   messageUserAvatarImage: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
   },
   messageUserAvatarText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 12,
+    fontWeight: '600',
   },
   messageUser: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#000000',
+    marginBottom: 2,
   },
   messageDate: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#8E8E93',
   },
   messageContent: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#000000',
-    lineHeight: 20,
+    lineHeight: 18,
+  },
+  deleteButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#F8F9FA',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
   },
   aiSettingsContainer: {
     flex: 1,
