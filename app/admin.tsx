@@ -160,19 +160,23 @@ export default function AdminScreen() {
   return (
       <View style={styles.userCard} key={user.id}>
         <View style={styles.userInfo}>
-          <View style={[styles.userAvatar, { backgroundColor: getRoleColor(userRole) }]}>
+          <View style={styles.userAvatar}>
             {user.photoUrl ? (
               <Image source={{ uri: user.photoUrl }} style={styles.userAvatarImage} />
             ) : (
-              <Text style={styles.userAvatarText}>{avatarText}</Text>
+              <Text style={[styles.userAvatarText, { backgroundColor: getRoleColor(userRole) }]}>{avatarText}</Text>
             )}
       </View>
           <View style={styles.userDetails}>
             <Text style={styles.userName}>{userName}</Text>
             <Text style={styles.userUsername}>@{userUsername}</Text>
+            <Text style={[styles.userRole, { color: getRoleColor(userRole) }]}>
+              {getRoleName(userRole)}
+            </Text>
             {user.isMuted && (
               <View style={styles.mutedIndicator}>
                 <Ionicons name="volume-mute" size={12} color="#FF4757" />
+                <Text style={styles.mutedText}>Заглушен</Text>
             </View>
           )}
           </View>
@@ -181,16 +185,16 @@ export default function AdminScreen() {
         {canManage && user.id !== currentUser?.id && userRole === 'USER' && (
           <View style={styles.userActions}>
             <TouchableOpacity
-              style={styles.actionButton}
+              style={[styles.actionButton, styles.adminButton]}
               onPress={() => handleMakeAdmin(user.id)}
             >
-              <Ionicons name="shield" size={14} color="#3390EC" />
+              <Ionicons name="shield" size={14} color="#FFFFFF" />
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.actionButton}
+              style={[styles.actionButton, styles.moderatorButton]}
               onPress={() => handleMakeModerator(user.id)}
             >
-              <Ionicons name="checkmark-circle" size={14} color="#34C759" />
+              <Ionicons name="checkmark-circle" size={14} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
         )}
@@ -636,6 +640,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    overflow: 'hidden',
   },
   userAvatarImage: {
     width: 40,
@@ -646,6 +651,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    textAlign: 'center',
+    lineHeight: 40,
   },
   userDetails: {
     flex: 1,
@@ -659,9 +669,17 @@ const styles = StyleSheet.create({
   userUsername: {
     fontSize: 13,
     color: '#8E8E93',
+    marginBottom: 2,
+  },
+  userRole: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   mutedIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 4,
+    gap: 4,
   },
   userRole: {
     flexDirection: 'row',
