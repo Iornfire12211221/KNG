@@ -8,10 +8,15 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-# Copy only the minimal server
-COPY backend/minimal-server.js ./
+# Copy package files first for better layer caching
+COPY package.json package-lock.json ./
+RUN npm install --legacy-peer-deps
 
-# No dependencies needed for minimal server
+# Copy source code
+COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
 
 # Set production environment variables
 ENV NODE_ENV=production
@@ -19,8 +24,11 @@ ENV EXPO_USE_FAST_RESOLVER=1
 ENV EXPO_NO_TELEMETRY=1
 ENV EXPO_NON_INTERACTIVE=1
 
-# Skip Expo build for simple server
-# RUN npx expo export --platform web --output-dir dist
+# Build static web app for production
+RUN npx expo export --platform web --output-dir dist
+
+# Copy custom HTML for Telegram WebApp
+RUN cp web/index.html dist/index.html
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
@@ -37,4 +45,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8081/ || exit 1
 
 # Start the application
-CMD ["node", "minimal-server.js"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate && node backend/full-server.ts"]
