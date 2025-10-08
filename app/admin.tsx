@@ -38,8 +38,8 @@ const CustomSlider = ({ value, onValueChange, style }: { value: number; onValueC
         onLayout={(event) => setSliderWidth(event.nativeEvent.layout.width)}
         activeOpacity={1}
       >
-        <View style={[styles.customSliderProgress, { width: `${value * 100}%` }]} />
-        <View style={[styles.customSliderThumb, { left: `${value * 100}%` }]} />
+        <View style={[styles.customSliderProgress, { width: `${(isNaN(value) ? 0.5 : value) * 100}%` }]} />
+        <View style={[styles.customSliderThumb, { left: `${(isNaN(value) ? 0.5 : value) * 100}%` }]} />
           </TouchableOpacity>
         </View>
   );
@@ -135,7 +135,19 @@ export default function AdminScreen() {
     try {
       const saved = await AsyncStorage.getItem('ai_settings');
       if (saved) {
-        setAISettings(JSON.parse(saved));
+        const parsedSettings = JSON.parse(saved);
+        // Убеждаемся, что все поля имеют значения по умолчанию
+        setAISettings({
+          autoModeration: parsedSettings.autoModeration ?? false,
+          smartFiltering: parsedSettings.smartFiltering ?? false,
+          imageAnalysis: parsedSettings.imageAnalysis ?? false,
+          spamProtection: parsedSettings.spamProtection ?? false,
+          toxicityFilter: parsedSettings.toxicityFilter ?? false,
+          moderationThreshold: parsedSettings.moderationThreshold ?? 0.7,
+          spamThreshold: parsedSettings.spamThreshold ?? 0.8,
+          toxicityThreshold: parsedSettings.toxicityThreshold ?? 0.6,
+          sensitivityLevel: parsedSettings.sensitivityLevel ?? 0.5,
+        });
       }
     } catch (error) {
       console.error('Ошибка загрузки настроек ИИ:', error);
@@ -223,22 +235,22 @@ export default function AdminScreen() {
   }, [currentUser, handleMakeAdmin, handleMakeModerator]);
 
   // Рендер поста
-  const renderPost = useCallback(({ item: post }: { item: Post }) => (
+  const renderPost = useCallback(({ item: post }: { item: any }) => (
     <View style={styles.postCard} key={post.id}>
       <View style={styles.postHeader}>
         <View style={styles.postAuthorInfo}>
           <View style={styles.postAuthorAvatar}>
-            {post.authorPhoto ? (
-              <Image source={{ uri: post.authorPhoto }} style={styles.postAuthorAvatarImage} />
+            {post.photo ? (
+              <Image source={{ uri: post.photo }} style={styles.postAuthorAvatarImage} />
             ) : (
               <Text style={styles.postAuthorAvatarText}>
-                {post.author && post.author.length > 0 ? post.author.charAt(0).toUpperCase() : '?'}
-                        </Text>
+                {post.userName && post.userName.length > 0 ? post.userName.charAt(0).toUpperCase() : '?'}
+              </Text>
             )}
-                      </View>
+          </View>
           <View style={styles.postAuthorDetails}>
-            <Text style={styles.postAuthor}>{post.author || 'Неизвестный автор'}</Text>
-            <Text style={styles.postTimeAgo}>{getTimeAgo(post.createdAt)}</Text>
+            <Text style={styles.postAuthor}>{post.userName || 'Неизвестный автор'}</Text>
+            <Text style={styles.postTimeAgo}>{getTimeAgo(post.timestamp)}</Text>
           </View>
         </View>
         <View style={styles.postStatus}>
@@ -247,24 +259,24 @@ export default function AdminScreen() {
             size={16} 
             color={post.verified ? "#34C759" : "#FF9500"} 
           />
-                      </View>
-                    </View>
-                    
-      {post.content && (
-        <Text style={styles.postText}>{post.content}</Text>
+        </View>
+      </View>
+      
+      {post.description && (
+        <Text style={styles.postText}>{post.description}</Text>
       )}
       
-      {post.imageUrl && (
-        <Image source={{ uri: post.imageUrl }} style={styles.postImage} />
+      {post.photo && (
+        <Image source={{ uri: post.photo }} style={styles.postImage} />
       )}
       
-      {post.location && (
+      {post.address && (
         <View style={styles.postLocationContainer}>
           <Ionicons name="location" size={14} color="#8E8E93" />
-          <Text style={styles.postLocation}>{post.location}</Text>
-                        </View>
-                        )}
-                      </View>
+          <Text style={styles.postLocation}>{post.address}</Text>
+        </View>
+      )}
+    </View>
   ), []);
 
   // Рендер сообщения
@@ -421,10 +433,10 @@ export default function AdminScreen() {
           <Text style={styles.sliderLabel}>Общая чувствительность</Text>
           <View style={styles.sliderRow}>
             <Text style={styles.sliderValue}>
-              {Math.round(aiSettings.sensitivityLevel * 100)}%
-                          </Text>
+              {isNaN(aiSettings.sensitivityLevel) ? '50%' : Math.round(aiSettings.sensitivityLevel * 100)}%
+            </Text>
             <CustomSlider
-              value={aiSettings.sensitivityLevel}
+              value={isNaN(aiSettings.sensitivityLevel) ? 0.5 : aiSettings.sensitivityLevel}
               onValueChange={(value) => saveAISettings({ ...aiSettings, sensitivityLevel: value })}
               style={styles.slider}
             />
