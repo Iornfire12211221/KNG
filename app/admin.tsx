@@ -19,6 +19,11 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useApp } from '../hooks/app-store';
 import { useUserManagement, User } from '../hooks/user-management-client';
+import { useNotifications } from '../hooks/useNotifications';
+import { useGeofencing } from '../hooks/useGeofencing';
+import { useRealTimeUpdates } from '../hooks/useRealTimeUpdates';
+import { NotificationBell } from '../components/NotificationBell';
+import { NotificationSettings } from '../components/NotificationSettings';
 
 
 // Типы данных
@@ -68,8 +73,14 @@ export default function AdminScreen() {
   const { currentUser, posts, messages, clearExpiredPosts } = useApp();
   const { managedUsers, usersLoading } = useUserManagement();
   
+  // Система уведомлений
+  const { notifications, unreadCount, addNotification } = useNotifications();
+  const { zones, isTracking } = useGeofencing();
+  const { connectionStatus, sendSystemNotification } = useRealTimeUpdates();
+  
   // Состояние
   const [activeTab, setActiveTab] = useState('users');
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [aiSettings, setAISettings] = useState<AISettings>({
     autoModeration: false,
     smartFiltering: false,
@@ -467,6 +478,12 @@ export default function AdminScreen() {
             contentContainerStyle={styles.listContainer}
           />
         );
+      case 'notifications':
+        return (
+          <View style={styles.notificationsContainer}>
+            <NotificationSettings />
+          </View>
+        );
       case 'ai':
         return renderAISettings();
       default:
@@ -487,12 +504,15 @@ export default function AdminScreen() {
           <Ionicons name="arrow-back" size={24} color="#000000" />
                         </TouchableOpacity>
         <Text style={styles.headerTitle}>Админ панель</Text>
-                        <TouchableOpacity
-              style={styles.cleanupButton}
-              onPress={clearExpiredPosts}
-                        >
-              <Ionicons name="trash-outline" size={20} color="#8E8E93" />
-                        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <NotificationBell size={20} />
+          <TouchableOpacity
+            style={styles.cleanupButton}
+            onPress={clearExpiredPosts}
+          >
+            <Ionicons name="trash-outline" size={20} color="#8E8E93" />
+          </TouchableOpacity>
+        </View>
       </View>
                       
       {/* Вкладки */}
@@ -521,6 +541,14 @@ export default function AdminScreen() {
              Сообщения
            </Text>
                         </TouchableOpacity>
+                        <TouchableOpacity
+          style={[styles.tab, activeTab === 'notifications' && styles.activeTab]}
+          onPress={() => setActiveTab('notifications')}
+        >
+          <Text style={[styles.tabText, activeTab === 'notifications' && styles.activeTabText]}>
+            Уведомления
+              </Text>
+            </TouchableOpacity>
                         <TouchableOpacity
           style={[styles.tab, activeTab === 'ai' && styles.activeTab]}
           onPress={() => setActiveTab('ai')}
@@ -1021,5 +1049,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#FF4757',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  notificationsContainer: {
+    flex: 1,
   },
 });
