@@ -65,7 +65,7 @@ interface AISettings {
 
 export default function AdminScreen() {
   const router = useRouter();
-  const { currentUser, posts, messages, clearExpiredPosts, clearAllPosts } = useApp();
+  const { currentUser, posts, messages, clearExpiredPosts } = useApp();
   const { managedUsers, usersLoading } = useUserManagement();
   
   // Состояние
@@ -133,8 +133,6 @@ export default function AdminScreen() {
   // Инициализация
   useEffect(() => {
     loadAISettings();
-    // Автоматически очищаем все посты при загрузке админ панели
-    clearAllPosts();
   }, [loadAISettings]);
 
   // Управление пользователями
