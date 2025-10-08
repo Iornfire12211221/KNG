@@ -9,7 +9,7 @@
     "dev": "expo start --dev-client",
     "build": "expo export --platform web",
     "build-prod": "expo export --platform web --output-dir dist",
-    "serve": "bun run backend/hono.ts",
+    "serve": "node backend/hono.ts",
     "lint": "expo lint"
   },
   "dependencies": {
@@ -44,7 +44,7 @@
     "expo-system-ui": "~5.0.6",
     "expo-web-browser": "^14.2.0",
     "hono": "^4.9.6",
-    "lucide-react-native": "^0.460.0",
+    "lucide-react-native": "^0.475.0",
     "nativewind": "^4.1.23",
     "prisma": "^6.16.3",
     "react": "19.0.0",
