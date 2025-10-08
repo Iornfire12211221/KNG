@@ -46,7 +46,17 @@
       ]
     },
     "web": {
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "bundler": "metro",
+      "output": "static",
+      "name": "Карта ДПС Кингисепп",
+      "shortName": "ДПС Карта",
+      "description": "Карта и чат для постов ДПС в реальном времени в Кингисеппе",
+      "startUrl": "/",
+      "display": "standalone",
+      "orientation": "portrait",
+      "themeColor": "#007AFF",
+      "backgroundColor": "#FFFFFF"
     },
     "plugins": [
       [

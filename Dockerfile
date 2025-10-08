@@ -1,37 +1,52 @@
 FROM oven/bun:1-alpine
 
-RUN apk add --no-cache libc6-compat
+# Install system dependencies
+RUN apk add --no-cache \
+    libc6-compat \
+    curl \
+    && rm -rf /var/cache/apk/*
 
 WORKDIR /app
 
 # Copy package files first for better layer caching
 COPY package.json bun.lock* ./
-RUN bun install --ci
+RUN bun install --ci --production=false
 
-# Copy the rest of the source
+# Copy source code
 COPY . .
 
 # Generate Prisma client
 RUN bunx prisma generate
 
+# Set production environment variables
 ENV NODE_ENV=production
 ENV EXPO_USE_FAST_RESOLVER=1
 ENV EXPO_NO_TELEMETRY=1
 ENV EXPO_NON_INTERACTIVE=1
-ENV DATABASE_URL="postgresql://gen_user:Dima122111@5b185a49c11b0959c8173153.twc1.net:5432/default_db"
+ENV EXPO_USE_FAST_RESOLVER=1
+ENV EXPO_NO_TELEMETRY=1
 
-# Build static web app (Expo exports to ./dist)
-RUN bunx expo export --platform web
+# Build static web app for production
+RUN bunx expo export --platform web --output-dir dist
 
-# Helpful debug output
-RUN ls -la ./dist || true
-RUN ls -la ./dist/_expo || true
-RUN head -n 20 ./dist/index.html || true
+# Verify build output
+RUN ls -la ./dist && \
+    ls -la ./dist/_expo && \
+    echo "Build completed successfully"
 
-# Ensure certs directory exists and is readable
-RUN ls -la ./certs || echo "No certs directory"
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001
+
+# Change ownership of the app directory
+RUN chown -R nextjs:nodejs /app
+USER nextjs
 
 EXPOSE 8081
 
-# Start with database migration and then run the app
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8081/ || exit 1
+
+# Start the application
 CMD ["sh", "-c", "bunx prisma db push --skip-generate && bun run backend/hono.ts"]

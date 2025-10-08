@@ -1,0 +1,65 @@
+{
+  "expo": {
+    "name": "ДПС Кингисепп",
+    "slug": "dps-kingisepp",
+    "version": "1.0.1",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "dps-kingisepp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.dps.kingisepp",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Приложение использует ваше местоположение для отображения постов ДПС на карте."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "app.dps.kingisepp",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/images/favicon.png",
+      "bundler": "metro",
+      "output": "static",
+      "name": "ДПС Кингисепп",
+      "shortName": "ДПС",
+      "description": "Карта постов ДПС в реальном времени",
+      "startUrl": "/",
+      "display": "standalone",
+      "orientation": "portrait",
+      "themeColor": "#007AFF",
+      "backgroundColor": "#FFFFFF"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://your-domain.timeweb.ru"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Приложение использует ваше местоположение для отображения постов ДПС на карте."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

@@ -2,9 +2,24 @@ version: '3.8'
 
 services:
   app:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8081:8081"
     environment:
       - NODE_ENV=production
+      - EXPO_USE_FAST_RESOLVER=1
+      - EXPO_NO_TELEMETRY=1
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.telegram-app.rule=Host(`your-domain.timeweb.ru`)"
+      - "traefik.http.routers.telegram-app.tls=true"
+      - "traefik.http.routers.telegram-app.tls.certresolver=letsencrypt"
