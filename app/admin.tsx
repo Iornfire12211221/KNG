@@ -133,19 +133,7 @@ export default function AdminScreen() {
   // Инициализация
   useEffect(() => {
     loadAISettings();
-    // Очищаем локальные данные постов
-    clearLocalPosts();
   }, [loadAISettings]);
-
-  // Функция для очистки локальных постов
-  const clearLocalPosts = useCallback(async () => {
-    try {
-      await AsyncStorage.removeItem('dps_posts');
-      console.log('🗑️ Local posts cleared');
-    } catch (error) {
-      console.error('❌ Error clearing local posts:', error);
-    }
-  }, []);
 
   // Управление пользователями
   const handleMakeAdmin = useCallback((userId: string) => {
