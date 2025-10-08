@@ -65,7 +65,7 @@ interface AISettings {
 
 export default function AdminScreen() {
   const router = useRouter();
-  const { currentUser, posts, messages, clearExpiredPosts, clearAllPosts } = useApp();
+  const { currentUser, posts, messages, clearExpiredPosts } = useApp();
   const { managedUsers, usersLoading } = useUserManagement();
   
   // Состояние
@@ -483,33 +483,12 @@ export default function AdminScreen() {
           <Ionicons name="arrow-back" size={24} color="#000000" />
                         </TouchableOpacity>
         <Text style={styles.headerTitle}>Админ панель</Text>
-            <View style={styles.headerButtons}>
-              <TouchableOpacity
-                style={styles.cleanupButton}
-                onPress={clearExpiredPosts}
-              >
-                <Ionicons name="trash" size={20} color="#FF4757" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.clearAllButton}
-                onPress={() => {
-                  Alert.alert(
-                    '⚠️ ВНИМАНИЕ',
-                    'Вы уверены, что хотите удалить ВСЕ посты? Это действие нельзя отменить!',
-                    [
-                      { text: 'Отмена', style: 'cancel' },
-                      { 
-                        text: 'Удалить все', 
-                        style: 'destructive',
-                        onPress: clearAllPosts
-                      }
-                    ]
-                  );
-                }}
-              >
-                <Ionicons name="nuclear" size={20} color="#FF0000" />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={styles.cleanupButton}
+              onPress={clearExpiredPosts}
+            >
+              <Ionicons name="trash-outline" size={20} color="#8E8E93" />
+            </TouchableOpacity>
       </View>
                       
       {/* Вкладки */}
@@ -557,7 +536,7 @@ export default function AdminScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FAFAFA',
   },
   accessDenied: {
     flex: 1,
@@ -582,10 +561,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   backButton: {
     padding: 8,
@@ -600,20 +584,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#000000',
   },
-  headerButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
   cleanupButton: {
     padding: 8,
-  },
-  clearAllButton: {
-    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#F8F9FA',
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#F8F9FA',
-    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   tab: {
     flex: 1,
@@ -639,11 +621,15 @@ const styles = StyleSheet.create({
   },
   userCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    marginHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   userInfo: {
     flexDirection: 'row',
@@ -719,11 +705,15 @@ const styles = StyleSheet.create({
   },
   postCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    marginHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   postHeader: {
     flexDirection: 'row',
@@ -880,11 +870,15 @@ const styles = StyleSheet.create({
   },
   messageCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    marginHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   messageHeader: {
     flexDirection: 'row',
@@ -942,7 +936,7 @@ const styles = StyleSheet.create({
   },
   aiSettingsContainer: {
     flex: 1,
-    padding: 16,
+    padding: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -956,7 +950,15 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   settingsSection: {
-    marginBottom: 24,
+    marginBottom: 32,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   settingsSubtitle: {
     fontSize: 16,
