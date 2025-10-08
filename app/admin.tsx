@@ -20,30 +20,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useApp } from '../hooks/app-store';
 import { useUserManagement, User } from '../hooks/user-management-client';
 
-// Простой слайдер компонент
-const CustomSlider = ({ value, onValueChange, style }: { value: number; onValueChange: (value: number) => void; style?: any }) => {
-  const [sliderWidth, setSliderWidth] = useState(200);
-
-  const handlePress = (event: any) => {
-    const { locationX } = event.nativeEvent;
-    const newValue = Math.max(0, Math.min(1, locationX / sliderWidth));
-    onValueChange(newValue);
-  };
-
-    return (
-    <View style={[styles.customSliderContainer, style]}>
-      <TouchableOpacity
-        style={styles.customSliderTrack}
-        onPress={handlePress}
-        onLayout={(event) => setSliderWidth(event.nativeEvent.layout.width)}
-        activeOpacity={1}
-      >
-        <View style={[styles.customSliderProgress, { width: `${(isNaN(value) ? 0.5 : value) * 100}%` }]} />
-        <View style={[styles.customSliderThumb, { left: `${(isNaN(value) ? 0.5 : value) * 100}%` }]} />
-          </TouchableOpacity>
-        </View>
-  );
-};
 
 // Типы данных
 interface AdminUser {
@@ -85,15 +61,11 @@ interface AISettings {
   imageAnalysis: boolean;
   spamProtection: boolean;
   toxicityFilter: boolean;
-  moderationThreshold: number;
-  spamThreshold: number;
-  toxicityThreshold: number;
-  sensitivityLevel: number;
 }
 
 export default function AdminScreen() {
   const router = useRouter();
-  const { currentUser, posts, messages, clearExpiredPosts } = useApp();
+  const { currentUser, posts, messages, clearExpiredPosts, clearAllPosts } = useApp();
   const { managedUsers, usersLoading } = useUserManagement();
   
   // Состояние
@@ -104,10 +76,6 @@ export default function AdminScreen() {
     imageAnalysis: false,
     spamProtection: false,
     toxicityFilter: false,
-    moderationThreshold: 0.7,
-    spamThreshold: 0.8,
-    toxicityThreshold: 0.6,
-    sensitivityLevel: 0.5,
   });
 
   // Проверка доступа
@@ -143,10 +111,6 @@ export default function AdminScreen() {
           imageAnalysis: parsedSettings.imageAnalysis ?? false,
           spamProtection: parsedSettings.spamProtection ?? false,
           toxicityFilter: parsedSettings.toxicityFilter ?? false,
-          moderationThreshold: parsedSettings.moderationThreshold ?? 0.7,
-          spamThreshold: parsedSettings.spamThreshold ?? 0.8,
-          toxicityThreshold: parsedSettings.toxicityThreshold ?? 0.6,
-          sensitivityLevel: parsedSettings.sensitivityLevel ?? 0.5,
         });
       }
     } catch (error) {
@@ -383,66 +347,6 @@ export default function AdminScreen() {
                       </View>
                     </View>
                     
-      {/* Пороги чувствительности */}
-      <View style={styles.settingsSection}>
-        <Text style={styles.settingsSubtitle}>Пороги чувствительности</Text>
-        
-        <View style={styles.sliderContainer}>
-          <Text style={styles.sliderLabel}>Модерация</Text>
-          <View style={styles.sliderRow}>
-            <Text style={styles.sliderValue}>
-              {Math.round(aiSettings.moderationThreshold * 100)}%
-            </Text>
-            <CustomSlider
-              value={aiSettings.moderationThreshold}
-              onValueChange={(value) => saveAISettings({ ...aiSettings, moderationThreshold: value })}
-              style={styles.slider}
-            />
-                    </View>
-                  </View>
-
-        <View style={styles.sliderContainer}>
-          <Text style={styles.sliderLabel}>Спам</Text>
-          <View style={styles.sliderRow}>
-            <Text style={styles.sliderValue}>
-              {Math.round(aiSettings.spamThreshold * 100)}%
-            </Text>
-            <CustomSlider
-              value={aiSettings.spamThreshold}
-              onValueChange={(value) => saveAISettings({ ...aiSettings, spamThreshold: value })}
-              style={styles.slider}
-            />
-                </View>
-              </View>
-
-        <View style={styles.sliderContainer}>
-          <Text style={styles.sliderLabel}>Токсичность</Text>
-          <View style={styles.sliderRow}>
-            <Text style={styles.sliderValue}>
-              {Math.round(aiSettings.toxicityThreshold * 100)}%
-                    </Text>
-            <CustomSlider
-              value={aiSettings.toxicityThreshold}
-              onValueChange={(value) => saveAISettings({ ...aiSettings, toxicityThreshold: value })}
-              style={styles.slider}
-            />
-                        </View>
-                        </View>
-
-        <View style={styles.sliderContainer}>
-          <Text style={styles.sliderLabel}>Общая чувствительность</Text>
-          <View style={styles.sliderRow}>
-            <Text style={styles.sliderValue}>
-              {isNaN(aiSettings.sensitivityLevel) ? '50%' : Math.round(aiSettings.sensitivityLevel * 100)}%
-            </Text>
-            <CustomSlider
-              value={isNaN(aiSettings.sensitivityLevel) ? 0.5 : aiSettings.sensitivityLevel}
-              onValueChange={(value) => saveAISettings({ ...aiSettings, sensitivityLevel: value })}
-              style={styles.slider}
-            />
-                        </View>
-                    </View>
-                  </View>
                   
       {/* Дополнительные настройки */}
       <View style={styles.settingsSection}>
@@ -455,10 +359,6 @@ export default function AdminScreen() {
             imageAnalysis: false,
             spamProtection: false,
             toxicityFilter: false,
-            moderationThreshold: 0.7,
-            spamThreshold: 0.8,
-            toxicityThreshold: 0.6,
-            sensitivityLevel: 0.5,
           };
           saveAISettings(defaultSettings);
         }}>
@@ -583,12 +483,33 @@ export default function AdminScreen() {
           <Ionicons name="arrow-back" size={24} color="#000000" />
                         </TouchableOpacity>
         <Text style={styles.headerTitle}>Админ панель</Text>
-                        <TouchableOpacity
-          style={styles.cleanupButton}
-          onPress={clearExpiredPosts}
-                        >
-          <Ionicons name="trash" size={20} color="#FF4757" />
-                        </TouchableOpacity>
+            <View style={styles.headerButtons}>
+              <TouchableOpacity
+                style={styles.cleanupButton}
+                onPress={clearExpiredPosts}
+              >
+                <Ionicons name="trash" size={20} color="#FF4757" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.clearAllButton}
+                onPress={() => {
+                  Alert.alert(
+                    '⚠️ ВНИМАНИЕ',
+                    'Вы уверены, что хотите удалить ВСЕ посты? Это действие нельзя отменить!',
+                    [
+                      { text: 'Отмена', style: 'cancel' },
+                      { 
+                        text: 'Удалить все', 
+                        style: 'destructive',
+                        onPress: clearAllPosts
+                      }
+                    ]
+                  );
+                }}
+              >
+                <Ionicons name="nuclear" size={20} color="#FF0000" />
+              </TouchableOpacity>
+            </View>
       </View>
                       
       {/* Вкладки */}
@@ -679,7 +600,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#000000',
   },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   cleanupButton: {
+    padding: 8,
+  },
+  clearAllButton: {
     padding: 8,
   },
   tabBar: {
@@ -1058,63 +986,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#8E8E93',
     lineHeight: 18,
-  },
-  sliderContainer: {
-    marginBottom: 16,
-  },
-  sliderLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 8,
-  },
-  sliderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  sliderValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#3390EC',
-    minWidth: 40,
-  },
-  slider: {
-    flex: 1,
-    height: 40,
-  },
-  customSliderContainer: {
-    flex: 1,
-    height: 40,
-    justifyContent: 'center',
-  },
-  customSliderTrack: {
-    height: 8,
-    backgroundColor: '#E5E5E5',
-    borderRadius: 4,
-    position: 'relative',
-  },
-  customSliderProgress: {
-    height: '100%',
-    backgroundColor: '#3390EC',
-    borderRadius: 4,
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
-  customSliderThumb: {
-    position: 'absolute',
-    top: -6,
-    width: 20,
-    height: 20,
-    backgroundColor: '#3390EC',
-    borderRadius: 10,
-    marginLeft: -10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
   },
   resetButton: {
     flexDirection: 'row',

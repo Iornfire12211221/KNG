@@ -155,6 +155,19 @@ export const postsRouter = createTRPCRouter({
     return { deletedCount: result.count };
   }),
 
+  // Удалить ВСЕ посты (для полной очистки)
+  deleteAll: publicProcedure.mutation(async () => {
+    try {
+      const deletedCount = await prisma.post.deleteMany({});
+      
+      console.log(`🗑️ Deleted ALL ${deletedCount.count} posts from database`);
+      return { deletedCount: deletedCount.count };
+    } catch (error) {
+      console.error('❌ Error deleting all posts:', error);
+      throw error;
+    }
+  }),
+
   // Получить все посты для админов (включая на модерации)
   getAllForAdmin: publicProcedure.query(async () => {
     try {

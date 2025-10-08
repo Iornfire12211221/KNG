@@ -918,6 +918,34 @@ ${description ? `Описание от пользователя: "${description}
     setPosts((prev) => prev.filter((p) => p.expiresAt > now));
   }, []);
 
+  // Удалить ВСЕ посты (полная очистка)
+  const clearAllPosts = useCallback(async () => {
+    // Очищаем локально
+    setPosts([]);
+    await AsyncStorage.removeItem('dps_posts');
+    console.log('🗑️ Cleared all posts locally');
+    
+    // Очищаем на сервере
+    try {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_RORK_API_BASE_URL || ''}/api/trpc/posts.deleteAll`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.result?.data?.deletedCount > 0) {
+          console.log(`🗑️ Server deleted ALL ${data.result.data.deletedCount} posts`);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error deleting all posts on server:', error);
+    }
+  }, []);
+
   // Функция для принудительного обновления постов из AsyncStorage (fallback)
   const refreshPosts = useCallback(async () => {
     try {
@@ -1325,6 +1353,7 @@ ${description ? `Описание от пользователя: "${description}
       removePost,
       addMessage,
       clearExpiredPosts,
+      clearAllPosts,
       refreshPosts,
       syncPostsWithServer,
       updateUser,
@@ -1356,6 +1385,7 @@ ${description ? `Описание от пользователя: "${description}
       removePost,
       addMessage,
       clearExpiredPosts,
+      clearAllPosts,
       refreshPosts,
       syncPostsWithServer,
       updateUser,
