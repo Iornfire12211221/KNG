@@ -42,4 +42,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8081/ || exit 1
 
 # Start the application
-CMD ["sh", "-c", "node backend/simple-server.ts"]
+CMD ["sh", "-c", "node backend/express-server.js"]
