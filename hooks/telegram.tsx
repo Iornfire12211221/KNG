@@ -133,8 +133,23 @@ export const useTelegram = () => {
         // Расширяем на весь экран
         tg.expand();
         
-        // Включаем подтверждение закрытия
-        tg.isClosingConfirmationEnabled = true;
+        // Отключаем подтверждение закрытия для плавной работы
+        tg.isClosingConfirmationEnabled = false;
+        
+        // Включаем тактильную обратную связь
+        if (tg.HapticFeedback) {
+          tg.HapticFeedback.impactOccurred('light');
+        }
+        
+        // Скрываем главную кнопку по умолчанию
+        if (tg.MainButton) {
+          tg.MainButton.hide();
+        }
+        
+        // Скрываем кнопку назад по умолчанию
+        if (tg.BackButton) {
+          tg.BackButton.hide();
+        }
         
         setIsReady(true);
         

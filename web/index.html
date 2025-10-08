@@ -58,12 +58,21 @@
   <!-- Telegram WebApp Script -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   
+  <!-- Telegram WebApp Meta Tags -->
+  <meta name="telegram-web-app" content="true">
+  <meta name="telegram-web-app-version" content="1.0">
+  <meta name="telegram-web-app-platform" content="web">
+  
   <!-- PWA Meta Tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="ДПС Кингисепп">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#007AFF">
+  
+  <!-- Prevent external navigation -->
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
   
   <!-- Cache busting -->
   <meta name="cache-control" content="no-cache, no-store, must-revalidate">
@@ -218,6 +227,24 @@
       
       // Расширяем на весь экран
       telegramWebApp.expand();
+      
+      // Отключаем подтверждение закрытия для плавной работы
+      telegramWebApp.isClosingConfirmationEnabled = false;
+      
+      // Включаем тактильную обратную связь
+      if (telegramWebApp.HapticFeedback) {
+        telegramWebApp.HapticFeedback.impactOccurred('light');
+      }
+      
+      // Скрываем главную кнопку по умолчанию
+      if (telegramWebApp.MainButton) {
+        telegramWebApp.MainButton.hide();
+      }
+      
+      // Скрываем кнопку назад по умолчанию
+      if (telegramWebApp.BackButton) {
+        telegramWebApp.BackButton.hide();
+      }
       
     } else {
       console.log('Не запущено в Telegram WebApp окружении');
