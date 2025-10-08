@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { trpcServer } from "@hono/trpc-server";
 import { cors } from "hono/cors";
-import { serveStatic } from "hono/bun";
+import { serveStatic } from "hono/node-server";
 import { appRouter } from "./trpc/app-router";
 import { createContext } from "./trpc/create-context";
 import { serve } from "@hono/node-server";

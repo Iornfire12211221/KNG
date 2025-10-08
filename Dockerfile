@@ -1,4 +1,4 @@
-FROM oven/bun:1-alpine
+FROM node:18-alpine
 
 # Install system dependencies
 RUN apk add --no-cache \
@@ -9,25 +9,23 @@ RUN apk add --no-cache \
 WORKDIR /app
 
 # Copy package files first for better layer caching
-COPY package.json bun.lock* ./
-RUN bun install --ci --production=false
+COPY package.json package-lock.json ./
+RUN npm ci
 
 # Copy source code
 COPY . .
 
 # Generate Prisma client
-RUN bunx prisma generate
+RUN npx prisma generate
 
 # Set production environment variables
 ENV NODE_ENV=production
 ENV EXPO_USE_FAST_RESOLVER=1
 ENV EXPO_NO_TELEMETRY=1
 ENV EXPO_NON_INTERACTIVE=1
-ENV EXPO_USE_FAST_RESOLVER=1
-ENV EXPO_NO_TELEMETRY=1
 
 # Build static web app for production
-RUN bunx expo export --platform web --output-dir dist
+RUN npx expo export --platform web --output-dir dist
 
 # Verify build output
 RUN ls -la ./dist && \
@@ -49,4 +47,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8081/ || exit 1
 
 # Start the application
-CMD ["sh", "-c", "bunx prisma db push --skip-generate && bun run backend/hono.ts"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate && npm run serve"]
