@@ -69,6 +69,7 @@ export const useUserManagement = () => {
           telegramId: '123456789',
           name: 'Админ',
           telegramUsername: 'admin',
+          photoUrl: 'https://t.me/i/userpic/320/example_admin_photo.svg',
           role: 'ADMIN',
           isMuted: false,
           isBanned: false,

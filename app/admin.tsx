@@ -133,7 +133,19 @@ export default function AdminScreen() {
   // Инициализация
   useEffect(() => {
     loadAISettings();
+    // Очищаем локальные данные постов
+    clearLocalPosts();
   }, [loadAISettings]);
+
+  // Функция для очистки локальных постов
+  const clearLocalPosts = useCallback(async () => {
+    try {
+      await AsyncStorage.removeItem('dps_posts');
+      console.log('🗑️ Local posts cleared');
+    } catch (error) {
+      console.error('❌ Error clearing local posts:', error);
+    }
+  }, []);
 
   // Управление пользователями
   const handleMakeAdmin = useCallback((userId: string) => {
@@ -209,9 +221,9 @@ export default function AdminScreen() {
             ) : (
               <Text style={styles.postAuthorAvatarText}>
                 {post.userName && post.userName.length > 0 ? post.userName.charAt(0).toUpperCase() : '?'}
-              </Text>
+                        </Text>
             )}
-          </View>
+                      </View>
           <View style={styles.postAuthorDetails}>
             <Text style={styles.postAuthor}>{post.userName || 'Неизвестный автор'}</Text>
             <Text style={styles.postTimeAgo}>{getTimeAgo(post.timestamp)}</Text>
@@ -223,14 +235,14 @@ export default function AdminScreen() {
             size={16} 
             color={post.verified ? "#34C759" : "#FF9500"} 
           />
-        </View>
-      </View>
-      
+                      </View>
+                    </View>
+                    
       {post.description && (
         <Text style={styles.postText}>{post.description}</Text>
       )}
-      
-      {post.photo && (
+                    
+                    {post.photo && (
         <Image source={{ uri: post.photo }} style={styles.postImage} />
       )}
       
@@ -238,9 +250,9 @@ export default function AdminScreen() {
         <View style={styles.postLocationContainer}>
           <Ionicons name="location" size={14} color="#8E8E93" />
           <Text style={styles.postLocation}>{post.address}</Text>
-        </View>
-      )}
-    </View>
+                        </View>
+                        )}
+                      </View>
   ), []);
 
   // Рендер сообщения
@@ -364,8 +376,8 @@ export default function AdminScreen() {
         }}>
           <Ionicons name="refresh" size={16} color="#FF4757" />
           <Text style={styles.resetButtonText}>Сбросить настройки</Text>
-                        </TouchableOpacity>
-      </View>
+                          </TouchableOpacity>
+                    </View>
     </ScrollView>
   ), [aiSettings, saveAISettings]);
 
@@ -483,12 +495,12 @@ export default function AdminScreen() {
           <Ionicons name="arrow-back" size={24} color="#000000" />
                         </TouchableOpacity>
         <Text style={styles.headerTitle}>Админ панель</Text>
-            <TouchableOpacity
+                        <TouchableOpacity
               style={styles.cleanupButton}
               onPress={clearExpiredPosts}
-            >
+                        >
               <Ionicons name="trash-outline" size={20} color="#8E8E93" />
-            </TouchableOpacity>
+                        </TouchableOpacity>
       </View>
                       
       {/* Вкладки */}
@@ -509,15 +521,15 @@ export default function AdminScreen() {
             Посты ({posts.length})
           </Text>
                         </TouchableOpacity>
-                            <TouchableOpacity
+                        <TouchableOpacity
           style={[styles.tab, activeTab === 'messages' && styles.activeTab]}
           onPress={() => setActiveTab('messages')}
-        >
+                        >
           <Text style={[styles.tabText, activeTab === 'messages' && styles.activeTabText]}>
             Сообщения ({messages.length})
           </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
+                        </TouchableOpacity>
+                        <TouchableOpacity
           style={[styles.tab, activeTab === 'ai' && styles.activeTab]}
           onPress={() => setActiveTab('ai')}
         >
@@ -561,15 +573,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   backButton: {
     padding: 8,
@@ -592,8 +600,8 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
@@ -621,15 +629,12 @@ const styles = StyleSheet.create({
   },
   userCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    marginHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+    marginHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   userInfo: {
     flexDirection: 'row',
@@ -705,15 +710,12 @@ const styles = StyleSheet.create({
   },
   postCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    marginHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+    marginHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   postHeader: {
     flexDirection: 'row',
@@ -870,15 +872,12 @@ const styles = StyleSheet.create({
   },
   messageCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    marginHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+    marginHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   messageHeader: {
     flexDirection: 'row',
@@ -950,15 +949,12 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   settingsSection: {
-    marginBottom: 32,
+    marginBottom: 16,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    borderRadius: 8,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   settingsSubtitle: {
     fontSize: 16,
