@@ -14,7 +14,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNotifications, NotificationSettings } from '../hooks/useNotifications';
+import { useNotifications, NotificationSettings as NotificationSettingsType } from '../hooks/useNotifications';
 import { useGeofencing } from '../hooks/useGeofencing';
 import { useRealTimeUpdates } from '../hooks/useRealTimeUpdates';
 
@@ -29,7 +29,7 @@ export function NotificationSettings({ onClose }: NotificationSettingsProps) {
 
   const [activeSection, setActiveSection] = useState<'general' | 'types' | 'geofencing' | 'websocket'>('general');
 
-  const handleNotificationToggle = useCallback(async (key: keyof NotificationSettings, value: any) => {
+  const handleNotificationToggle = useCallback(async (key: keyof NotificationSettingsType, value: any) => {
     await saveNotificationSettings({ [key]: value });
   }, [saveNotificationSettings]);
 
