@@ -8,15 +8,10 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-# Copy package files first for better layer caching
-COPY package.json package-lock.json ./
-RUN npm install --legacy-peer-deps
+# Copy only the minimal server
+COPY backend/minimal-server.js ./
 
-# Copy source code
-COPY . .
-
-# Skip Prisma generation for simple server
-# RUN npx prisma generate
+# No dependencies needed for minimal server
 
 # Set production environment variables
 ENV NODE_ENV=production
@@ -42,4 +37,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8081/ || exit 1
 
 # Start the application
-CMD ["sh", "-c", "node backend/express-server.js"]
+CMD ["node", "minimal-server.js"]
