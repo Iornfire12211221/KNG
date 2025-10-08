@@ -689,10 +689,6 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     marginBottom: 2,
   },
-  userRole: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
   mutedIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
