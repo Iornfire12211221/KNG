@@ -172,7 +172,7 @@ export default function AdminScreen() {
             <Text style={styles.userUsername}>@{userUsername}</Text>
             <Text style={[styles.userRole, { color: getRoleColor(userRole) }]}>
               {getRoleName(userRole)}
-            </Text>
+          </Text>
             {user.isMuted && (
               <View style={styles.mutedIndicator}>
                 <Ionicons name="volume-mute" size={12} color="#FF4757" />
@@ -501,25 +501,25 @@ export default function AdminScreen() {
           style={[styles.tab, activeTab === 'users' && styles.activeTab]}
           onPress={() => setActiveTab('users')}
                         >
-          <Text style={[styles.tabText, activeTab === 'users' && styles.activeTabText]}>
-            Пользователи ({managedUsers.length})
-          </Text>
+           <Text style={[styles.tabText, activeTab === 'users' && styles.activeTabText]}>
+             Пользователи
+           </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
           style={[styles.tab, activeTab === 'posts' && styles.activeTab]}
           onPress={() => setActiveTab('posts')}
                         >
-          <Text style={[styles.tabText, activeTab === 'posts' && styles.activeTabText]}>
-            Посты ({posts.length})
-          </Text>
+           <Text style={[styles.tabText, activeTab === 'posts' && styles.activeTabText]}>
+             Посты
+           </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
           style={[styles.tab, activeTab === 'messages' && styles.activeTab]}
           onPress={() => setActiveTab('messages')}
                         >
-          <Text style={[styles.tabText, activeTab === 'messages' && styles.activeTabText]}>
-            Сообщения ({messages.length})
-          </Text>
+           <Text style={[styles.tabText, activeTab === 'messages' && styles.activeTabText]}>
+             Сообщения
+           </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
           style={[styles.tab, activeTab === 'ai' && styles.activeTab]}
