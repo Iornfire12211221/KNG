@@ -46,7 +46,7 @@ export default function ProfileScreen() {
     if (telegramUser && isTelegramWebApp) {
       console.log('✅ Setting Telegram data in profile');
       setEditName(telegramUser.first_name || currentUser?.name || '');
-      setEditTelegram(telegramUser.id?.toString() || currentUser?.telegramUsername || '');
+      setEditTelegram(telegramUser.username || currentUser?.telegramUsername || '');
     } else {
       console.log('⚠️ Telegram data not available, using current user data');
     }
@@ -168,8 +168,8 @@ export default function ProfileScreen() {
         ) : (
           <View style={styles.info}>
             <Text style={styles.name}>{telegramUser?.first_name || currentUser?.name}</Text>
-            {telegramUser?.id && (
-              <Text style={styles.username}>@{telegramUser.id}</Text>
+            {(telegramUser?.username || currentUser?.telegramUsername) && (
+              <Text style={styles.username}>@{telegramUser?.username || currentUser?.telegramUsername}</Text>
             )}
             <TouchableOpacity style={styles.editButton} onPress={() => setIsEditing(true)}>
               <Edit2 size={14} color="#666" strokeWidth={2} />
@@ -192,8 +192,8 @@ export default function ProfileScreen() {
           <View style={styles.statIconContainer}>
             <Camera size={18} color="#34C759" strokeWidth={2} />
           </View>
-          <Text style={styles.statValue}>{telegramUser?.id || 'N/A'}</Text>
-          <Text style={styles.statLabel}>Telegram ID</Text>
+          <Text style={styles.statValue}>{userPosts.filter(p => p.photo).length}</Text>
+          <Text style={styles.statLabel}>Фото</Text>
         </View>
       </View>
 
