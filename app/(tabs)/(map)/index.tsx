@@ -3433,7 +3433,7 @@ const styles = StyleSheet.create({
   },
   minimalistGearButton: {
     position: 'absolute',
-    top: Platform.OS === 'web' ? 60 : 70,
+    top: Platform.OS === 'web' ? 40 : 50,
     left: 20,
     width: 36,
     height: 36,
