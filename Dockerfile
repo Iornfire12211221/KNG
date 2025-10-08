@@ -15,8 +15,8 @@ RUN npm install --legacy-peer-deps
 # Copy source code
 COPY . .
 
-# Generate Prisma client
-RUN npx prisma generate
+# Skip Prisma generation for simple server
+# RUN npx prisma generate
 
 # Set production environment variables
 ENV NODE_ENV=production
@@ -24,13 +24,8 @@ ENV EXPO_USE_FAST_RESOLVER=1
 ENV EXPO_NO_TELEMETRY=1
 ENV EXPO_NON_INTERACTIVE=1
 
-# Build static web app for production
-RUN npx expo export --platform web --output-dir dist
-
-# Verify build output
-RUN ls -la ./dist && \
-    ls -la ./dist/_expo && \
-    echo "Build completed successfully"
+# Skip Expo build for simple server
+# RUN npx expo export --platform web --output-dir dist
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
@@ -47,4 +42,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8081/ || exit 1
 
 # Start the application
-CMD ["sh", "-c", "npx prisma db push --skip-generate && npm run serve"]
+CMD ["sh", "-c", "node backend/simple-server.ts"]
