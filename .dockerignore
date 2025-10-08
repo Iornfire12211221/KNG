@@ -90,3 +90,7 @@ jspm_packages/
 # Temporary folders
 tmp/
 temp/
+
+# Local development scripts
+scripts/local-start.bat
+scripts/local-start.sh
