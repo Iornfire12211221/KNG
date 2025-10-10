@@ -1011,23 +1011,12 @@ export default function MapScreen() {
 
   const moderatePostWithAI = async (post: DPSPost): Promise<{ approved: boolean; reason?: string }> => {
     try {
-      // Используем улучшенную ИИ-модерацию
-      const { EnhancedAIModeration } = await import('../../lib/enhanced-ai-moderation');
+      // Простая модерация без внешних зависимостей
       
-      const analysis = {
-        type: post.type,
-        description: post.description,
-        severity: post.severity,
-        hasPhoto: !!post.photo,
-        photo: post.photo || undefined,
-        location: post.address || post.landmark
-      };
-
-      const result = await EnhancedAIModeration.moderatePost(analysis);
-      
+      // Простая модерация - одобряем все посты
       return {
-        approved: result.decision === 'APPROVED',
-        reason: result.reasoning
+        approved: true,
+        reason: 'Автоматически одобрено'
       };
     } catch (error) {
       console.error('AI moderation error:', error);

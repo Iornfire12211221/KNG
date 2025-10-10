@@ -49,10 +49,16 @@ if (process.env.NODE_ENV === "production") {
     
     if (distExists) {
       const files = fs.readdirSync(distPath);
-      console.log('Files in dist:', files);
+      console.log('Files in dist:', files.slice(0, 10)); // Показываем первые 10 файлов
       
       const indexExists = fs.existsSync(path.join(distPath, 'index.html'));
       console.log('index.html exists:', indexExists);
+      
+      if (!indexExists) {
+        console.error('❌ index.html not found in dist directory!');
+      }
+    } else {
+      console.error('❌ Dist directory not found!');
     }
   } catch (error) {
     console.error('Error checking dist directory:', error);
