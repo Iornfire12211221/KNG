@@ -44,5 +44,5 @@ EXPOSE 8081
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8081/ || exit 1
 
-# Start the application with proper Hono server
-CMD ["sh", "-c", "echo '=== STARTING FULL APPLICATION ===' && echo 'Step 1: Database setup...' && npx prisma db push --skip-generate && echo 'Step 2: Database ready, starting Hono server...' && npx tsx backend/hono.ts"]
+# Start the application with proper startup script
+CMD ["node", "backend/start-server.js"]
