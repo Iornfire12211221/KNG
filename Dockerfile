@@ -44,5 +44,5 @@ EXPOSE 8081
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8081/ || exit 1
 
-# Start the application with proper startup script
-CMD ["node", "backend/start-server.js"]
+# Start the application with simple production server
+CMD ["node", "backend/production-server.js"]
