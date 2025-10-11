@@ -1,117 +1,46 @@
+// Minimal production server - no external dependencies
 const http = require('http');
-const url = require('url');
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
 
 const port = process.env.PORT || 8081;
 
-// Простые тестовые данные
-const mockPosts = [
-  {
-    id: "1",
-    description: "ДПС пост на трассе",
-    latitude: 59.3733,
-    longitude: 28.6139,
-    address: "Кингисепп, Ленинградская область",
-    timestamp: Date.now(),
-    expiresAt: Date.now() + 4 * 60 * 60 * 1000,
-    userId: "user1",
-    userName: "Тестовый пользователь",
-    type: "dps",
-    severity: "medium",
-    likes: 0,
-    isApproved: true,
+console.log('=== MINIMAL SERVER STARTING ===');
+console.log('Timestamp:', new Date().toISOString());
+console.log('Node.js version:', process.version);
+console.log('Platform:', process.platform);
+console.log('Environment:', process.env.NODE_ENV || 'development');
+console.log('Port:', port);
+console.log('Working directory:', process.cwd());
+
+// Check if dist directory exists
+const distPath = path.join(process.cwd(), 'dist');
+console.log('Checking dist directory:', distPath);
+
+let distExists = false;
+let indexExists = false;
+
+try {
+  distExists = fs.existsSync(distPath);
+  console.log('Dist directory exists:', distExists);
+  
+  if (distExists) {
+    const files = fs.readdirSync(distPath);
+    console.log('Files in dist:', files.slice(0, 10));
+    
+    indexExists = fs.existsSync(path.join(distPath, 'index.html'));
+    console.log('index.html exists:', indexExists);
   }
-];
+} catch (error) {
+  console.error('Error checking dist directory:', error);
+}
 
-// HTML страница
-const htmlPage = `
-<!DOCTYPE html>
-<html>
-<head>
-  <title>ДПС Кингисепп</title>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { 
-      font-family: Arial, sans-serif; 
-      margin: 0; 
-      padding: 40px; 
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-    }
-    .container { 
-      background: white; 
-      padding: 40px; 
-      border-radius: 15px; 
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    h1 { 
-      color: #007AFF; 
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .status { 
-      color: green; 
-      font-weight: bold; 
-      font-size: 18px;
-      text-align: center;
-      margin: 20px 0;
-    }
-    .info {
-      background: #f8f9fa;
-      padding: 20px;
-      border-radius: 10px;
-      margin: 20px 0;
-    }
-    .link {
-      display: inline-block;
-      background: #007AFF;
-      color: white;
-      padding: 10px 20px;
-      text-decoration: none;
-      border-radius: 5px;
-      margin: 10px 5px;
-    }
-    .link:hover {
-      background: #0056b3;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>🚀 ДПС Кингисепп</h1>
-    <p class="status">✅ Приложение запущено и работает!</p>
-    
-    <div class="info">
-      <p><strong>Время:</strong> ${new Date().toLocaleString('ru-RU')}</p>
-      <p><strong>Node.js версия:</strong> ${process.version}</p>
-      <p><strong>Платформа:</strong> ${process.platform}</p>
-      <p><strong>Режим:</strong> ${process.env.NODE_ENV || 'development'}</p>
-      <p><strong>Порт:</strong> ${port}</p>
-    </div>
-    
-    <div style="text-align: center;">
-      <a href="/api/health" class="link">🔍 Health Check</a>
-      <a href="/api/posts" class="link">📋 API Posts</a>
-    </div>
-    
-    <div class="info">
-      <h3>📱 Готово для Telegram WebApp</h3>
-      <p>Приложение оптимизировано для развертывания в Telegram Mini Apps.</p>
-      <p><strong>Сервер:</strong> Минимальный Node.js сервер без внешних зависимостей</p>
-    </div>
-  </div>
-</body>
-</html>
-`;
-
-// Создаем HTTP сервер
+// Create HTTP server
 const server = http.createServer((req, res) => {
-  const parsedUrl = url.parse(req.url, true);
+  const parsedUrl = new URL(req.url, `http://localhost:${port}`);
   const pathname = parsedUrl.pathname;
+  
+  console.log(`${new Date().toISOString()} - ${req.method} ${pathname}`);
   
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -125,75 +54,109 @@ const server = http.createServer((req, res) => {
     return;
   }
   
-  console.log(`${new Date().toISOString()} - ${req.method} ${pathname}`);
-  
-  // API routes
+  // Simple health check
   if (pathname === '/api/health') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
+    const healthResponse = {
       status: "ok",
       timestamp: new Date().toISOString(),
       version: "1.0.1",
-      message: "Minimal Node.js server is running",
+      message: "Minimal server running",
       nodeVersion: process.version,
       platform: process.platform,
-      port: port
-    }));
+      port: port,
+      mode: "minimal",
+      diagnostics: {
+        distExists,
+        indexExists
+      }
+    };
+    
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(healthResponse));
     return;
   }
   
+  // Simple posts API
   if (pathname === '/api/posts') {
-    if (req.method === 'GET') {
-      const now = Date.now();
-      const activePosts = mockPosts.filter(post => post.expiresAt > now);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ success: true, data: activePosts }));
+    const mockPosts = [
+      {
+        id: "1",
+        description: "ДПС пост на трассе",
+        latitude: 59.3733,
+        longitude: 28.6139,
+        address: "Кингисепп, Ленинградская область",
+        timestamp: Date.now(),
+        expiresAt: Date.now() + 4 * 60 * 60 * 1000,
+        userId: "user1",
+        userName: "Тестовый пользователь",
+        type: "dps",
+        severity: "medium",
+        likes: 0,
+        isApproved: true,
+      }
+    ];
+    
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, data: mockPosts }));
+    return;
+  }
+  
+  // Serve static files
+  if (distExists && (pathname === '/' || pathname.startsWith('/_expo/') || pathname.startsWith('/static/') || pathname.startsWith('/assets/') || pathname.includes('.'))) {
+    let filePath;
+    
+    if (pathname === '/') {
+      filePath = path.join(distPath, 'index.html');
+    } else {
+      filePath = path.join(distPath, pathname);
+    }
+    
+    // Security check
+    if (!filePath.startsWith(distPath)) {
+      res.writeHead(403);
+      res.end('Forbidden');
       return;
     }
     
-    if (req.method === 'POST') {
-      let body = '';
-      req.on('data', chunk => {
-        body += chunk.toString();
-      });
-      req.on('end', () => {
-        try {
-          const data = JSON.parse(body);
-          const newPost = {
-            id: Date.now().toString(),
-            description: data.description || "Новый пост",
-            latitude: data.latitude || 59.3733,
-            longitude: data.longitude || 28.6139,
-            address: data.address || "Кингисепп",
-            timestamp: Date.now(),
-            expiresAt: Date.now() + 4 * 60 * 60 * 1000,
-            userId: data.userId || "anonymous",
-            userName: data.userName || "Anonymous",
-            type: data.type || "dps",
-            severity: data.severity || "medium",
-            likes: 0,
-            isApproved: true,
-          };
-          
-          mockPosts.push(newPost);
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: true, data: newPost }));
-        } catch (error) {
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: false, error: 'Failed to create post' }));
-        }
-      });
-      return;
-    }
-  }
-  
-  // Serve static files if they exist
-  if (pathname.startsWith('/static/') || pathname.includes('.')) {
-    const filePath = path.join(__dirname, '..', 'dist', pathname);
     fs.readFile(filePath, (err, data) => {
       if (err) {
-        res.writeHead(404);
-        res.end('File not found');
+        console.log('Static file not found:', filePath);
+        if (pathname === '/') {
+          // Serve fallback HTML
+          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+          res.end(`
+            <!DOCTYPE html>
+            <html lang="ru">
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <title>ДПС Кингисепп</title>
+              <style>
+                body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+                .container { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                h1 { color: #007AFF; text-align: center; }
+                .status { color: green; font-weight: bold; text-align: center; margin: 20px 0; }
+                .info { background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <h1>🚀 ДПС Кингисепп</h1>
+                <p class="status">✅ Минимальный сервер запущен!</p>
+                <div class="info">
+                  <p><strong>Время:</strong> ${new Date().toLocaleString('ru-RU')}</p>
+                  <p><strong>Node.js версия:</strong> ${process.version}</p>
+                  <p><strong>Режим:</strong> Минимальный</p>
+                  <p><strong>API доступно:</strong> <a href="/api/health">/api/health</a></p>
+                </div>
+              </div>
+            </body>
+            </html>
+          `);
+        } else {
+          res.writeHead(404);
+          res.end('File not found');
+        }
         return;
       }
       
@@ -215,26 +178,57 @@ const server = http.createServer((req, res) => {
     return;
   }
   
-  // Default route - serve HTML page
+  // Default route - serve index.html for SPA
+  if (distExists && indexExists) {
+    const indexPath = path.join(distPath, 'index.html');
+    fs.readFile(indexPath, (err, data) => {
+      if (err) {
+        console.error('Error serving index.html:', err);
+        res.writeHead(500);
+        res.end('Server error');
+        return;
+      }
+      
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(data);
+    });
+    return;
+  }
+  
+  // Final fallback
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-  res.end(htmlPage);
+  res.end(`
+    <!DOCTYPE html>
+    <html lang="ru">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>ДПС Кингисепп</title>
+    </head>
+    <body>
+      <h1>🚀 ДПС Кингисепп</h1>
+      <p>Минимальный сервер работает</p>
+      <p>API: <a href="/api/health">/api/health</a></p>
+    </body>
+    </html>
+  `);
 });
 
 // Error handling
 server.on('error', (err) => {
-  console.error('Server error:', err);
+  console.error('❌ Server error:', err);
 });
 
 // Start server
-console.log(`🚀 Minimal Node.js server starting on port ${port}`);
-console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
-console.log(`🔧 Node.js version: ${process.version}`);
+console.log('\n=== STARTING SERVER ===');
+console.log(`🚀 Minimal server starting on port ${port}`);
 
 server.listen(port, '0.0.0.0', () => {
-  console.log(`✅ Minimal server running at http://localhost:${port}`);
+  console.log(`✅ Server running at http://localhost:${port}`);
   console.log(`🔗 Health check: http://localhost:${port}/api/health`);
   console.log(`🌐 Main page: http://localhost:${port}/`);
   console.log(`📋 API posts: http://localhost:${port}/api/posts`);
+  console.log('\n=== SERVER READY ===');
 });
 
 // Graceful shutdown
