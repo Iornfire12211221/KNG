@@ -97,16 +97,16 @@ if (process.env.NODE_ENV === "production") {
           }
         }
         
-        // For all other routes, serve simple index.html first
+        // For all other routes, serve fixed index.html first
         try {
-          const simpleIndexPath = path.join(process.cwd(), 'dist', 'index-simple.html');
-          const simpleIndexData = await fs.promises.readFile(simpleIndexPath);
-          console.log('Serving simple index.html');
-          return new Response(simpleIndexData, {
+          const fixedIndexPath = path.join(process.cwd(), 'dist', 'index-fixed.html');
+          const fixedIndexData = await fs.promises.readFile(fixedIndexPath);
+          console.log('Serving fixed index.html');
+          return new Response(fixedIndexData, {
             headers: { 'Content-Type': 'text/html; charset=utf-8' }
           });
         } catch (error) {
-          console.log('Simple index.html not found, trying original index.html');
+          console.log('Fixed index.html not found, trying original index.html');
           
           try {
             const indexPath = path.join(process.cwd(), 'dist', 'index.html');

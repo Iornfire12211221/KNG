@@ -484,11 +484,11 @@ const server = http.createServer((req, res) => {
       return;
     }
     
-    // For root path or any other path, serve simple index.html first
-    const simpleIndexPath = path.join(process.cwd(), 'dist', 'index-simple.html');
-    fs.readFile(simpleIndexPath, (err, data) => {
+    // For root path or any other path, serve fixed index.html first
+    const fixedIndexPath = path.join(process.cwd(), 'dist', 'index-fixed.html');
+    fs.readFile(fixedIndexPath, (err, data) => {
       if (err) {
-        console.log('Simple index.html not found, trying original index.html');
+        console.log('Fixed index.html not found, trying original index.html');
         
         // Fallback to original index.html
         const indexPath = path.join(process.cwd(), 'dist', 'index.html');
@@ -507,7 +507,7 @@ const server = http.createServer((req, res) => {
         return;
       }
       
-      console.log('Serving simple index.html from dist directory');
+      console.log('Serving fixed index.html from dist directory');
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(data);
     });
