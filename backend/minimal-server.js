@@ -5,7 +5,15 @@ const fs = require('fs');
 
 const port = process.env.PORT || 8081;
 
-// Простые тестовые данные
+console.log('=== MINIMAL SERVER STARTING ===');
+console.log('Timestamp:', new Date().toISOString());
+console.log('Node.js version:', process.version);
+console.log('Platform:', process.platform);
+console.log('Environment:', process.env.NODE_ENV || 'development');
+console.log('Port:', port);
+console.log('Working directory:', process.cwd());
+
+// Mock данные
 const mockPosts = [
   {
     id: "1",
@@ -29,7 +37,7 @@ const htmlPage = `
 <!DOCTYPE html>
 <html>
 <head>
-  <title>ДПС Кингисепп</title>
+  <title>ДПС Кингисепп - Минимальная версия</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
@@ -91,6 +99,7 @@ const htmlPage = `
       <p><strong>Платформа:</strong> ${process.platform}</p>
       <p><strong>Режим:</strong> ${process.env.NODE_ENV || 'development'}</p>
       <p><strong>Порт:</strong> ${port}</p>
+      <p><strong>Статус:</strong> Минимальная версия (без базы данных)</p>
     </div>
     
     <div style="text-align: center;">
@@ -100,8 +109,7 @@ const htmlPage = `
     
     <div class="info">
       <h3>📱 Готово для Telegram WebApp</h3>
-      <p>Приложение оптимизировано для развертывания в Telegram Mini Apps.</p>
-      <p><strong>Сервер:</strong> Минимальный Node.js сервер без внешних зависимостей</p>
+      <p>Минимальная версия с базовым API и mock данными.</p>
     </div>
   </div>
 </body>
@@ -109,9 +117,13 @@ const htmlPage = `
 `;
 
 // Создаем HTTP сервер
+console.log('\n=== CREATING HTTP SERVER ===');
 const server = http.createServer((req, res) => {
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
+  
+  // Логируем каждый запрос
+  console.log(`${new Date().toISOString()} - ${req.method} ${pathname}`);
   
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -125,8 +137,6 @@ const server = http.createServer((req, res) => {
     return;
   }
   
-  console.log(`${new Date().toISOString()} - ${req.method} ${pathname}`);
-  
   // API routes
   if (pathname === '/api/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -134,10 +144,12 @@ const server = http.createServer((req, res) => {
       status: "ok",
       timestamp: new Date().toISOString(),
       version: "1.0.1",
-      message: "Minimal Node.js server is running",
+      message: "Minimal server is running",
       nodeVersion: process.version,
       platform: process.platform,
-      port: port
+      port: port,
+      mode: "minimal",
+      features: ["api", "mock-data"]
     }));
     return;
   }
@@ -179,40 +191,13 @@ const server = http.createServer((req, res) => {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ success: true, data: newPost }));
         } catch (error) {
+          console.log('Error creating post:', error.message);
           res.writeHead(500, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ success: false, error: 'Failed to create post' }));
         }
       });
       return;
     }
-  }
-  
-  // Serve static files if they exist
-  if (pathname.startsWith('/static/') || pathname.includes('.')) {
-    const filePath = path.join(__dirname, '..', 'dist', pathname);
-    fs.readFile(filePath, (err, data) => {
-      if (err) {
-        res.writeHead(404);
-        res.end('File not found');
-        return;
-      }
-      
-      const ext = path.extname(pathname);
-      const contentType = {
-        '.html': 'text/html',
-        '.css': 'text/css',
-        '.js': 'application/javascript',
-        '.json': 'application/json',
-        '.png': 'image/png',
-        '.jpg': 'image/jpeg',
-        '.gif': 'image/gif',
-        '.ico': 'image/x-icon'
-      }[ext] || 'text/plain';
-      
-      res.writeHead(200, { 'Content-Type': contentType });
-      res.end(data);
-    });
-    return;
   }
   
   // Default route - serve HTML page
@@ -222,11 +207,12 @@ const server = http.createServer((req, res) => {
 
 // Error handling
 server.on('error', (err) => {
-  console.error('Server error:', err);
+  console.error('❌ Server error:', err);
 });
 
 // Start server
-console.log(`🚀 Minimal Node.js server starting on port ${port}`);
+console.log('\n=== STARTING SERVER ===');
+console.log(`🚀 Minimal server starting on port ${port}`);
 console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
 console.log(`🔧 Node.js version: ${process.version}`);
 
@@ -235,6 +221,7 @@ server.listen(port, '0.0.0.0', () => {
   console.log(`🔗 Health check: http://localhost:${port}/api/health`);
   console.log(`🌐 Main page: http://localhost:${port}/`);
   console.log(`📋 API posts: http://localhost:${port}/api/posts`);
+  console.log('\n=== SERVER READY ===');
 });
 
 // Graceful shutdown

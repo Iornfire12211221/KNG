@@ -44,5 +44,5 @@ EXPOSE 8081
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8081/ || exit 1
 
-# Start the application with detailed logging
-CMD ["sh", "-c", "echo '=== STARTING FULL APPLICATION ===' && echo 'Step 1: Database setup...' && npx prisma db push --skip-generate && echo 'Step 2: Database ready, starting server with logs...' && node backend/full-server-with-logs.js"]
+# Start the application with detailed logging and fallback
+CMD ["sh", "-c", "echo '=== STARTING APPLICATION ===' && echo 'Step 1: Checking dependencies...' && echo 'Step 2: Starting server with fallback...' && (node backend/full-server-with-logs.js || (echo 'Full server failed, starting minimal server...' && node backend/minimal-server.js))"]

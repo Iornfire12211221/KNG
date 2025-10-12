@@ -116,7 +116,7 @@ try {
 }
 
 // Определяем режим работы
-const canRunFullVersion = honoAvailable && trpcAvailable && prpcAvailable && hasDist;
+const canRunFullVersion = honoAvailable && trpcAvailable && prismaAvailable && hasDist;
 console.log('\n=== MODE DETERMINATION ===');
 console.log('Can run full version:', canRunFullVersion);
 console.log('Will use mode:', canRunFullVersion ? 'FULL' : 'MINIMAL');
