@@ -85,12 +85,20 @@ declare global {
 export const useTelegram = () => {
   const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
   const [user, setUser] = useState<TelegramWebApp['initDataUnsafe']['user'] | null>(null);
-  const [isReady, setIsReady] = useState(false);
+  // Если мы на сервере, сразу готовы
+  const [isReady, setIsReady] = useState(typeof window === 'undefined');
 
   useEffect(() => {
     console.log('🔄 useTelegram: Starting initialization...');
     
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    // Проверяем, что мы в браузере (не во время SSR)
+    if (typeof window === 'undefined') {
+      console.log('🔄 useTelegram: SSR detected, setting ready immediately');
+      setIsReady(true);
+      return;
+    }
+    
+    if (Platform.OS === 'web') {
       console.log('🔄 useTelegram: Web platform detected');
       
       // Проверяем наличие Telegram WebApp
