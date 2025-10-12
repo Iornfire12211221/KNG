@@ -484,17 +484,30 @@ const server = http.createServer((req, res) => {
       return;
     }
     
-    // For root path or any other path, serve index.html (SPA routing)
-    const indexPath = path.join(process.cwd(), 'dist', 'index.html');
-    fs.readFile(indexPath, (err, data) => {
+    // For root path or any other path, serve simple index.html first
+    const simpleIndexPath = path.join(process.cwd(), 'dist', 'index-simple.html');
+    fs.readFile(simpleIndexPath, (err, data) => {
       if (err) {
-        console.log('Index.html not found, serving fallback page');
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(fullHtmlPage);
+        console.log('Simple index.html not found, trying original index.html');
+        
+        // Fallback to original index.html
+        const indexPath = path.join(process.cwd(), 'dist', 'index.html');
+        fs.readFile(indexPath, (err2, data2) => {
+          if (err2) {
+            console.log('Original index.html not found, serving fallback page');
+            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+            res.end(fullHtmlPage);
+            return;
+          }
+          
+          console.log('Serving original index.html from dist directory');
+          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+          res.end(data2);
+        });
         return;
       }
       
-      console.log('Serving index.html from dist directory');
+      console.log('Serving simple index.html from dist directory');
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(data);
     });

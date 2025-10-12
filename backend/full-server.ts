@@ -97,30 +97,42 @@ if (process.env.NODE_ENV === "production") {
           }
         }
         
-        // For all other routes, serve index.html (SPA routing)
+        // For all other routes, serve simple index.html first
         try {
-          const indexPath = path.join(process.cwd(), 'dist', 'index.html');
-          const indexData = await fs.promises.readFile(indexPath);
-          return new Response(indexData, {
+          const simpleIndexPath = path.join(process.cwd(), 'dist', 'index-simple.html');
+          const simpleIndexData = await fs.promises.readFile(simpleIndexPath);
+          console.log('Serving simple index.html');
+          return new Response(simpleIndexData, {
             headers: { 'Content-Type': 'text/html; charset=utf-8' }
           });
         } catch (error) {
-          console.log('Index.html not found, serving fallback');
-          return c.html(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <title>ДПС Кингисепп</title>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1">
-            </head>
-            <body>
-              <h1>🚀 ДПС Кингисепп</h1>
-              <p>Приложение запущено, но index.html не найден</p>
-              <p>API доступно: <a href="/api/health">/api/health</a></p>
-            </body>
-            </html>
-          `);
+          console.log('Simple index.html not found, trying original index.html');
+          
+          try {
+            const indexPath = path.join(process.cwd(), 'dist', 'index.html');
+            const indexData = await fs.promises.readFile(indexPath);
+            console.log('Serving original index.html');
+            return new Response(indexData, {
+              headers: { 'Content-Type': 'text/html; charset=utf-8' }
+            });
+          } catch (error2) {
+            console.log('Original index.html not found, serving fallback');
+            return c.html(`
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <title>ДПС Кингисепп</title>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+              </head>
+              <body>
+                <h1>🚀 ДПС Кингисепп</h1>
+                <p>Приложение запущено, но index.html не найден</p>
+                <p>API доступно: <a href="/api/health">/api/health</a></p>
+              </body>
+              </html>
+            `);
+          }
         }
       });
     } else {
