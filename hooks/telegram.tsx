@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Platform } from 'react-native';
 import { useApp } from './app-store';
 
@@ -14,18 +14,11 @@ interface TelegramWebApp {
       is_premium?: boolean;
       photo_url?: string;
     };
-    chat?: {
-      id: number;
-      type: string;
-      title?: string;
-      username?: string;
-    };
-    start_param?: string;
   };
   version: string;
   platform: string;
   colorScheme: 'light' | 'dark';
-  themeParams: {
+  themeParams?: {
     bg_color?: string;
     text_color?: string;
     hint_color?: string;
@@ -34,11 +27,9 @@ interface TelegramWebApp {
     button_text_color?: string;
     secondary_bg_color?: string;
   };
-  isExpanded: boolean;
-  viewportHeight: number;
-  viewportStableHeight: number;
-  headerColor: string;
-  backgroundColor: string;
+  ready: () => void;
+  expand: () => void;
+  close: () => void;
   isClosingConfirmationEnabled: boolean;
   MainButton: {
     text: string;
@@ -49,91 +40,64 @@ interface TelegramWebApp {
     isProgressVisible: boolean;
     setText: (text: string) => void;
     onClick: (callback: () => void) => void;
-    offClick: (callback: () => void) => void;
     show: () => void;
     hide: () => void;
     enable: () => void;
     disable: () => void;
-    showProgress: (leaveActive?: boolean) => void;
+    showProgress: () => void;
     hideProgress: () => void;
-    setParams: (params: {
-      text?: string;
-      color?: string;
-      text_color?: string;
-      is_active?: boolean;
-      is_visible?: boolean;
-    }) => void;
+    setParams: (params: any) => void;
   };
   BackButton: {
     isVisible: boolean;
     onClick: (callback: () => void) => void;
-    offClick: (callback: () => void) => void;
     show: () => void;
     hide: () => void;
   };
   HapticFeedback: {
-    impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void;
+    impactOccurred: (style: 'light' | 'medium' | 'heavy') => void;
     notificationOccurred: (type: 'error' | 'success' | 'warning') => void;
     selectionChanged: () => void;
   };
-  expand: () => void;
-  close: () => void;
-  ready: () => void;
   sendData: (data: string) => void;
-  openLink: (url: string, options?: { try_instant_view?: boolean }) => void;
+  openLink: (url: string) => void;
   openTelegramLink: (url: string) => void;
-  showPopup: (params: {
-    title?: string;
-    message: string;
-    buttons?: {
-      id?: string;
-      type?: 'default' | 'ok' | 'close' | 'cancel' | 'destructive';
-      text: string;
-    }[];
-  }, callback?: (buttonId: string) => void) => void;
-  showAlert: (message: string, callback?: () => void) => void;
-  showConfirm: (message: string, callback?: (confirmed: boolean) => void) => void;
-  showScanQrPopup: (params: {
-    text?: string;
-  }, callback?: (text: string) => void) => void;
+  showPopup: (params: any) => void;
+  showAlert: (message: string) => void;
+  showConfirm: (message: string, callback: (confirmed: boolean) => void) => void;
+  showScanQrPopup: (params: any) => void;
   closeScanQrPopup: () => void;
-  readTextFromClipboard: (callback?: (text: string) => void) => void;
-  requestWriteAccess: (callback?: (granted: boolean) => void) => void;
-  requestContact: (callback?: (granted: boolean, contact?: {
-    contact: {
-      phone_number: string;
-      first_name: string;
-      last_name?: string;
-      user_id?: number;
+  readTextFromClipboard: (callback: (text: string) => void) => void;
+  requestWriteAccess: (callback: (granted: boolean) => void) => void;
+  requestContact: (callback: (granted: boolean) => void) => void;
+  requestLocation: (callback: (granted: boolean) => void) => void;
+  invokeCustomMethod: (method: string, params: any, callback?: (error: string, result: any) => void) => void;
+}
+
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp: TelegramWebApp;
     };
-  }) => void) => void;
-  requestLocation: (callback?: (granted: boolean, location?: {
-    latitude: number;
-    longitude: number;
-  }) => void) => void;
-  invokeCustomMethod: (method: string, params?: any, callback?: (error: string, result: any) => void) => void;
+  }
 }
 
 export const useTelegram = () => {
   const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
   const [user, setUser] = useState<TelegramWebApp['initDataUnsafe']['user'] | null>(null);
   const [isReady, setIsReady] = useState(false);
-  const { loginWithTelegram } = useApp();
 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       const tg = window.Telegram?.WebApp;
       if (tg) {
+        // Реальный Telegram WebApp найден
         setWebApp(tg as any);
         setUser(tg.initDataUnsafe?.user || null);
         
         // Готовим WebApp
         tg.ready();
-        
-        // Расширяем на весь экран
         tg.expand();
-        
-        // Отключаем подтверждение закрытия для плавной работы
         tg.isClosingConfirmationEnabled = false;
         
         // Включаем тактильную обратную связь
@@ -141,12 +105,10 @@ export const useTelegram = () => {
           tg.HapticFeedback.impactOccurred('light');
         }
         
-        // Скрываем главную кнопку по умолчанию
+        // Скрываем кнопки по умолчанию
         if (tg.MainButton) {
           tg.MainButton.hide();
         }
-        
-        // Скрываем кнопку назад по умолчанию
         if (tg.BackButton) {
           tg.BackButton.hide();
         }
@@ -160,134 +122,80 @@ export const useTelegram = () => {
           colorScheme: tg.colorScheme
         });
       } else {
-        console.log('ℹ️ Telegram WebApp не найден, проверяем URL данные');
+        // Telegram WebApp не найден - работаем в браузерном режиме
+        console.log('ℹ️ Telegram WebApp не найден, работаем в браузерном режиме');
         
-        // Fallback: парсим данные из URL
-        try {
-          console.log('🔍 Current URL:', window.location.href);
-          console.log('🔍 Current hash:', window.location.hash);
-          
-          const urlParams = new URLSearchParams(window.location.hash.substring(1));
-          const tgWebAppData = urlParams.get('tgWebAppData');
-          
-          if (tgWebAppData) {
-            console.log('📱 Найдены данные Telegram в URL - работаем в Telegram WebApp');
-            
-            // Парсим данные пользователя из URL
-            console.log('🔍 Parsing tgWebAppData:', tgWebAppData);
-            
-            // Пробуем разные форматы URL
-            let userMatch = tgWebAppData.match(/user%3D([^&]+)/); // Старый формат
-            if (!userMatch) {
-              userMatch = tgWebAppData.match(/user=([^&]+)/); // Новый формат
-            }
-            console.log('🔍 User match:', userMatch);
-            
-            if (userMatch) {
-              const userDataStr = decodeURIComponent(userMatch[1]);
-              console.log('🔍 Decoded user data string:', userDataStr);
-              const userData = JSON.parse(userDataStr);
-              
-              console.log('👤 Данные пользователя из URL:', userData);
-              setUser(userData);
-              
-              // Создаем mock WebApp объект
-              const mockWebApp = {
-                initData: tgWebAppData,
-                initDataUnsafe: { user: userData },
-                version: '9.1',
-                platform: 'web',
-                colorScheme: 'light' as const,
-                themeParams: {
-                  bg_color: '#ffffff',
-                  text_color: '#000000',
-                  hint_color: '#707579',
-                  link_color: '#00488f',
-                  button_color: '#3390ec',
-                  button_text_color: '#ffffff',
-                  secondary_bg_color: '#f4f4f5'
-                },
-                isExpanded: true,
-                viewportHeight: window.innerHeight,
-                viewportStableHeight: window.innerHeight,
-                headerColor: '#ffffff',
-                backgroundColor: '#ffffff',
-                isClosingConfirmationEnabled: false,
-                MainButton: {
-                  text: '',
-                  color: '#3390ec',
-                  textColor: '#ffffff',
-                  isVisible: false,
-                  isActive: true,
-                  isProgressVisible: false,
-                  setText: () => {},
-                  onClick: () => {},
-                  show: () => {},
-                  hide: () => {},
-                  enable: () => {},
-                  disable: () => {},
-                  showProgress: () => {},
-                  hideProgress: () => {},
-                  setParams: () => {},
-                },
-                BackButton: {
-                  isVisible: false,
-                  onClick: () => {},
-                  show: () => {},
-                  hide: () => {},
-                },
-                HapticFeedback: {
-                  impactOccurred: () => {},
-                  notificationOccurred: () => {},
-                  selectionChanged: () => {},
-                },
-                ready: () => {},
-                sendData: () => {},
-                openLink: () => {},
-                openTelegramLink: () => {},
-                showPopup: () => {},
-                showAlert: () => {},
-                showConfirm: () => {},
-                showScanQrPopup: () => {},
-                closeScanQrPopup: () => {},
-                readTextFromClipboard: () => {},
-                requestWriteAccess: () => {},
-                requestContact: () => {},
-                requestLocation: () => {},
-                invokeCustomMethod: () => {},
-              };
-              
-              setWebApp(mockWebApp as any);
-              console.log('✅ Mock Telegram WebApp создан с данными:', {
-                user: userData,
-                platform: 'web',
-                version: '9.1'
-              });
-              
-              // Автоматически авторизуем пользователя
-              console.log('🔄 Вызываем loginWithTelegram из useTelegram...');
-              loginWithTelegram({
-                telegramId: userData.id,
-                firstName: userData.first_name,
-                lastName: userData.last_name,
-                username: userData.username,
-                languageCode: userData.language_code,
-                isPremium: userData.is_premium,
-                photoUrl: userData.photo_url,
-              }).then((success) => {
-                console.log('🔄 Результат loginWithTelegram из useTelegram:', success);
-              }).catch((error) => {
-                console.error('❌ Ошибка loginWithTelegram из useTelegram:', error);
-              });
-            }
-          }
-        } catch (error) {
-          console.warn('⚠️ Ошибка парсинга данных Telegram из URL:', error);
-        }
+        // Создаем mock WebApp для браузерного режима
+        const mockWebApp = {
+          initData: '',
+          initDataUnsafe: { user: null },
+          version: '6.0',
+          platform: 'unknown',
+          colorScheme: 'light' as const,
+          themeParams: {
+            bg_color: '#ffffff',
+            text_color: '#000000',
+            hint_color: '#707579',
+            link_color: '#00488f',
+            button_color: '#3390ec',
+            button_text_color: '#ffffff',
+            secondary_bg_color: '#f4f4f5'
+          },
+          ready: () => {},
+          expand: () => {},
+          close: () => {},
+          isClosingConfirmationEnabled: false,
+          MainButton: {
+            text: '',
+            color: '#3390ec',
+            textColor: '#ffffff',
+            isVisible: false,
+            isActive: true,
+            isProgressVisible: false,
+            setText: () => {},
+            onClick: () => {},
+            show: () => {},
+            hide: () => {},
+            enable: () => {},
+            disable: () => {},
+            showProgress: () => {},
+            hideProgress: () => {},
+            setParams: () => {},
+          },
+          BackButton: {
+            isVisible: false,
+            onClick: () => {},
+            show: () => {},
+            hide: () => {},
+          },
+          HapticFeedback: {
+            impactOccurred: () => {},
+            notificationOccurred: () => {},
+            selectionChanged: () => {},
+          },
+          sendData: () => {},
+          openLink: () => {},
+          openTelegramLink: () => {},
+          showPopup: () => {},
+          showAlert: () => {},
+          showConfirm: () => {},
+          showScanQrPopup: () => {},
+          closeScanQrPopup: () => {},
+          readTextFromClipboard: () => {},
+          requestWriteAccess: () => {},
+          requestContact: () => {},
+          requestLocation: () => {},
+          invokeCustomMethod: () => {},
+        };
         
+        setWebApp(mockWebApp as any);
+        setUser(null);
         setIsReady(true);
+        
+        console.log('✅ Браузерный режим активирован');
       }
     } else {
+      // Не в веб-окружении
       setIsReady(true);
     }
   }, []);
@@ -319,48 +227,15 @@ export const useTelegram = () => {
     }
   }, [webApp]);
 
-  const hapticFeedback = useCallback((type: 'light' | 'medium' | 'heavy' | 'success' | 'error' | 'warning' | 'selection') => {
+  const hapticFeedback = useCallback((style: 'light' | 'medium' | 'heavy' = 'light') => {
     if (webApp?.HapticFeedback) {
-      if (type === 'selection') {
-        webApp.HapticFeedback.selectionChanged();
-      } else if (['success', 'error', 'warning'].includes(type)) {
-        webApp.HapticFeedback.notificationOccurred(type as 'success' | 'error' | 'warning');
-      } else {
-        webApp.HapticFeedback.impactOccurred(type as 'light' | 'medium' | 'heavy');
-      }
+      webApp.HapticFeedback.impactOccurred(style);
     }
   }, [webApp]);
 
-  const showAlert = useCallback((message: string) => {
-    return new Promise<void>((resolve) => {
-      if (webApp?.showAlert) {
-        webApp.showAlert(message, () => resolve());
-      } else {
-        alert(message);
-        resolve();
-      }
-    });
-  }, [webApp]);
-
-  const showConfirm = useCallback((message: string) => {
-    return new Promise<boolean>((resolve) => {
-      if (webApp?.showConfirm) {
-        webApp.showConfirm(message, (confirmed) => resolve(confirmed));
-      } else {
-        resolve(confirm(message));
-      }
-    });
-  }, [webApp]);
-
-  const close = useCallback(() => {
+  const closeWebApp = useCallback(() => {
     if (webApp?.close) {
       webApp.close();
-    }
-  }, [webApp]);
-
-  const sendData = useCallback((data: any) => {
-    if (webApp?.sendData) {
-      webApp.sendData(JSON.stringify(data));
     }
   }, [webApp]);
 
@@ -372,68 +247,28 @@ export const useTelegram = () => {
     }
   }, [webApp]);
 
-  const openTelegramLink = useCallback((url: string) => {
-    if (webApp?.openTelegramLink) {
-      webApp.openTelegramLink(url);
+  const showAlert = useCallback((message: string) => {
+    if (webApp?.showAlert) {
+      webApp.showAlert(message);
     } else {
-      window.open(url, '_blank');
+      alert(message);
     }
-  }, [webApp]);
-
-  const requestLocation = useCallback(() => {
-    return new Promise<{ granted: boolean; location?: { latitude: number; longitude: number } }>((resolve) => {
-      if (webApp?.requestLocation) {
-        webApp.requestLocation((granted, location) => {
-          resolve({ granted, location });
-        });
-      } else {
-        // Fallback для обычного браузера
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              resolve({
-                granted: true,
-                location: {
-                  latitude: position.coords.latitude,
-                  longitude: position.coords.longitude,
-                }
-              });
-            },
-            () => {
-              resolve({ granted: false });
-            },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-          );
-        } else {
-          resolve({ granted: false });
-        }
-      }
-    });
   }, [webApp]);
 
   return {
     webApp,
     user,
-    telegramUser: user, // Добавляем алиас для совместимости
     isReady,
-    isTelegramWebApp: !!webApp,
+    isTelegramWebApp: !!webApp && webApp.platform !== 'unknown',
     colorScheme: webApp?.colorScheme || 'light',
-    themeParams: webApp?.themeParams || {},
-    platform: webApp?.platform || 'unknown',
-    version: webApp?.version || 'unknown',
+    themeParams: webApp?.themeParams,
     showMainButton,
     hideMainButton,
     showBackButton,
     hideBackButton,
     hapticFeedback,
-    showAlert,
-    showConfirm,
-    close,
-    sendData,
+    closeWebApp,
     openLink,
-    openTelegramLink,
-    requestLocation,
+    showAlert,
   };
 };
-
-export default useTelegram;

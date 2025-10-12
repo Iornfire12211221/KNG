@@ -60,8 +60,49 @@ export const useTelegram = () => {
         
         console.log('✅ Telegram WebApp инициализирован');
       } else {
-        console.log('⚠️ Telegram WebApp не найден');
+        console.log('⚠️ Telegram WebApp не найден, работаем в браузерном режиме');
+        
+        // Создаем mock WebApp для браузерного режима
+        const mockWebApp = {
+          initData: '',
+          initDataUnsafe: { user: null },
+          version: '6.0',
+          platform: 'unknown',
+          colorScheme: 'light' as const,
+          themeParams: {
+            bg_color: '#ffffff',
+            text_color: '#000000',
+            hint_color: '#707579',
+            link_color: '#00488f',
+            button_color: '#3390ec',
+            button_text_color: '#ffffff',
+            secondary_bg_color: '#f4f4f5'
+          },
+          ready: () => {},
+          expand: () => {},
+          close: () => {},
+          isClosingConfirmationEnabled: false,
+          HapticFeedback: {
+            impactOccurred: () => {}
+          },
+          MainButton: {
+            hide: () => {},
+            show: () => {},
+            setText: () => {},
+            onClick: () => {}
+          },
+          BackButton: {
+            hide: () => {},
+            show: () => {},
+            onClick: () => {}
+          }
+        } as any;
+        
+        setWebApp(mockWebApp);
+        setUser(null);
         setIsReady(true);
+        
+        console.log('✅ Браузерный режим активирован');
       }
     };
 
@@ -80,7 +121,51 @@ export const useTelegram = () => {
       // Таймаут на случай если скрипт не загрузится
       setTimeout(() => {
         clearInterval(checkInterval);
-        setIsReady(true);
+        if (!window.Telegram?.WebApp) {
+          console.log('⚠️ Telegram WebApp не загрузился, активируем браузерный режим');
+          
+          // Создаем mock WebApp для браузерного режима
+          const mockWebApp = {
+            initData: '',
+            initDataUnsafe: { user: null },
+            version: '6.0',
+            platform: 'unknown',
+            colorScheme: 'light' as const,
+            themeParams: {
+              bg_color: '#ffffff',
+              text_color: '#000000',
+              hint_color: '#707579',
+              link_color: '#00488f',
+              button_color: '#3390ec',
+              button_text_color: '#ffffff',
+              secondary_bg_color: '#f4f4f5'
+            },
+            ready: () => {},
+            expand: () => {},
+            close: () => {},
+            isClosingConfirmationEnabled: false,
+            HapticFeedback: {
+              impactOccurred: () => {}
+            },
+            MainButton: {
+              hide: () => {},
+              show: () => {},
+              setText: () => {},
+              onClick: () => {}
+            },
+            BackButton: {
+              hide: () => {},
+              show: () => {},
+              onClick: () => {}
+            }
+          } as any;
+          
+          setWebApp(mockWebApp);
+          setUser(null);
+          setIsReady(true);
+          
+          console.log('✅ Браузерный режим активирован по таймауту');
+        }
       }, 5000);
     }
   }, []);
