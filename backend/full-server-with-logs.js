@@ -454,38 +454,56 @@ const server = http.createServer((req, res) => {
   }
   
   // Serve static files if they exist and we're in full mode
-  if (canRunFullVersion && (pathname.startsWith('/static/') || pathname.includes('.'))) {
-    const filePath = path.join(process.cwd(), 'dist', pathname);
-    fs.readFile(filePath, (err, data) => {
+  if (canRunFullVersion) {
+    // If it's a static file request (has extension or starts with /static)
+    if (pathname.startsWith('/static/') || pathname.includes('.')) {
+      const filePath = path.join(process.cwd(), 'dist', pathname);
+      fs.readFile(filePath, (err, data) => {
+        if (err) {
+          console.log('Static file not found:', filePath);
+          res.writeHead(404);
+          res.end('File not found');
+          return;
+        }
+        
+        const ext = path.extname(pathname);
+        const contentType = {
+          '.html': 'text/html',
+          '.css': 'text/css',
+          '.js': 'application/javascript',
+          '.json': 'application/json',
+          '.png': 'image/png',
+          '.jpg': 'image/jpeg',
+          '.gif': 'image/gif',
+          '.ico': 'image/x-icon'
+        }[ext] || 'text/plain';
+        
+        res.writeHead(200, { 'Content-Type': contentType });
+        res.end(data);
+      });
+      return;
+    }
+    
+    // For root path or any other path, serve index.html (SPA routing)
+    const indexPath = path.join(process.cwd(), 'dist', 'index.html');
+    fs.readFile(indexPath, (err, data) => {
       if (err) {
-        console.log('Static file not found:', filePath);
-        res.writeHead(404);
-        res.end('File not found');
+        console.log('Index.html not found, serving fallback page');
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(fullHtmlPage);
         return;
       }
       
-      const ext = path.extname(pathname);
-      const contentType = {
-        '.html': 'text/html',
-        '.css': 'text/css',
-        '.js': 'application/javascript',
-        '.json': 'application/json',
-        '.png': 'image/png',
-        '.jpg': 'image/jpeg',
-        '.gif': 'image/gif',
-        '.ico': 'image/x-icon'
-      }[ext] || 'text/plain';
-      
-      res.writeHead(200, { 'Content-Type': contentType });
+      console.log('Serving index.html from dist directory');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(data);
     });
     return;
   }
   
-  // Default route - serve appropriate HTML page
-  const html = canRunFullVersion ? fullHtmlPage : minimalHtmlPage;
+  // If not in full mode, serve minimal page
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-  res.end(html);
+  res.end(minimalHtmlPage);
 });
 
 // Error handling

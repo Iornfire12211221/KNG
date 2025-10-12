@@ -60,7 +60,69 @@ if (process.env.NODE_ENV === "production") {
     
     if (distExists) {
       console.log('Serving static files from dist directory');
-      app.use("/*", serveStatic({ root: "./dist" }));
+      
+      // Serve static files manually for better control
+      app.get("/*", async (c) => {
+        const url = new URL(c.req.url);
+        const pathname = url.pathname;
+        
+        // If it's an API route, don't handle it here
+        if (pathname.startsWith('/api/')) {
+          return c.text('Not found', 404);
+        }
+        
+        // For static files with extensions
+        if (pathname.includes('.') && !pathname.startsWith('/api/')) {
+          const filePath = path.join(process.cwd(), 'dist', pathname);
+          try {
+            const data = await fs.promises.readFile(filePath);
+            const ext = path.extname(pathname);
+            const contentType = {
+              '.html': 'text/html',
+              '.css': 'text/css',
+              '.js': 'application/javascript',
+              '.json': 'application/json',
+              '.png': 'image/png',
+              '.jpg': 'image/jpeg',
+              '.gif': 'image/gif',
+              '.ico': 'image/x-icon'
+            }[ext] || 'text/plain';
+            
+            return new Response(data, {
+              headers: { 'Content-Type': contentType }
+            });
+          } catch (error) {
+            console.log('Static file not found:', filePath);
+            return c.text('File not found', 404);
+          }
+        }
+        
+        // For all other routes, serve index.html (SPA routing)
+        try {
+          const indexPath = path.join(process.cwd(), 'dist', 'index.html');
+          const indexData = await fs.promises.readFile(indexPath);
+          return new Response(indexData, {
+            headers: { 'Content-Type': 'text/html; charset=utf-8' }
+          });
+        } catch (error) {
+          console.log('Index.html not found, serving fallback');
+          return c.html(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>ДПС Кингисепп</title>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+            </head>
+            <body>
+              <h1>🚀 ДПС Кингисепп</h1>
+              <p>Приложение запущено, но index.html не найден</p>
+              <p>API доступно: <a href="/api/health">/api/health</a></p>
+            </body>
+            </html>
+          `);
+        }
+      });
     } else {
       console.log('Dist directory not found, serving fallback');
       app.get("/*", (c) => {
