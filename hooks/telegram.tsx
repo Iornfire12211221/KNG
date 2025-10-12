@@ -88,39 +88,46 @@ export const useTelegram = () => {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    console.log('🔄 useTelegram: Starting initialization...');
+    
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      console.log('🔄 useTelegram: Web platform detected');
+      
+      // Проверяем наличие Telegram WebApp
       const tg = window.Telegram?.WebApp;
+      console.log('🔄 useTelegram: Telegram WebApp found:', !!tg);
+      
       if (tg) {
         // Реальный Telegram WebApp найден
+        console.log('🔄 useTelegram: Initializing real Telegram WebApp...');
+        
         setWebApp(tg as any);
         setUser(tg.initDataUnsafe?.user || null);
         
         // Готовим WebApp
-        tg.ready();
-        tg.expand();
-        tg.isClosingConfirmationEnabled = false;
-        
-        // Включаем тактильную обратную связь
-        if (tg.HapticFeedback) {
-          tg.HapticFeedback.impactOccurred('light');
-        }
-        
-        // Скрываем кнопки по умолчанию
-        if (tg.MainButton) {
-          tg.MainButton.hide();
-        }
-        if (tg.BackButton) {
-          tg.BackButton.hide();
+        try {
+          tg.ready();
+          tg.expand();
+          tg.isClosingConfirmationEnabled = false;
+          
+          // Включаем тактильную обратную связь
+          if (tg.HapticFeedback) {
+            tg.HapticFeedback.impactOccurred('light');
+          }
+          
+          // Скрываем кнопки по умолчанию
+          if (tg.MainButton) {
+            tg.MainButton.hide();
+          }
+          if (tg.BackButton) {
+            tg.BackButton.hide();
+          }
+        } catch (error) {
+          console.error('❌ useTelegram: Error initializing Telegram WebApp:', error);
         }
         
         setIsReady(true);
-        
-        console.log('✅ Telegram WebApp готов:', {
-          user: tg.initDataUnsafe?.user,
-          platform: tg.platform,
-          version: tg.version,
-          colorScheme: tg.colorScheme
-        });
+        console.log('✅ useTelegram: Telegram WebApp готов');
       } else {
         // Telegram WebApp не найден - работаем в браузерном режиме
         console.log('ℹ️ Telegram WebApp не найден, работаем в браузерном режиме');
@@ -192,12 +199,21 @@ export const useTelegram = () => {
         setUser(null);
         setIsReady(true);
         
-        console.log('✅ Браузерный режим активирован');
+        console.log('✅ useTelegram: Браузерный режим активирован');
       }
     } else {
       // Не в веб-окружении
+      console.log('🔄 useTelegram: Non-web platform, setting ready');
       setIsReady(true);
     }
+    
+    // Гарантируем, что isReady будет true через небольшую задержку
+    const timeout = setTimeout(() => {
+      console.log('🔄 useTelegram: Timeout fallback - forcing ready');
+      setIsReady(true);
+    }, 1000);
+    
+    return () => clearTimeout(timeout);
   }, []);
 
   const showMainButton = useCallback((text: string, onClick: () => void) => {

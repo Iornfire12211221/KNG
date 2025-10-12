@@ -40,6 +40,8 @@ function RootLayoutNav() {
 function AppContent() {
   const systemColorScheme = useColorScheme();
   const telegram = useTelegram();
+  
+  console.log('🔄 AppContent: telegram.isReady =', telegram.isReady);
 
   const colorScheme = useMemo(() => {
     if (Platform.OS === 'web' && telegram.isTelegramWebApp) {
@@ -123,6 +125,7 @@ function AppContent() {
   }, [telegram.isReady]);
 
   if (!telegram.isReady) {
+    console.log('🔄 AppContent: Showing loading screen, telegram.isReady =', telegram.isReady);
     return (
       <View style={styles.loadingContainer} testID="app-loading">
         <ActivityIndicator size="large" color="#007AFF" />
@@ -130,6 +133,8 @@ function AppContent() {
       </View>
     );
   }
+  
+  console.log('✅ AppContent: Telegram ready, rendering main app');
 
   return (
     <ThemeProvider value={telegramTheme}>
