@@ -45,4 +45,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8081/ || exit 1
 
 # Start the application with detailed logging and fallback
-CMD ["sh", "-c", "echo '=== STARTING APPLICATION ===' && echo 'Step 1: Checking dependencies...' && echo 'Step 2: Starting server with fallback...' && (node backend/full-server-with-logs.js || (echo 'Full server failed, starting minimal server...' && node backend/minimal-server.js))"]
+CMD ["sh", "-c", "echo '=== STARTING APPLICATION ===' && echo 'Step 1: Testing with simple server...' && echo 'Step 2: Starting test server...' && node backend/test-server.js"]
