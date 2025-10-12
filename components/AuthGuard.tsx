@@ -10,9 +10,13 @@ interface AuthGuardProps {
 
 export default function AuthGuard({ children }: AuthGuardProps) {
   const { currentUser, isLoading } = useApp();
+  
+  console.log('🔄 AuthGuard: isLoading =', isLoading, 'currentUser =', !!currentUser);
 
   React.useEffect(() => {
+    console.log('🔄 AuthGuard: useEffect triggered, isLoading =', isLoading, 'currentUser =', !!currentUser);
     if (!isLoading && !currentUser) {
+      console.log('🔄 AuthGuard: Redirecting to /auth');
       router.replace('/auth');
     }
   }, [currentUser, isLoading]);

@@ -38,13 +38,32 @@ export const [AppProviderInternal, useAppInternal] = createContextHook(() => {
   // Load data from AsyncStorage
   useEffect(() => {
     const loadData = async () => {
+      console.log('🔄 useApp: Starting data load from AsyncStorage');
+      
+      // Добавляем timeout для загрузки данных
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('AsyncStorage timeout')), 3000);
+      });
+      
       try {
-        const [storedPosts, storedMessages, storedUser, storedUsers] = await Promise.all([
+        const dataPromise = Promise.all([
           AsyncStorage.getItem('dps_posts'),
           AsyncStorage.getItem('chat_messages'),
           AsyncStorage.getItem('current_user'),
           AsyncStorage.getItem('all_users'),
         ]);
+        
+        const [storedPosts, storedMessages, storedUser, storedUsers] = await Promise.race([
+          dataPromise,
+          timeoutPromise
+        ]) as any;
+        
+        console.log('🔄 useApp: AsyncStorage data loaded:', {
+          posts: !!storedPosts,
+          messages: !!storedMessages,
+          user: !!storedUser,
+          users: !!storedUsers
+        });
 
         if (storedPosts) {
           const parsedPosts = JSON.parse(storedPosts);
@@ -87,8 +106,9 @@ export const [AppProviderInternal, useAppInternal] = createContextHook(() => {
           setCurrentUser(JSON.parse(storedUser));
         }
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('❌ useApp: Error loading data:', error);
       } finally {
+        console.log('✅ useApp: Data loading completed, setting isLoading = false');
         setIsLoading(false);
       }
     };
