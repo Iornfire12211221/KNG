@@ -86,7 +86,7 @@ export const useTelegram = () => {
   const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
   const [user, setUser] = useState<TelegramWebApp['initDataUnsafe']['user'] | null>(null);
   // Если мы на сервере, сразу готовы
-  const [isReady, setIsReady] = useState(typeof window === 'undefined');
+  const [isReady, setIsReady] = useState(true);
 
   useEffect(() => {
     console.log('🔄 useTelegram: Starting initialization...');
@@ -97,6 +97,9 @@ export const useTelegram = () => {
       setIsReady(true);
       return;
     }
+    
+    // Устанавливаем готовность сразу для браузера
+    setIsReady(true);
     
     if (Platform.OS === 'web') {
       console.log('🔄 useTelegram: Web platform detected');
@@ -134,7 +137,6 @@ export const useTelegram = () => {
           console.error('❌ useTelegram: Error initializing Telegram WebApp:', error);
         }
         
-        setIsReady(true);
         console.log('✅ useTelegram: Telegram WebApp готов');
       } else {
         // Telegram WebApp не найден - работаем в браузерном режиме
@@ -205,23 +207,15 @@ export const useTelegram = () => {
         
         setWebApp(mockWebApp as any);
         setUser(null);
-        setIsReady(true);
         
         console.log('✅ useTelegram: Браузерный режим активирован');
       }
     } else {
       // Не в веб-окружении
-      console.log('🔄 useTelegram: Non-web platform, setting ready');
-      setIsReady(true);
+      console.log('🔄 useTelegram: Non-web platform');
     }
     
-    // Гарантируем, что isReady будет true через небольшую задержку
-    const timeout = setTimeout(() => {
-      console.log('🔄 useTelegram: Timeout fallback - forcing ready');
-      setIsReady(true);
-    }, 1000);
-    
-    return () => clearTimeout(timeout);
+    // isReady уже установлен в true в начале функции
   }, []);
 
   const showMainButton = useCallback((text: string, onClick: () => void) => {

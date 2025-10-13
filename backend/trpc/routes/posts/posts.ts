@@ -85,7 +85,7 @@ export const postsRouter = createTRPCRouter({
       postId: z.string(),
       userId: z.string(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const post = await ctx.prisma.post.findUnique({
         where: { id: input.postId }
       });
@@ -117,7 +117,7 @@ export const postsRouter = createTRPCRouter({
       postId: z.string(),
       userId: z.string(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const post = await ctx.prisma.post.findUnique({
         where: { id: input.postId }
       });
@@ -263,7 +263,7 @@ export const postsRouter = createTRPCRouter({
       reason: z.string().optional(),
       moderatorId: z.string(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const post = await ctx.prisma.post.update({
         where: { id: input.postId },
         data: {
