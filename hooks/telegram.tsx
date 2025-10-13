@@ -90,6 +90,8 @@ export const useTelegram = () => {
 
   useEffect(() => {
     console.log('🔄 useTelegram: Starting initialization...');
+    console.log('🔄 useTelegram: Current URL:', typeof window !== 'undefined' ? window.location.href : 'SSR');
+    console.log('🔄 useTelegram: Platform.OS:', Platform.OS);
     
     // Проверяем, что мы в браузере (не во время SSR)
     if (typeof window === 'undefined') {
@@ -100,6 +102,8 @@ export const useTelegram = () => {
     
     if (Platform.OS === 'web') {
       console.log('🔄 useTelegram: Web platform detected');
+      console.log('🔄 useTelegram: window.Telegram exists:', !!window.Telegram);
+      console.log('🔄 useTelegram: window.Telegram.WebApp exists:', !!window.Telegram?.WebApp);
       
       // Ждем загрузки Telegram WebApp API (может загружаться асинхронно)
       const checkTelegramWebApp = () => {
@@ -109,6 +113,9 @@ export const useTelegram = () => {
         if (tg) {
           // Реальный Telegram WebApp найден
           console.log('🔄 useTelegram: Initializing real Telegram WebApp...');
+          console.log('🔄 useTelegram: tg.initDataUnsafe:', tg.initDataUnsafe);
+          console.log('🔄 useTelegram: tg.initDataUnsafe.user:', tg.initDataUnsafe?.user);
+          console.log('🔄 useTelegram: tg.initData:', tg.initData);
           
           setWebApp(tg as any);
           setUser(tg.initDataUnsafe?.user || null);
@@ -142,6 +149,10 @@ export const useTelegram = () => {
           const urlParams = new URLSearchParams(window.location.search);
           const hashParams = new URLSearchParams(window.location.hash.substring(1));
           const tgWebAppData = urlParams.get('tgWebAppData') || hashParams.get('tgWebAppData');
+          
+          console.log('🔄 useTelegram: URL params:', Object.fromEntries(urlParams.entries()));
+          console.log('🔄 useTelegram: Hash params:', Object.fromEntries(hashParams.entries()));
+          console.log('🔄 useTelegram: tgWebAppData found:', !!tgWebAppData);
           
           if (tgWebAppData) {
             console.log('🔄 useTelegram: Telegram data found in URL, but WebApp API not loaded yet');
@@ -193,11 +204,22 @@ export const useTelegram = () => {
           
           // Telegram WebApp не найден - работаем в браузерном режиме
           console.log('ℹ️ Telegram WebApp не найден, работаем в браузерном режиме');
+          console.log('ℹ️ useTelegram: Creating mock user for browser mode');
           
           // Создаем mock WebApp для браузерного режима
+          const mockUser = {
+            id: 123456789,
+            first_name: 'Демо',
+            last_name: 'Пользователь',
+            username: 'demo_user',
+            language_code: 'ru',
+            is_premium: false,
+            allows_write_to_pm: true
+          };
+          
           const mockWebApp = {
             initData: '',
-            initDataUnsafe: { user: null },
+            initDataUnsafe: { user: mockUser },
             version: '6.0',
             platform: 'unknown',
             colorScheme: 'light' as const,
@@ -258,8 +280,9 @@ export const useTelegram = () => {
           };
           
           setWebApp(mockWebApp as any);
-          setUser(null);
+          setUser(mockUser);
           console.log('✅ useTelegram: Браузерный режим активирован');
+          console.log('✅ useTelegram: Mock user set:', mockUser);
           setIsReady(true);
         }
       };

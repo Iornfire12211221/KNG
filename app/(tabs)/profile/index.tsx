@@ -31,7 +31,7 @@ import AdminGearButton from '@/components/AdminGearButton';
 
 export default function ProfileScreen() {
   const { currentUser, updateUser, posts, messages, logoutUser, makeAdmin } = useApp();
-  const { telegramUser, isTelegramWebApp } = useTelegram();
+  const { user: telegramUser, isTelegramWebApp } = useTelegram();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(currentUser?.name || '');
   const [editTelegram, setEditTelegram] = useState(currentUser?.telegramUsername || '');
@@ -42,13 +42,34 @@ export default function ProfileScreen() {
     console.log('🔍 Profile useEffect - telegramUser:', telegramUser);
     console.log('🔍 Profile useEffect - isTelegramWebApp:', isTelegramWebApp);
     console.log('🔍 Profile useEffect - currentUser:', currentUser);
+    console.log('🔍 Profile useEffect - telegramUser.first_name:', telegramUser?.first_name);
+    console.log('🔍 Profile useEffect - telegramUser.username:', telegramUser?.username);
+    console.log('🔍 Profile useEffect - telegramUser.id:', telegramUser?.id);
+    
+    // Тест базы данных
+    const testDatabase = async () => {
+      try {
+        const response = await fetch('/api/health');
+        const data = await response.json();
+        console.log('🗄️ Database health check:', data);
+      } catch (error) {
+        console.error('❌ Database health check failed:', error);
+      }
+    };
+    testDatabase();
     
     if (telegramUser && isTelegramWebApp) {
       console.log('✅ Setting Telegram data in profile');
-      setEditName(telegramUser.first_name || currentUser?.name || '');
-      setEditTelegram(telegramUser.username || currentUser?.telegramUsername || '');
+      const newName = telegramUser.first_name || currentUser?.name || '';
+      const newUsername = telegramUser.username || currentUser?.telegramUsername || '';
+      console.log('🔍 Setting name to:', newName);
+      console.log('🔍 Setting username to:', newUsername);
+      setEditName(newName);
+      setEditTelegram(newUsername);
     } else {
       console.log('⚠️ Telegram data not available, using current user data');
+      console.log('🔍 Current user name:', currentUser?.name);
+      console.log('🔍 Current user telegramUsername:', currentUser?.telegramUsername);
     }
   }, [telegramUser, isTelegramWebApp, currentUser]);
   const handleLogout = () => {
@@ -167,10 +188,20 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <View style={styles.info}>
-            <Text style={styles.name}>{telegramUser?.first_name || currentUser?.name}</Text>
-            {(telegramUser?.username || currentUser?.telegramUsername) && (
-              <Text style={styles.username}>@{telegramUser?.username || currentUser?.telegramUsername}</Text>
-            )}
+            {(() => {
+              const displayName = telegramUser?.first_name || currentUser?.name;
+              const displayUsername = telegramUser?.username || currentUser?.telegramUsername;
+              console.log('🖼️ Display name:', displayName);
+              console.log('🖼️ Display username:', displayUsername);
+              return (
+                <>
+                  <Text style={styles.name}>{displayName}</Text>
+                  {displayUsername && (
+                    <Text style={styles.username}>@{displayUsername}</Text>
+                  )}
+                </>
+              );
+            })()}
             <TouchableOpacity style={styles.editButton} onPress={() => setIsEditing(true)}>
               <Edit2 size={14} color="#666" strokeWidth={2} />
               <Text style={styles.editText}>Редактировать</Text>

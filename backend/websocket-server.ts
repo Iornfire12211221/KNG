@@ -408,6 +408,12 @@ export class WebSocketManager {
    * Запуск проверки геofencing
    */
   private startGeofenceCheck(): void {
+    // В development режиме не запускаем геofencing
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔧 Geofencing disabled in development mode');
+      return;
+    }
+    
     this.geofenceCheckInterval = setInterval(async () => {
       await this.checkGeofencing();
     }, this.GEOFENCE_CHECK_INTERVAL);
@@ -417,12 +423,12 @@ export class WebSocketManager {
    * Проверка геofencing для всех пользователей
    */
   private async checkGeofencing(): Promise<void> {
-    try {
-      // В development режиме отключаем геofencing полностью
-      if (process.env.NODE_ENV === 'development') {
-        return;
-      }
+    // В development режиме отключаем геofencing полностью
+    if (process.env.NODE_ENV === 'development') {
+      return;
+    }
 
+    try {
       // Проверяем доступность Prisma
       if (!prisma) {
         return; // Тихо пропускаем, не логируем
