@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { publicProcedure, createTRPCRouter } from '../../create-context';
-import { prisma } from '../../../../lib/prisma';
 
 // Схемы валидации
 const PostTypeSchema = z.enum(['dps', 'patrol', 'accident', 'camera', 'roadwork', 'animals', 'other']);
@@ -36,10 +35,10 @@ const CreatePostSchema = z.object({
 
 export const postsRouter = createTRPCRouter({
   // Получить все активные посты (только одобренные для обычных пользователей)
-  getAll: publicProcedure.query(async () => {
+  getAll: publicProcedure.query(async ({ ctx }) => {
     try {
       const now = Date.now();
-      const posts = await prisma.post.findMany({
+      const posts = await ctx.prisma.post.findMany({
         where: {
           expiresAt: {
             gt: now
@@ -66,8 +65,8 @@ export const postsRouter = createTRPCRouter({
   // Создать новый пост
   create: publicProcedure
     .input(CreatePostSchema)
-    .mutation(async ({ input }) => {
-      const post = await prisma.post.create({
+    .mutation(async ({ input, ctx }) => {
+      const post = await ctx.prisma.post.create({
         data: {
           ...input,
           timestamp: BigInt(input.timestamp),
@@ -87,7 +86,7 @@ export const postsRouter = createTRPCRouter({
       userId: z.string(),
     }))
     .mutation(async ({ input }) => {
-      const post = await prisma.post.findUnique({
+      const post = await ctx.prisma.post.findUnique({
         where: { id: input.postId }
       });
 
@@ -98,7 +97,7 @@ export const postsRouter = createTRPCRouter({
       const likedBy = post.likedBy || [];
       const hasLiked = likedBy.includes(input.userId);
 
-      const updatedPost = await prisma.post.update({
+      const updatedPost = await ctx.prisma.post.update({
         where: { id: input.postId },
         data: {
           likes: hasLiked ? post.likes - 1 : post.likes + 1,
@@ -119,7 +118,7 @@ export const postsRouter = createTRPCRouter({
       userId: z.string(),
     }))
     .mutation(async ({ input }) => {
-      const post = await prisma.post.findUnique({
+      const post = await ctx.prisma.post.findUnique({
         where: { id: input.postId }
       });
 
@@ -132,7 +131,7 @@ export const postsRouter = createTRPCRouter({
         throw new Error('Not authorized to delete this post');
       }
 
-      await prisma.post.delete({
+      await ctx.prisma.post.delete({
         where: { id: input.postId }
       });
 
@@ -143,7 +142,7 @@ export const postsRouter = createTRPCRouter({
   // Очистить просроченные посты
   clearExpired: publicProcedure.mutation(async () => {
     const now = Date.now();
-    const result = await prisma.post.deleteMany({
+    const result = await ctx.prisma.post.deleteMany({
       where: {
         expiresAt: {
           lt: now
@@ -158,7 +157,7 @@ export const postsRouter = createTRPCRouter({
   // Удалить ВСЕ посты (для полной очистки)
   deleteAll: publicProcedure.mutation(async () => {
     try {
-      const deletedCount = await prisma.post.deleteMany({});
+      const deletedCount = await ctx.prisma.post.deleteMany({});
       
       console.log(`🗑️ Deleted ALL ${deletedCount.count} posts from database`);
       return { deletedCount: deletedCount.count };
@@ -169,10 +168,10 @@ export const postsRouter = createTRPCRouter({
   }),
 
   // Получить все посты для админов (включая на модерации)
-  getAllForAdmin: publicProcedure.query(async () => {
+  getAllForAdmin: publicProcedure.query(async ({ ctx }) => {
     try {
       const now = Date.now();
-      const posts = await prisma.post.findMany({
+      const posts = await ctx.prisma.post.findMany({
         where: {
           expiresAt: {
             gt: now
@@ -198,7 +197,7 @@ export const postsRouter = createTRPCRouter({
     .query(async ({ input }) => {
       try {
         const now = Date.now();
-        const posts = await prisma.post.findMany({
+        const posts = await ctx.prisma.post.findMany({
           where: {
             userId: input.userId,
             expiresAt: {
@@ -239,7 +238,7 @@ export const postsRouter = createTRPCRouter({
   // Получить посты на модерации
   getPendingModeration: publicProcedure.query(async () => {
     try {
-      const posts = await prisma.post.findMany({
+      const posts = await ctx.prisma.post.findMany({
         where: {
           moderationStatus: 'PENDING',
           needsModeration: true
@@ -265,7 +264,7 @@ export const postsRouter = createTRPCRouter({
       moderatorId: z.string(),
     }))
     .mutation(async ({ input }) => {
-      const post = await prisma.post.update({
+      const post = await ctx.prisma.post.update({
         where: { id: input.postId },
         data: {
           moderationStatus: input.decision as any,

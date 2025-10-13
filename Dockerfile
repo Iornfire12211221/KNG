@@ -41,5 +41,5 @@ EXPOSE 8081
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8081/ || exit 1
 
-# Start the mock API server
-CMD ["npx", "tsx", "backend/mock-api.ts"]
+# Start the Hono server
+CMD ["npx", "tsx", "backend/full-server.ts"]

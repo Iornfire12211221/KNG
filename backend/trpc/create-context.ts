@@ -1,12 +1,13 @@
 import { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
+import { prisma } from "../../lib/prisma";
 
 // Context creation function
 export const createContext = async (opts: FetchCreateContextFnOptions) => {
   return {
     req: opts.req,
-    // You can add more context items here like database connections, auth, etc.
+    prisma,
   };
 };
 
