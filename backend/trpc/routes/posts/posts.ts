@@ -122,13 +122,8 @@ export const postsRouter = createTRPCRouter({
         
         console.log(`📤 Created new post: ${post.id} by ${post.userName}`);
         
-        // Отправляем уведомления в Telegram группу
-        try {
-          const { NotificationService } = await import('../../../notification-service');
-          await NotificationService.notifyNewPost(post.id);
-        } catch (error) {
-          console.error('❌ Ошибка отправки уведомления в Telegram:', error);
-        }
+        // НЕ отправляем уведомления сразу - только после модерации!
+        console.log('📱 Уведомление будет отправлено после одобрения модератором');
         
         // Отправляем WebSocket уведомление о новом посте
         try {

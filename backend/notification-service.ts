@@ -149,8 +149,15 @@ export class NotificationService {
    * Проверяет, нужно ли отправлять уведомление
    */
   private static shouldNotify(post: any): boolean {
+    // ВАЖНО: Проверяем, что пост одобрен модерацией
+    if (post.needsModeration || post.moderationStatus !== 'APPROVED') {
+      console.log('📱 Уведомление не отправлено: пост не одобрен модерацией');
+      return false;
+    }
+
     // Проверяем тип поста
     if (!this.settings.types.includes(post.type)) {
+      console.log('📱 Уведомление не отправлено: тип поста не включен в настройки');
       return false;
     }
 
@@ -160,14 +167,11 @@ export class NotificationService {
     const minLevel = severityLevels[this.settings.minSeverity];
     
     if (postLevel < minLevel) {
+      console.log('📱 Уведомление не отправлено: приоритет ниже минимального');
       return false;
     }
 
-    // Проверяем, что пост одобрен
-    if (post.needsModeration || post.moderationStatus !== 'APPROVED') {
-      return false;
-    }
-
+    console.log('✅ Пост прошел все проверки, уведомление будет отправлено');
     return true;
   }
 
