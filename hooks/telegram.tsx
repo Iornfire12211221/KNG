@@ -107,7 +107,7 @@ export const useTelegram = () => {
       
       // Ждем загрузки Telegram WebApp API (может загружаться асинхронно)
       const checkTelegramWebApp = () => {
-      const tg = window.Telegram?.WebApp;
+        const tg = window.Telegram?.WebApp;
         console.log('🔄 useTelegram: Telegram WebApp found:', !!tg);
         console.log('🔄 useTelegram: window.Telegram object:', window.Telegram);
         
@@ -115,40 +115,40 @@ export const useTelegram = () => {
         const telegramScript = document.querySelector('script[src*="telegram.org/js/telegram-web-app.js"]');
         console.log('🔄 useTelegram: Telegram script element:', !!telegramScript);
         
-      if (tg) {
+        if (tg) {
           // Реальный Telegram WebApp найден
           console.log('🔄 useTelegram: Initializing real Telegram WebApp...');
           console.log('🔄 useTelegram: tg.initDataUnsafe:', tg.initDataUnsafe);
           console.log('🔄 useTelegram: tg.initDataUnsafe.user:', tg.initDataUnsafe?.user);
           console.log('🔄 useTelegram: tg.initData:', tg.initData);
           
-        setWebApp(tg as any);
-        setUser(tg.initDataUnsafe?.user || null);
-        
-        // Готовим WebApp
+          setWebApp(tg as any);
+          setUser(tg.initDataUnsafe?.user || null);
+          
+          // Готовим WebApp
           try {
-        tg.ready();
-        tg.expand();
-        tg.isClosingConfirmationEnabled = false;
-        
-        // Включаем тактильную обратную связь
-        if (tg.HapticFeedback) {
-          tg.HapticFeedback.impactOccurred('light');
-        }
-        
+            tg.ready();
+            tg.expand();
+            tg.isClosingConfirmationEnabled = false;
+            
+            // Включаем тактильную обратную связь
+            if (tg.HapticFeedback) {
+              tg.HapticFeedback.impactOccurred('light');
+            }
+            
             // Скрываем кнопки по умолчанию
-        if (tg.MainButton) {
-          tg.MainButton.hide();
-        }
-        if (tg.BackButton) {
-          tg.BackButton.hide();
+            if (tg.MainButton) {
+              tg.MainButton.hide();
+            }
+            if (tg.BackButton) {
+              tg.BackButton.hide();
             }
           } catch (error) {
             console.error('❌ useTelegram: Error initializing Telegram WebApp:', error);
-        }
-        
+          }
+          
           console.log('✅ useTelegram: Telegram WebApp готов');
-        setIsReady(true);
+          setIsReady(true);
         } else {
           // Проверяем URL на наличие Telegram данных
           const urlParams = new URLSearchParams(window.location.search);
@@ -205,7 +205,7 @@ export const useTelegram = () => {
                   const hashParams = new URLSearchParams(window.location.hash.substring(1));
                   const tgWebAppData = urlParams.get('tgWebAppData') || hashParams.get('tgWebAppData');
           
-          if (tgWebAppData) {
+                  if (tgWebAppData) {
                     console.log('🔄 useTelegram: Parsing Telegram data from URL...');
                     const decodedData = decodeURIComponent(tgWebAppData);
                     console.log('🔄 useTelegram: Decoded data:', decodedData);
@@ -326,7 +326,7 @@ export const useTelegram = () => {
               
               // Парсим user данные
               const userMatch = decodedData.match(/user=([^&]+)/);
-            if (userMatch) {
+              if (userMatch) {
                 const userData = JSON.parse(decodeURIComponent(userMatch[1]));
                 console.log('✅ useTelegram: Parsed user data:', userData);
                 
@@ -342,31 +342,31 @@ export const useTelegram = () => {
                   photo_url: userData.photo_url
                 };
                 
-              const mockWebApp = {
-                initData: tgWebAppData,
+                const mockWebApp = {
+                  initData: tgWebAppData,
                   initDataUnsafe: { user: realUser },
                   version: '6.0',
-                platform: 'web',
-                colorScheme: 'light' as const,
-                themeParams: {
-                  bg_color: '#ffffff',
-                  text_color: '#000000',
-                  hint_color: '#707579',
-                  link_color: '#00488f',
-                  button_color: '#3390ec',
-                  button_text_color: '#ffffff',
-                  secondary_bg_color: '#f4f4f5'
-                },
+                  platform: 'web',
+                  colorScheme: 'light' as const,
+                  themeParams: {
+                    bg_color: '#ffffff',
+                    text_color: '#000000',
+                    hint_color: '#707579',
+                    link_color: '#00488f',
+                    button_color: '#3390ec',
+                    button_text_color: '#ffffff',
+                    secondary_bg_color: '#f4f4f5'
+                  },
                   ready: () => { console.log('Mock WebApp: ready()'); },
                   expand: () => { console.log('Mock WebApp: expand()'); },
                   close: () => { console.log('Mock WebApp: close()'); },
-                isClosingConfirmationEnabled: false,
-                MainButton: {
-                  text: '',
-                  color: '#3390ec',
-                  textColor: '#ffffff',
-                  isVisible: false,
-                  isActive: true,
+                  isClosingConfirmationEnabled: false,
+                  MainButton: {
+                    text: '',
+                    color: '#3390ec',
+                    textColor: '#ffffff',
+                    isVisible: false,
+                    isActive: true,
                     isProgressVisible: false,
                     setText: (text: string) => { console.log('Mock MainButton: setText', text); },
                     onClick: () => { console.log('Mock MainButton: onClick'); },
@@ -457,49 +457,49 @@ export const useTelegram = () => {
               textColor: '',
               isVisible: false,
               isActive: false,
-                  isProgressVisible: false,
-                  setText: () => {},
-                  onClick: () => {},
-                  show: () => {},
-                  hide: () => {},
-                  enable: () => {},
-                  disable: () => {},
-                  showProgress: () => {},
-                  hideProgress: () => {},
+              isProgressVisible: false,
+              setText: () => {},
+              onClick: () => {},
+              show: () => {},
+              hide: () => {},
+              enable: () => {},
+              disable: () => {},
+              showProgress: () => {},
+              hideProgress: () => {},
               setParams: () => {}
-                },
-                BackButton: {
-                  isVisible: false,
-                  onClick: () => {},
-                  show: () => {},
+            },
+            BackButton: {
+              isVisible: false,
+              onClick: () => {},
+              show: () => {},
               hide: () => {}
-                },
-                HapticFeedback: {
-                  impactOccurred: () => {},
-                  notificationOccurred: () => {},
+            },
+            HapticFeedback: {
+              impactOccurred: () => {},
+              notificationOccurred: () => {},
               selectionChanged: () => {}
-                },
-                sendData: () => {},
-                openLink: () => {},
-                openTelegramLink: () => {},
-                showPopup: () => {},
-                showAlert: () => {},
-                showConfirm: () => {},
-                showScanQrPopup: () => {},
-                closeScanQrPopup: () => {},
-                readTextFromClipboard: () => {},
-                requestWriteAccess: () => {},
-                requestContact: () => {},
-                requestLocation: () => {},
+            },
+            sendData: () => {},
+            openLink: () => {},
+            openTelegramLink: () => {},
+            showPopup: () => {},
+            showAlert: () => {},
+            showConfirm: () => {},
+            showScanQrPopup: () => {},
+            closeScanQrPopup: () => {},
+            readTextFromClipboard: () => {},
+            requestWriteAccess: () => {},
+            requestContact: () => {},
+            requestLocation: () => {},
             invokeCustomMethod: () => {}
-              };
-              
-              setWebApp(mockWebApp as any);
+          };
+          
+          setWebApp(mockWebApp as any);
           setUser(mockUser);
           console.log('✅ useTelegram: Браузерный режим активирован');
           console.log('✅ useTelegram: Mock user set:', mockUser);
-        setIsReady(true);
-      }
+          setIsReady(true);
+        }
       };
       
       // Проверяем сразу

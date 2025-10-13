@@ -203,12 +203,18 @@ export const [AppProviderInternal, useAppInternal] = createContextHook(() => {
             return p.expiresAt > now;
           });
           
+          // Проверяем, нужно ли обновлять состояние
           if (activePosts.length !== parsedPosts.length) {
             console.log(`Удалено ${parsedPosts.length - activePosts.length} просроченных постов`);
-            setPosts(activePosts);
+            // Обновляем состояние только если есть изменения
+            setPosts(prevPosts => {
+              // Проверяем, действительно ли нужно обновление
+              if (prevPosts.length !== activePosts.length) {
+                return activePosts;
+              }
+              return prevPosts;
+            });
             await AsyncStorage.setItem('dps_posts', JSON.stringify(activePosts));
-          } else {
-            setPosts(activePosts);
           }
           
           // Проверяем актуальность постов
@@ -268,7 +274,7 @@ export const [AppProviderInternal, useAppInternal] = createContextHook(() => {
     const interval = setInterval(checkAndCleanPosts, 60 * 1000); // Проверяем каждую минуту
 
     return () => clearInterval(interval);
-  }, []);
+  }, []); // Убираем зависимости, чтобы избежать бесконечного цикла
 
   const analyzeTextContent = async (text: string): Promise<{ isAppropriate: boolean; reason?: string }> => {
     try {
