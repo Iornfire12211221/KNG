@@ -28,6 +28,21 @@ try {
   console.log('ℹ️ app-config.js not found, using environment variables');
 }
 
+// Загружаем конфигурацию Telegram Bot
+try {
+  const telegramConfig = require('./telegram-config.js');
+  if (telegramConfig.TELEGRAM_BOT_TOKEN) {
+    process.env.TELEGRAM_BOT_TOKEN = telegramConfig.TELEGRAM_BOT_TOKEN;
+    console.log('✅ Loaded TELEGRAM_BOT_TOKEN from telegram-config.js');
+  }
+  if (telegramConfig.TELEGRAM_GROUP_CHAT_ID) {
+    process.env.TELEGRAM_GROUP_CHAT_ID = telegramConfig.TELEGRAM_GROUP_CHAT_ID;
+    console.log('✅ Loaded TELEGRAM_GROUP_CHAT_ID from telegram-config.js');
+  }
+} catch (error) {
+  console.log('ℹ️ telegram-config.js not found, using environment variables');
+}
+
 // Create main app
 const app = new Hono();
 

@@ -122,6 +122,14 @@ export const postsRouter = createTRPCRouter({
         
         console.log(`📤 Created new post: ${post.id} by ${post.userName}`);
         
+        // Отправляем уведомления в Telegram группу
+        try {
+          const { NotificationService } = await import('../../../notification-service');
+          await NotificationService.notifyNewPost(post.id);
+        } catch (error) {
+          console.error('❌ Ошибка отправки уведомления в Telegram:', error);
+        }
+        
         // Отправляем WebSocket уведомление о новом посте
         try {
           const { wsManager } = await import('../../../websocket-server');
@@ -375,6 +383,16 @@ export const postsRouter = createTRPCRouter({
       });
 
       console.log(`👮 Manual moderation: ${input.postId} -> ${input.decision} by ${input.moderatorId}`);
+      
+      // Отправляем уведомления в Telegram группу при одобрении
+      if (input.decision === 'APPROVED') {
+        try {
+          const { NotificationService } = await import('../../../notification-service');
+          await NotificationService.notifyNewPost(input.postId);
+        } catch (error) {
+          console.error('❌ Ошибка отправки уведомления в Telegram при одобрении:', error);
+        }
+      }
       
       // Отправляем WebSocket уведомление о модерации
       try {
