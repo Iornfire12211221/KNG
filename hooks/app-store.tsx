@@ -183,12 +183,17 @@ export const [AppProviderInternal, useAppInternal] = createContextHook(() => {
 
   // Автоматическая очистка просроченных постов и проверка актуальности
   useEffect(() => {
+    let isCleaning = false; // Флаг для предотвращения одновременных вызовов
+    
     // Функция для проверки и очистки постов
     const checkAndCleanPosts = async () => {
-      const now = Date.now();
+      if (isCleaning) return; // Предотвращаем одновременные вызовы
+      isCleaning = true;
       
-      // Загружаем посты из AsyncStorage для проверки даже когда приложение было закрыто
       try {
+        const now = Date.now();
+        
+        // Загружаем посты из AsyncStorage для проверки даже когда приложение было закрыто
         const storedPosts = await AsyncStorage.getItem('dps_posts');
         if (storedPosts) {
           const parsedPosts = JSON.parse(storedPosts);
@@ -217,53 +222,57 @@ export const [AppProviderInternal, useAppInternal] = createContextHook(() => {
             await AsyncStorage.setItem('dps_posts', JSON.stringify(activePosts));
           }
           
-          // Проверяем актуальность постов
-          const postsToCheck = activePosts.filter((post: DPSPost) => {
-            const checkInterval = RELEVANCE_CHECK_INTERVALS[post.type];
-            const lastCheck = post.relevanceCheckedAt || post.timestamp;
-            return now - lastCheck > checkInterval;
-          });
-          
-          // Ограничиваем количество одновременных проверок
-          const maxConcurrentChecks = 1;
-          const postsToCheckLimited = postsToCheck.slice(0, maxConcurrentChecks);
-          
-          // Асинхронно проверяем актуальность
-          for (const post of postsToCheckLimited) {
-            try {
-              const isRelevant = await checkPostRelevance(post);
-              
-              setPosts((currentPosts) => {
-                const updated = currentPosts.map((p) => 
-                  p.id === post.id 
-                    ? { 
-                        ...p, 
-                        isRelevant, 
-                        relevanceCheckedAt: now,
-                        expiresAt: !isRelevant ? Math.min(p.expiresAt, now + 30 * 60 * 1000) : p.expiresAt
-                      }
-                    : p
-                );
-                // Сохраняем обновленные посты
-                AsyncStorage.setItem('dps_posts', JSON.stringify(updated));
-                return updated;
-              });
-            } catch (error) {
-              console.error(`Ошибка при проверке поста ${post.id}:`, error);
-              setPosts((currentPosts) => {
-                const updated = currentPosts.map((p) => 
-                  p.id === post.id 
-                    ? { ...p, relevanceCheckedAt: now }
-                    : p
-                );
-                AsyncStorage.setItem('dps_posts', JSON.stringify(updated));
-                return updated;
-              });
+          // Проверяем актуальность постов (только в production)
+          if (process.env.NODE_ENV !== 'development') {
+            const postsToCheck = activePosts.filter((post: DPSPost) => {
+              const checkInterval = RELEVANCE_CHECK_INTERVALS[post.type];
+              const lastCheck = post.relevanceCheckedAt || post.timestamp;
+              return now - lastCheck > checkInterval;
+            });
+            
+            // Ограничиваем количество одновременных проверок
+            const maxConcurrentChecks = 1;
+            const postsToCheckLimited = postsToCheck.slice(0, maxConcurrentChecks);
+            
+            // Асинхронно проверяем актуальность
+            for (const post of postsToCheckLimited) {
+              try {
+                const isRelevant = await checkPostRelevance(post);
+                
+                setPosts((currentPosts) => {
+                  const updated = currentPosts.map((p) => 
+                    p.id === post.id 
+                      ? { 
+                          ...p, 
+                          isRelevant, 
+                          relevanceCheckedAt: now,
+                          expiresAt: !isRelevant ? Math.min(p.expiresAt, now + 30 * 60 * 1000) : p.expiresAt
+                        }
+                      : p
+                  );
+                  // Сохраняем обновленные посты
+                  AsyncStorage.setItem('dps_posts', JSON.stringify(updated));
+                  return updated;
+                });
+              } catch (error) {
+                console.error(`Ошибка при проверке поста ${post.id}:`, error);
+                setPosts((currentPosts) => {
+                  const updated = currentPosts.map((p) => 
+                    p.id === post.id 
+                      ? { ...p, relevanceCheckedAt: now }
+                      : p
+                  );
+                  AsyncStorage.setItem('dps_posts', JSON.stringify(updated));
+                  return updated;
+                });
+              }
             }
           }
         }
       } catch (error) {
         console.error('Error checking posts:', error);
+      } finally {
+        isCleaning = false;
       }
     };
     

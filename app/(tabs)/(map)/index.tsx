@@ -585,7 +585,7 @@ export default function MapScreen() {
           } catch (error) {
             console.log('Telegram location tracking error:', error);
           }
-        }, 5000); // Увеличиваем интервал до 5 секунд для снижения нагрузки
+        }, 10000); // Увеличиваем интервал до 10 секунд для снижения нагрузки
         
         return () => {
           clearInterval(intervalId);
@@ -595,8 +595,8 @@ export default function MapScreen() {
         const locationSubscription = await Location.watchPositionAsync(
         {
             accuracy: Location.Accuracy.High,
-            timeInterval: 5000, // Увеличиваем интервал до 5 секунд
-            distanceInterval: 10, // Увеличиваем минимальное расстояние
+            timeInterval: 10000, // Увеличиваем интервал до 10 секунд
+            distanceInterval: 50, // Увеличиваем минимальное расстояние до 50 метров
           mayShowUserSettingsDialog: false,
         },
         (location) => {

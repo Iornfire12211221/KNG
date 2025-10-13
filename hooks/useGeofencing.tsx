@@ -313,10 +313,15 @@ export function useGeofencing() {
   const stopTracking = useCallback(() => {
     if (watchIdRef.current) {
       try {
-        // Проверяем, что watchIdRef.current является строкой или числом
-        const taskName = typeof watchIdRef.current === 'string' ? watchIdRef.current : String(watchIdRef.current);
-        require('expo-location').stopLocationUpdatesAsync(taskName);
-        console.log('📍 Location tracking stopped for task:', taskName);
+        // В web окружении stopLocationUpdatesAsync может не работать
+        if (Platform.OS === 'web') {
+          console.log('📍 Web platform: stopping location tracking by clearing watchId');
+        } else {
+          // Проверяем, что watchIdRef.current является строкой или числом
+          const taskName = typeof watchIdRef.current === 'string' ? watchIdRef.current : String(watchIdRef.current);
+          require('expo-location').stopLocationUpdatesAsync(taskName);
+          console.log('📍 Location tracking stopped for task:', taskName);
+        }
       } catch (error) {
         console.error('❌ Error stopping location tracking:', error);
       }
