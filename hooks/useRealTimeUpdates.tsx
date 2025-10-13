@@ -36,7 +36,7 @@ export interface WebSocketSettings {
 }
 
 const DEFAULT_SETTINGS: WebSocketSettings = {
-  enabled: true,
+  enabled: process.env.NODE_ENV !== 'development', // Отключаем в development режиме
   url: process.env.EXPO_PUBLIC_WS_URL || 'ws://localhost:8080/ws',
   autoReconnect: true,
   maxReconnectAttempts: 5,
@@ -212,15 +212,20 @@ export function useRealTimeUpdates() {
 
   // Подключение к WebSocket
   const connect = useCallback(() => {
-    if (!settings.enabled || !currentUser?.id) return;
+    if (!settings.enabled || !currentUser?.id) {
+      console.log('🔌 WebSocket connection skipped: disabled or no user');
+      return;
+    }
 
     // Закрываем существующее соединение
     if (wsRef.current) {
       wsRef.current.close();
+      wsRef.current = null;
     }
 
     try {
       const wsUrl = `${settings.url}?userId=${currentUser.id}&token=${currentUser.id}`;
+      console.log('🔌 Attempting WebSocket connection to:', wsUrl);
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
@@ -230,6 +235,7 @@ export function useRealTimeUpdates() {
           reconnecting: false,
           lastConnected: Date.now(),
           reconnectAttempts: 0,
+          error: undefined,
         });
 
         // Запускаем heartbeat
@@ -251,8 +257,9 @@ export function useRealTimeUpdates() {
 
         stopHeartbeat();
 
-        // Попытка переподключения
+        // Попытка переподключения только если не было принудительного закрытия
         if (settings.autoReconnect && 
+            event.code !== 1000 && // Не нормальное закрытие
             connectionStatus.reconnectAttempts < settings.maxReconnectAttempts) {
           
           setConnectionStatus(prev => ({

@@ -215,6 +215,12 @@ export function useNotifications() {
 
   // WebSocket подключение
   const connectWebSocket = useCallback(() => {
+    // Отключаем WebSocket в development режиме
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔧 WebSocket disabled in development mode');
+      return;
+    }
+
     if (!currentUser?.id || wsRef.current?.readyState === WebSocket.OPEN) return;
 
     const wsUrl = process.env.EXPO_PUBLIC_WS_URL || 'ws://localhost:8080/ws';
@@ -284,6 +290,11 @@ export function useNotifications() {
 
   // Геofencing - проверка близости к постам
   const checkGeofencing = useCallback(async () => {
+    // Отключаем геofencing в development режиме
+    if (process.env.NODE_ENV === 'development') {
+      return;
+    }
+
     if (!settings.geofencing || !currentUser?.location) return;
 
     const userLocation = currentUser.location;

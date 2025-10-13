@@ -557,7 +557,7 @@ export default function MapScreen() {
     }
   };
 
-  const startLocationTracking = async () => {
+  const startLocationTracking = useCallback(async () => {
     try {
       console.log('Starting location tracking...');
       
@@ -585,7 +585,7 @@ export default function MapScreen() {
           } catch (error) {
             console.log('Telegram location tracking error:', error);
           }
-        }, 1000);
+        }, 5000); // Увеличиваем интервал до 5 секунд для снижения нагрузки
         
         return () => {
           clearInterval(intervalId);
@@ -595,8 +595,8 @@ export default function MapScreen() {
         const locationSubscription = await Location.watchPositionAsync(
         {
             accuracy: Location.Accuracy.High,
-            timeInterval: 1000,
-            distanceInterval: 1,
+            timeInterval: 5000, // Увеличиваем интервал до 5 секунд
+            distanceInterval: 10, // Увеличиваем минимальное расстояние
           mayShowUserSettingsDialog: false,
         },
         (location) => {
@@ -611,7 +611,7 @@ export default function MapScreen() {
     } catch (error) {
       console.error('Error starting location tracking:', error);
     }
-  };
+  }, [isTelegramWebApp, requestLocation]);
 
 
   const getDistanceFromUser = (postLat: number, postLng: number) => {

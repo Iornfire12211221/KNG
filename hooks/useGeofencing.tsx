@@ -241,6 +241,12 @@ export function useGeofencing() {
 
   // Начало отслеживания
   const startTracking = useCallback(async () => {
+    // Отключаем геofencing в development режиме
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔧 Geofencing disabled in development mode');
+      return;
+    }
+
     if (!settings.enabled || isTracking) return;
 
     try {
@@ -306,7 +312,14 @@ export function useGeofencing() {
   // Остановка отслеживания
   const stopTracking = useCallback(() => {
     if (watchIdRef.current) {
-      require('expo-location').stopLocationUpdatesAsync(watchIdRef.current);
+      try {
+        // Проверяем, что watchIdRef.current является строкой или числом
+        const taskName = typeof watchIdRef.current === 'string' ? watchIdRef.current : String(watchIdRef.current);
+        require('expo-location').stopLocationUpdatesAsync(taskName);
+        console.log('📍 Location tracking stopped for task:', taskName);
+      } catch (error) {
+        console.error('❌ Error stopping location tracking:', error);
+      }
       watchIdRef.current = null;
     }
     setIsTracking(false);
