@@ -98,124 +98,143 @@ export const useTelegram = () => {
       return;
     }
     
-    // Устанавливаем готовность сразу для браузера
-    setIsReady(true);
-    
     if (Platform.OS === 'web') {
       console.log('🔄 useTelegram: Web platform detected');
       
-      // Проверяем наличие Telegram WebApp
-      const tg = window.Telegram?.WebApp;
-      console.log('🔄 useTelegram: Telegram WebApp found:', !!tg);
-      
-      if (tg) {
-        // Реальный Telegram WebApp найден
-        console.log('🔄 useTelegram: Initializing real Telegram WebApp...');
+      // Ждем загрузки Telegram WebApp API (может загружаться асинхронно)
+      const checkTelegramWebApp = () => {
+        const tg = window.Telegram?.WebApp;
+        console.log('🔄 useTelegram: Telegram WebApp found:', !!tg);
         
-        setWebApp(tg as any);
-        setUser(tg.initDataUnsafe?.user || null);
-        
-        // Готовим WebApp
-        try {
-          tg.ready();
-          tg.expand();
-          tg.isClosingConfirmationEnabled = false;
+        if (tg) {
+          // Реальный Telegram WebApp найден
+          console.log('🔄 useTelegram: Initializing real Telegram WebApp...');
           
-          // Включаем тактильную обратную связь
-          if (tg.HapticFeedback) {
-            tg.HapticFeedback.impactOccurred('light');
+          setWebApp(tg as any);
+          setUser(tg.initDataUnsafe?.user || null);
+          
+          // Готовим WebApp
+          try {
+            tg.ready();
+            tg.expand();
+            tg.isClosingConfirmationEnabled = false;
+            
+            // Включаем тактильную обратную связь
+            if (tg.HapticFeedback) {
+              tg.HapticFeedback.impactOccurred('light');
+            }
+            
+            // Скрываем кнопки по умолчанию
+            if (tg.MainButton) {
+              tg.MainButton.hide();
+            }
+            if (tg.BackButton) {
+              tg.BackButton.hide();
+            }
+          } catch (error) {
+            console.error('❌ useTelegram: Error initializing Telegram WebApp:', error);
           }
           
-          // Скрываем кнопки по умолчанию
-          if (tg.MainButton) {
-            tg.MainButton.hide();
+          console.log('✅ useTelegram: Telegram WebApp готов');
+          setIsReady(true);
+        } else {
+          // Проверяем URL на наличие Telegram данных
+          const urlParams = new URLSearchParams(window.location.search);
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          const tgWebAppData = urlParams.get('tgWebAppData') || hashParams.get('tgWebAppData');
+          
+          if (tgWebAppData) {
+            console.log('🔄 useTelegram: Telegram data found in URL, but WebApp API not loaded yet');
+            // Ждем еще немного для загрузки API
+            setTimeout(checkTelegramWebApp, 100);
+            return;
           }
-          if (tg.BackButton) {
-            tg.BackButton.hide();
-          }
-        } catch (error) {
-          console.error('❌ useTelegram: Error initializing Telegram WebApp:', error);
+          
+          // Telegram WebApp не найден - работаем в браузерном режиме
+          console.log('ℹ️ Telegram WebApp не найден, работаем в браузерном режиме');
+          
+          // Создаем mock WebApp для браузерного режима
+          const mockWebApp = {
+            initData: '',
+            initDataUnsafe: { user: null },
+            version: '6.0',
+            platform: 'unknown',
+            colorScheme: 'light' as const,
+            themeParams: {
+              bg_color: '#ffffff',
+              text_color: '#000000',
+              hint_color: '#707579',
+              link_color: '#00488f',
+              button_color: '#3390ec',
+              button_text_color: '#ffffff',
+              secondary_bg_color: '#f4f4f5'
+            },
+            ready: () => {},
+            expand: () => {},
+            close: () => {},
+            isClosingConfirmationEnabled: false,
+            MainButton: {
+              text: '',
+              color: '',
+              textColor: '',
+              isVisible: false,
+              isActive: false,
+              isProgressVisible: false,
+              setText: () => {},
+              onClick: () => {},
+              show: () => {},
+              hide: () => {},
+              enable: () => {},
+              disable: () => {},
+              showProgress: () => {},
+              hideProgress: () => {},
+              setParams: () => {}
+            },
+            BackButton: {
+              isVisible: false,
+              onClick: () => {},
+              show: () => {},
+              hide: () => {}
+            },
+            HapticFeedback: {
+              impactOccurred: () => {},
+              notificationOccurred: () => {},
+              selectionChanged: () => {}
+            },
+            sendData: () => {},
+            openLink: () => {},
+            openTelegramLink: () => {},
+            showPopup: () => {},
+            showAlert: () => {},
+            showConfirm: () => {},
+            showScanQrPopup: () => {},
+            closeScanQrPopup: () => {},
+            readTextFromClipboard: () => {},
+            requestWriteAccess: () => {},
+            requestContact: () => {},
+            requestLocation: () => {},
+            invokeCustomMethod: () => {}
+          };
+          
+          setWebApp(mockWebApp as any);
+          setUser(null);
+          console.log('✅ useTelegram: Браузерный режим активирован');
+          setIsReady(true);
         }
-        
-        console.log('✅ useTelegram: Telegram WebApp готов');
-      } else {
-        // Telegram WebApp не найден - работаем в браузерном режиме
-        console.log('ℹ️ Telegram WebApp не найден, работаем в браузерном режиме');
-        
-        // Создаем mock WebApp для браузерного режима
-        const mockWebApp = {
-          initData: '',
-          initDataUnsafe: { user: null },
-          version: '6.0',
-          platform: 'unknown',
-          colorScheme: 'light' as const,
-          themeParams: {
-            bg_color: '#ffffff',
-            text_color: '#000000',
-            hint_color: '#707579',
-            link_color: '#00488f',
-            button_color: '#3390ec',
-            button_text_color: '#ffffff',
-            secondary_bg_color: '#f4f4f5'
-          },
-          ready: () => {},
-          expand: () => {},
-          close: () => {},
-          isClosingConfirmationEnabled: false,
-          MainButton: {
-            text: '',
-            color: '#3390ec',
-            textColor: '#ffffff',
-            isVisible: false,
-            isActive: true,
-            isProgressVisible: false,
-            setText: () => {},
-            onClick: () => {},
-            show: () => {},
-            hide: () => {},
-            enable: () => {},
-            disable: () => {},
-            showProgress: () => {},
-            hideProgress: () => {},
-            setParams: () => {},
-          },
-          BackButton: {
-            isVisible: false,
-            onClick: () => {},
-            show: () => {},
-            hide: () => {},
-          },
-          HapticFeedback: {
-            impactOccurred: () => {},
-            notificationOccurred: () => {},
-            selectionChanged: () => {},
-          },
-          sendData: () => {},
-          openLink: () => {},
-          openTelegramLink: () => {},
-          showPopup: () => {},
-          showAlert: () => {},
-          showConfirm: () => {},
-          showScanQrPopup: () => {},
-          closeScanQrPopup: () => {},
-          readTextFromClipboard: () => {},
-          requestWriteAccess: () => {},
-          requestContact: () => {},
-          requestLocation: () => {},
-          invokeCustomMethod: () => {},
-        };
-        
-        setWebApp(mockWebApp as any);
-        setUser(null);
-        
-        console.log('✅ useTelegram: Браузерный режим активирован');
+      };
+      
+      // Проверяем сразу
+      checkTelegramWebApp();
+      
+      // Если не найден, ждем еще немного
+      if (!window.Telegram?.WebApp) {
+        setTimeout(checkTelegramWebApp, 500);
       }
     } else {
       // Не в веб-окружении
       console.log('🔄 useTelegram: Non-web platform');
+      setIsReady(true);
     }
-    
-    // isReady уже установлен в true в начале функции
   }, []);
 
   const showMainButton = useCallback((text: string, onClick: () => void) => {

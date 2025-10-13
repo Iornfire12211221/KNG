@@ -420,8 +420,7 @@ export class WebSocketManager {
     try {
       // Проверяем доступность Prisma
       if (!prisma) {
-        console.log('⚠️ Prisma not available, skipping geofencing check');
-        return;
+        return; // Тихо пропускаем, не логируем
       }
 
       // Получаем активные посты из базы данных
@@ -459,6 +458,10 @@ export class WebSocketManager {
         }
       }
     } catch (error) {
+      // Тихо игнорируем ошибки геofencing в локальной разработке
+      if (process.env.NODE_ENV === 'development') {
+        return;
+      }
       console.error('❌ Error checking geofencing:', error);
     }
   }
