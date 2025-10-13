@@ -5,8 +5,10 @@ import { serveStatic } from "hono/node-server";
 import { appRouter } from "./trpc/app-router";
 import { createContext } from "./trpc/create-context";
 import { serve } from "@hono/node-server";
+import { createServer } from "http";
 import fs from "fs";
 import path from "path";
+import { wsManager } from "./websocket-server";
 
 // Загружаем конфигурацию из файла, если переменные окружения не установлены
 try {
@@ -53,6 +55,14 @@ api.get("/health", (c) => {
     message: "Full server with database is running",
     nodeVersion: process.version,
     platform: process.platform
+  });
+});
+
+// WebSocket statistics endpoint
+api.get("/ws/stats", (c) => {
+  return c.json({
+    websocket: wsManager.getStats(),
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -259,13 +269,19 @@ app.onError((err, c) => {
   return c.json({ success: false, error: 'Internal server error', details: err.message }, 500);
 });
 
-// Запуск сервера
+// Запуск сервера с поддержкой WebSocket
 const port = process.env.PORT || 8081;
+const wsPort = process.env.WS_PORT || 8080;
 
 console.log(`🚀 Full server starting on port ${port}`);
+console.log(`🔌 WebSocket server starting on port ${wsPort}`);
 console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
 console.log(`🔧 Node.js version: ${process.version}`);
 
+// Создаем HTTP сервер для Hono
+const httpServer = createServer();
+
+// Запускаем Hono сервер
 serve({
   fetch: app.fetch,
   port: Number(port),
@@ -273,4 +289,25 @@ serve({
   console.log(`✅ Full server running at http://localhost:${info.port}`);
   console.log(`🔗 Health check: http://localhost:${info.port}/api/health`);
   console.log(`🔗 tRPC API: http://localhost:${info.port}/api/trpc`);
+});
+
+// Запускаем WebSocket сервер на отдельном порту
+const wsServer = createServer();
+wsManager.start(wsServer, Number(wsPort));
+
+wsServer.listen(Number(wsPort), () => {
+  console.log(`🔌 WebSocket server running on port ${wsPort}`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('🛑 SIGTERM received, shutting down gracefully');
+  wsManager.stop();
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('🛑 SIGINT received, shutting down gracefully');
+  wsManager.stop();
+  process.exit(0);
 });

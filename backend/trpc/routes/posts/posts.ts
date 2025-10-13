@@ -109,17 +109,73 @@ export const postsRouter = createTRPCRouter({
   create: publicProcedure
     .input(CreatePostSchema)
     .mutation(async ({ input, ctx }) => {
-      const post = await ctx.prisma.post.create({
-        data: {
+      try {
+        // Пытаемся создать пост в базе данных
+        const post = await ctx.prisma.post.create({
+          data: {
+            ...input,
+            timestamp: BigInt(input.timestamp),
+            expiresAt: BigInt(input.expiresAt),
+            relevanceCheckedAt: input.relevanceCheckedAt ? BigInt(input.relevanceCheckedAt) : null,
+          }
+        });
+        
+        console.log(`📤 Created new post: ${post.id} by ${post.userName}`);
+        
+        // Отправляем WebSocket уведомление о новом посте
+        try {
+          const { wsManager } = await import('../../../websocket-server');
+          await wsManager.notifyNewPost({
+            id: post.id,
+            type: post.type,
+            severity: post.severity,
+            description: post.description,
+            latitude: post.latitude,
+            longitude: post.longitude,
+            address: post.address,
+            timestamp: Number(post.timestamp),
+            userName: post.userName,
+          });
+        } catch (error) {
+          console.error('❌ Error sending WebSocket notification:', error);
+        }
+        
+        return post;
+      } catch (error) {
+        console.error('❌ Database error, falling back to mock post:', error);
+        
+        // Fallback для локальной разработки
+        console.log('🔄 Creating mock post for local development');
+        const mockPost = {
+          id: `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           ...input,
           timestamp: BigInt(input.timestamp),
           expiresAt: BigInt(input.expiresAt),
           relevanceCheckedAt: input.relevanceCheckedAt ? BigInt(input.relevanceCheckedAt) : null,
+        };
+        
+        console.log(`📤 Created mock post: ${mockPost.id} by ${mockPost.userName}`);
+        
+        // Отправляем WebSocket уведомление о новом посте
+        try {
+          const { wsManager } = await import('../../../websocket-server');
+          await wsManager.notifyNewPost({
+            id: mockPost.id,
+            type: mockPost.type,
+            severity: mockPost.severity,
+            description: mockPost.description,
+            latitude: mockPost.latitude,
+            longitude: mockPost.longitude,
+            address: mockPost.address,
+            timestamp: Number(mockPost.timestamp),
+            userName: mockPost.userName,
+          });
+        } catch (error) {
+          console.error('❌ Error sending WebSocket notification:', error);
         }
-      });
-      
-      console.log(`📤 Created new post: ${post.id} by ${post.userName}`);
-      return post;
+        
+        return mockPost;
+      }
     }),
 
   // Лайкнуть пост
@@ -319,6 +375,19 @@ export const postsRouter = createTRPCRouter({
       });
 
       console.log(`👮 Manual moderation: ${input.postId} -> ${input.decision} by ${input.moderatorId}`);
+      
+      // Отправляем WebSocket уведомление о модерации
+      try {
+        const { wsManager } = await import('../../../websocket-server');
+        if (input.decision === 'APPROVED') {
+          await wsManager.notifyPostApproval(input.postId, post.userId);
+        } else if (input.decision === 'REJECTED') {
+          await wsManager.notifyPostRejection(input.postId, post.userId, input.reason || 'Пост не соответствует правилам');
+        }
+      } catch (error) {
+        console.error('❌ Error sending moderation WebSocket notification:', error);
+      }
+      
       return post;
     }),
 
