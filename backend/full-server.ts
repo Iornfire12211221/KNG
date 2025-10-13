@@ -10,6 +10,11 @@ import fs from "fs";
 import path from "path";
 import { wsManager } from "./websocket-server";
 
+// Устанавливаем NODE_ENV если не установлен
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = 'development';
+}
+
 // Загружаем конфигурацию из файла, если переменные окружения не установлены
 try {
   if (!process.env.DATABASE_URL) {

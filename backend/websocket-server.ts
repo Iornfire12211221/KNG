@@ -98,8 +98,12 @@ export class WebSocketManager {
     // Запускаем heartbeat для проверки соединений
     this.startHeartbeat();
     
-    // Запускаем проверку геofencing
-    this.startGeofenceCheck();
+    // Запускаем проверку геofencing только в production
+    if (process.env.NODE_ENV !== 'development') {
+      this.startGeofenceCheck();
+    } else {
+      console.log('🔧 Geofencing disabled in development mode');
+    }
 
     console.log(`✅ WebSocket server started on port ${port}`);
   }
