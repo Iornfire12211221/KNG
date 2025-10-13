@@ -101,4 +101,23 @@ app.get("*", async (c) => {
   }
 });
 
+// Start server
+const port = process.env.PORT || 8081;
+
+console.log('🚀 Starting Mock API Server...');
+console.log('📁 Working directory:', process.cwd());
+console.log('🌐 Port:', port);
+
+// Start server using Hono's Node.js adapter
+import { serve } from '@hono/node-server';
+
+serve({
+  fetch: app.fetch,
+  port: port,
+  hostname: '0.0.0.0',
+});
+
+console.log(`✅ Mock API Server running at http://localhost:${port}`);
+console.log(`📱 Telegram WebApp ready!`);
+
 export default app;
