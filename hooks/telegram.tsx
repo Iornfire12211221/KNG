@@ -145,8 +145,49 @@ export const useTelegram = () => {
           
           if (tgWebAppData) {
             console.log('🔄 useTelegram: Telegram data found in URL, but WebApp API not loaded yet');
-            // Ждем еще немного для загрузки API
-            setTimeout(checkTelegramWebApp, 100);
+            // Ждем максимум 3 секунды для загрузки API
+            let attempts = 0;
+            const maxAttempts = 30; // 30 попыток по 100мс = 3 секунды
+            
+            const waitForTelegramAPI = () => {
+              attempts++;
+              const tg = window.Telegram?.WebApp;
+              
+              if (tg) {
+                console.log('🔄 useTelegram: Telegram WebApp API loaded after delay');
+                setWebApp(tg as any);
+                setUser(tg.initDataUnsafe?.user || null);
+                
+                try {
+                  tg.ready();
+                  tg.expand();
+                  tg.isClosingConfirmationEnabled = false;
+                  
+                  if (tg.HapticFeedback) {
+                    tg.HapticFeedback.impactOccurred('light');
+                  }
+                  
+                  if (tg.MainButton) {
+                    tg.MainButton.hide();
+                  }
+                  if (tg.BackButton) {
+                    tg.BackButton.hide();
+                  }
+                } catch (error) {
+                  console.error('❌ useTelegram: Error initializing Telegram WebApp:', error);
+                }
+                
+                console.log('✅ useTelegram: Telegram WebApp готов');
+                setIsReady(true);
+              } else if (attempts < maxAttempts) {
+                setTimeout(waitForTelegramAPI, 100);
+              } else {
+                console.log('ℹ️ useTelegram: Telegram WebApp API не загрузился за 3 секунды, переходим в браузерный режим');
+                // Переходим к созданию mock WebApp
+              }
+            };
+            
+            setTimeout(waitForTelegramAPI, 100);
             return;
           }
           
@@ -225,11 +266,6 @@ export const useTelegram = () => {
       
       // Проверяем сразу
       checkTelegramWebApp();
-      
-      // Если не найден, ждем еще немного
-      if (!window.Telegram?.WebApp) {
-        setTimeout(checkTelegramWebApp, 500);
-      }
     } else {
       // Не в веб-окружении
       console.log('🔄 useTelegram: Non-web platform');

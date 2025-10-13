@@ -418,6 +418,11 @@ export class WebSocketManager {
    */
   private async checkGeofencing(): Promise<void> {
     try {
+      // В development режиме отключаем геofencing полностью
+      if (process.env.NODE_ENV === 'development') {
+        return;
+      }
+
       // Проверяем доступность Prisma
       if (!prisma) {
         return; // Тихо пропускаем, не логируем
@@ -426,7 +431,7 @@ export class WebSocketManager {
       // Получаем активные посты из базы данных
       const activePosts = await prisma.post.findMany({
         where: {
-          expiresAt: { gt: Date.now() },
+          expiresAt: { gt: BigInt(Date.now()) },
           needsModeration: false,
         },
         select: {
