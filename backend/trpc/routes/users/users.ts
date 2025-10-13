@@ -33,22 +33,36 @@ export const usersRouter = createTRPCRouter({
   upsert: publicProcedure
     .input(CreateUserSchema)
     .mutation(async ({ input }) => {
+      // Проверяем, является ли пользователь основателем
+      const isFounder = (input.username ?? '').toLowerCase() === 'herlabsn';
+      
+      console.log('🔍 User upsert check:', {
+        username: input.username,
+        usernameLower: (input.username ?? '').toLowerCase(),
+        isFounder,
+        telegramId: input.telegramId
+      });
+
       const user = await prisma.user.upsert({
         where: { telegramId: input.telegramId },
         update: {
           name: input.name,
           username: input.username,
           photoUrl: input.photoUrl,
+          // Обновляем роль только если это основатель
+          role: isFounder ? 'FOUNDER' : undefined,
         },
         create: {
           telegramId: input.telegramId,
           name: input.name,
           username: input.username,
           photoUrl: input.photoUrl,
+          // Устанавливаем роль основателя при создании
+          role: isFounder ? 'FOUNDER' : 'USER',
         }
       });
       
-      console.log(`👤 User upserted: ${user.id} (${user.name})`);
+      console.log(`👤 User upserted: ${user.id} (${user.name}) with role: ${user.role}`);
       return user;
     }),
 
@@ -234,6 +248,67 @@ export const usersRouter = createTRPCRouter({
       });
 
       return stats;
+    }),
+
+  // Получить всех пользователей для отладки
+  debugGetAll: publicProcedure
+    .query(async () => {
+      const users = await prisma.user.findMany({
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          telegramId: true,
+          name: true,
+          username: true,
+          photoUrl: true,
+          role: true,
+          isMuted: true,
+          isBanned: true,
+          isKicked: true,
+          locationPermission: true,
+          createdAt: true,
+          updatedAt: true,
+        }
+      });
+
+      console.log('🔍 Debug: All users in database:', users);
+      return users;
+    }),
+
+  // Найти пользователя по username для отладки
+  debugFindByUsername: publicProcedure
+    .input(z.object({ username: z.string() }))
+    .query(async ({ input }) => {
+      const user = await prisma.user.findFirst({
+        where: { username: input.username }
+      });
+
+      console.log(`🔍 Debug: User found by username "${input.username}":`, user);
+      return user;
+    }),
+
+  // Принудительно обновить роль пользователя (для исправления)
+  forceUpdateRole: publicProcedure
+    .input(z.object({ 
+      username: z.string(),
+      role: z.enum(['USER', 'MODERATOR', 'ADMIN', 'FOUNDER'])
+    }))
+    .mutation(async ({ input }) => {
+      const user = await prisma.user.findFirst({
+        where: { username: input.username }
+      });
+
+      if (!user) {
+        throw new Error(`User with username "${input.username}" not found`);
+      }
+
+      const updatedUser = await prisma.user.update({
+        where: { id: user.id },
+        data: { role: input.role }
+      });
+
+      console.log(`🔧 Force updated role: ${updatedUser.name} (${updatedUser.username}) -> ${updatedUser.role}`);
+      return updatedUser;
     }),
 
   // Назначить модератора
