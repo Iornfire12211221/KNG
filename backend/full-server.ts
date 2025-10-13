@@ -128,10 +128,31 @@ if (process.env.NODE_ENV === "production") {
         // For all other routes, serve index.html (SPA routing)
         try {
           const indexPath = path.join(process.cwd(), 'dist', 'index.html');
-          const indexData = await fs.promises.readFile(indexPath);
-          console.log('Serving index.html');
-          return new Response(indexData, {
-            headers: { 'Content-Type': 'text/html; charset=utf-8' }
+          let indexData = await fs.promises.readFile(indexPath);
+          let indexContent = indexData.toString();
+          
+          // Add Telegram WebApp script if not present
+          if (!indexContent.includes('telegram.org/js/telegram-web-app.js')) {
+            const telegramScript = `
+              <script src="https://telegram.org/js/telegram-web-app.js"></script>
+              <script>
+                // Ensure Telegram WebApp is available
+                if (window.Telegram && window.Telegram.WebApp) {
+                  console.log('✅ Telegram WebApp API loaded successfully');
+                } else {
+                  console.log('⚠️ Telegram WebApp API not loaded, will use URL parsing');
+                }
+              </script>
+            `;
+            indexContent = indexContent.replace('</head>', `${telegramScript}</head>`);
+          }
+          
+          console.log('Serving index.html with Telegram WebApp support');
+          return new Response(indexContent, {
+            headers: { 
+              'Content-Type': 'text/html; charset=utf-8',
+              'Content-Security-Policy': "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org https://*.telegram.org https://api.telegram.org https://*.mapbox.com https://api.mapbox.com; img-src 'self' data: https: blob:; connect-src 'self' https: wss: ws:;"
+            }
           });
         } catch (error) {
           console.log('Index.html not found, serving fallback');
