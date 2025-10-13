@@ -7,8 +7,8 @@ module.exports = {
   // Токен бота от @BotFather
   TELEGRAM_BOT_TOKEN: 'YOUR_BOT_TOKEN_HERE',
   
-  // ID группы для уведомлений (можно получить через @userinfobot)
-  TELEGRAM_GROUP_CHAT_ID: 'YOUR_GROUP_CHAT_ID_HERE',
+  // ID канала для уведомлений (можно получить через @userinfobot)
+  TELEGRAM_CHANNEL_CHAT_ID: 'YOUR_CHANNEL_CHAT_ID_HERE',
   
   // Настройки уведомлений
   NOTIFICATIONS: {
@@ -24,7 +24,7 @@ module.exports = {
     // Минимальный интервал между уведомлениями (в минутах)
     cooldownMinutes: 5,
     
-    // Отправлять в Telegram группу
+    // Отправлять в Telegram канал
     sendToTelegram: true,
     
     // Отправлять через WebSocket
@@ -40,12 +40,13 @@ module.exports = {
  *    - Выберите имя и username для бота
  *    - Получите токен и вставьте в TELEGRAM_BOT_TOKEN
  * 
- * 2. Добавьте бота в группу:
- *    - Создайте группу или используйте существующую
- *    - Добавьте бота в группу как администратора
- *    - Отправьте любое сообщение в группу
- *    - Используйте @userinfobot чтобы получить ID группы
- *    - Вставьте ID в TELEGRAM_GROUP_CHAT_ID
+ * 2. Добавьте бота в канал:
+ *    - Создайте канал или используйте существующий
+ *    - Добавьте бота в канал как администратора
+ *    - Дайте боту права на отправку сообщений
+ *    - Отправьте любое сообщение в канал
+ *    - Используйте @userinfobot чтобы получить ID канала
+ *    - Вставьте ID в TELEGRAM_CHANNEL_CHAT_ID
  * 
  * 3. Скопируйте этот файл:
  *    cp telegram-config.example.js telegram-config.js

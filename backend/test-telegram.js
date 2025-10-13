@@ -20,15 +20,15 @@ if (!config.TELEGRAM_BOT_TOKEN || config.TELEGRAM_BOT_TOKEN === 'YOUR_BOT_TOKEN_
   process.exit(1);
 }
 
-if (!config.TELEGRAM_GROUP_CHAT_ID || config.TELEGRAM_GROUP_CHAT_ID === 'YOUR_GROUP_CHAT_ID_HERE') {
-  console.log('❌ ID группы не настроен!');
-  console.log('📝 Укажите реальный ID группы в telegram-config.js');
+if (!config.TELEGRAM_CHANNEL_CHAT_ID || config.TELEGRAM_CHANNEL_CHAT_ID === 'YOUR_CHANNEL_CHAT_ID_HERE') {
+  console.log('❌ ID канала не настроен!');
+  console.log('📝 Укажите реальный ID канала в telegram-config.js');
   process.exit(1);
 }
 
 console.log('✅ Конфигурация загружена');
 console.log('🤖 Токен бота:', config.TELEGRAM_BOT_TOKEN.substring(0, 10) + '...');
-console.log('👥 ID группы:', config.TELEGRAM_GROUP_CHAT_ID);
+console.log('📺 ID канала:', config.TELEGRAM_CHANNEL_CHAT_ID);
 
 // Тестируем отправку сообщения
 async function testTelegram() {
@@ -39,18 +39,18 @@ async function testTelegram() {
     console.log('🔄 Отправляем тестовое сообщение...');
     
     await bot.telegram.sendMessage(
-      config.TELEGRAM_GROUP_CHAT_ID,
+      config.TELEGRAM_CHANNEL_CHAT_ID,
       '🧪 <b>Тест уведомлений</b>\n\n' +
       'Если вы видите это сообщение, значит бот работает правильно!\n\n' +
       '✅ Конфигурация корректна\n' +
-      '✅ Бот добавлен в группу\n' +
+      '✅ Бот добавлен в канал\n' +
       '✅ Права настроены\n\n' +
       'Теперь уведомления о ДПС будут приходить автоматически!',
       { parse_mode: 'HTML' }
     );
     
     console.log('✅ Тестовое сообщение отправлено успешно!');
-    console.log('📱 Проверьте вашу Telegram группу');
+    console.log('📺 Проверьте ваш Telegram канал');
     
     // Получаем информацию о боте
     const botInfo = await bot.telegram.getMe();
@@ -64,9 +64,9 @@ async function testTelegram() {
     
     if (error.message.includes('chat not found')) {
       console.log('💡 Возможные причины:');
-      console.log('   - Бот не добавлен в группу');
-      console.log('   - Неправильный ID группы');
-      console.log('   - Бот не является администратором');
+      console.log('   - Бот не добавлен в канал');
+      console.log('   - Неправильный ID канала');
+      console.log('   - Бот не является администратором канала');
     } else if (error.message.includes('Unauthorized')) {
       console.log('💡 Возможные причины:');
       console.log('   - Неправильный токен бота');

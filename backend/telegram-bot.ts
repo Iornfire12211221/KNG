@@ -1,5 +1,5 @@
 /**
- * 🤖 TELEGRAM BOT ДЛЯ УВЕДОМЛЕНИЙ В ГРУППУ
+ * 🤖 TELEGRAM BOT ДЛЯ УВЕДОМЛЕНИЙ В КАНАЛ
  * Отправляет минималистичные уведомления о новых постах ДПС
  */
 
@@ -22,18 +22,18 @@ export interface TelegramNotification {
 
 export class TelegramNotificationBot {
   private bot: Telegraf;
-  private groupChatId: string;
+  private channelChatId: string;
   private isEnabled: boolean;
 
   constructor() {
     this.bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN || '');
-    this.groupChatId = process.env.TELEGRAM_GROUP_CHAT_ID || '';
-    this.isEnabled = !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_GROUP_CHAT_ID);
+    this.channelChatId = process.env.TELEGRAM_CHANNEL_CHAT_ID || '';
+    this.isEnabled = !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHANNEL_CHAT_ID);
     
     if (!this.isEnabled) {
       console.log('⚠️ Telegram Bot не настроен. Уведомления отключены.');
     } else {
-      console.log('✅ Telegram Bot инициализирован для группы:', this.groupChatId);
+      console.log('✅ Telegram Bot инициализирован для канала:', this.channelChatId);
     }
   }
 
@@ -55,13 +55,13 @@ export class TelegramNotificationBot {
 
       const message = this.formatNotificationMessage(notification);
       
-      await this.bot.telegram.sendMessage(this.groupChatId, message, {
+      await this.bot.telegram.sendMessage(this.channelChatId, message, {
         parse_mode: 'HTML',
         disable_web_page_preview: true,
         disable_notification: notification.severity === 'low' // Тихо для низкого приоритета
       });
 
-      console.log('✅ Уведомление отправлено в группу:', notification.type, notification.severity);
+      console.log('✅ Уведомление отправлено в канал:', notification.type, notification.severity);
       return true;
 
     } catch (error) {
@@ -94,7 +94,7 @@ export class TelegramNotificationBot {
   }
 
   /**
-   * Форматирует сообщение для группы
+   * Форматирует сообщение для канала
    */
   private formatNotificationMessage(notification: TelegramNotification): string {
     const emoji = this.getTypeEmoji(notification.type);
@@ -189,7 +189,7 @@ export class TelegramNotificationBot {
 
     try {
       await this.bot.telegram.sendMessage(
-        this.groupChatId, 
+        this.channelChatId, 
         '🤖 <b>Тест уведомлений</b>\n\nБот для уведомлений о ДПС активирован!',
         { parse_mode: 'HTML' }
       );
