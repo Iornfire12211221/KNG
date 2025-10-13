@@ -9,6 +9,20 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+// Загружаем конфигурацию из файла, если переменные окружения не установлены
+let config: any = {};
+try {
+  if (!process.env.DATABASE_URL) {
+    config = require('../app-config.js');
+    if (config.DATABASE_URL) {
+      process.env.DATABASE_URL = config.DATABASE_URL;
+      console.log('✅ Loaded DATABASE_URL from app-config.js');
+    }
+  }
+} catch (error) {
+  console.log('ℹ️ app-config.js not found, using environment variables');
+}
+
 // Проверяем наличие DATABASE_URL
 if (!process.env.DATABASE_URL) {
   console.error('❌ DATABASE_URL is not defined!');

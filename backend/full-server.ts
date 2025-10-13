@@ -8,6 +8,19 @@ import { serve } from "@hono/node-server";
 import fs from "fs";
 import path from "path";
 
+// Загружаем конфигурацию из файла, если переменные окружения не установлены
+try {
+  if (!process.env.DATABASE_URL) {
+    const config = require('../app-config.js');
+    if (config.DATABASE_URL) {
+      process.env.DATABASE_URL = config.DATABASE_URL;
+      console.log('✅ Loaded DATABASE_URL from app-config.js');
+    }
+  }
+} catch (error) {
+  console.log('ℹ️ app-config.js not found, using environment variables');
+}
+
 // Create main app
 const app = new Hono();
 
