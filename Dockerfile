@@ -27,9 +27,6 @@ ENV EXPO_NON_INTERACTIVE=1
 # Build static web app for production
 RUN npx expo export --platform web --output-dir dist
 
-# Copy custom HTML for Telegram WebApp
-RUN cp web/index.html dist/index.html
-
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nextjs -u 1001
