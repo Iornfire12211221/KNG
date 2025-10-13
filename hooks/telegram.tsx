@@ -316,9 +316,7 @@ export const useTelegram = () => {
           // Telegram WebApp не найден - проверяем URL на наличие данных
           console.log('ℹ️ Telegram WebApp не найден, проверяем URL на наличие данных');
           
-          // Проверяем URL на наличие Telegram данных
-          const urlParams = new URLSearchParams(window.location.search);
-          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          // Используем уже объявленные переменные из блока выше
           const tgWebAppData = urlParams.get('tgWebAppData') || hashParams.get('tgWebAppData');
           
           if (tgWebAppData) {
