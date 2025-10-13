@@ -633,6 +633,12 @@ ${description ? `Описание от пользователя: "${description}
       if (existingUser) {
         // Обновляем данные существующего пользователя
         const isOwner = (telegramData.username ?? '').toLowerCase() === 'herlabsn';
+        console.log('🔍 Admin check:', {
+          username: telegramData.username,
+          usernameLower: (telegramData.username ?? '').toLowerCase(),
+          isOwner,
+          currentIsAdmin: existingUser.isAdmin
+        });
         const updatedUser: User = {
           ...existingUser,
           firstName: telegramData.firstName,
@@ -662,6 +668,11 @@ ${description ? `Описание от пользователя: "${description}
       } else {
         // Создаем нового пользователя (клиентская версия)
         const isOwner = (telegramData.username ?? '').toLowerCase() === 'herlabsn';
+        console.log('🔍 New user admin check:', {
+          username: telegramData.username,
+          usernameLower: (telegramData.username ?? '').toLowerCase(),
+          isOwner
+        });
         const newUser: User = {
           id: `tg_${telegramData.telegramId}`,
           name: `${telegramData.firstName} ${telegramData.lastName || ''}`.trim(),
