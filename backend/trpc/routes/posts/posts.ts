@@ -38,6 +38,31 @@ export const postsRouter = createTRPCRouter({
   getAll: publicProcedure.query(async ({ ctx }) => {
     try {
       const now = Date.now();
+      
+      // Fallback для локальной разработки
+      if (!ctx.prisma) {
+        console.log('🔄 Using mock data for local development');
+        return [
+          {
+            id: "1",
+            description: "Тестовый пост для локальной разработки",
+            latitude: 59.3765,
+            longitude: 28.6123,
+            address: "Кингисепп, ул. Тестовая",
+            timestamp: BigInt(now),
+            expiresAt: BigInt(now + 3600000),
+            userId: "test-user",
+            userName: "Тестовый пользователь",
+            type: "dps",
+            severity: "medium",
+            likes: 0,
+            likedBy: [],
+            needsModeration: false,
+            isRelevant: true
+          }
+        ];
+      }
+      
       const posts = await ctx.prisma.post.findMany({
         where: {
           expiresAt: {

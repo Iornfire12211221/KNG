@@ -7,7 +7,7 @@ import { prisma } from "../../lib/prisma";
 export const createContext = async (opts: FetchCreateContextFnOptions) => {
   return {
     req: opts.req,
-    prisma,
+    prisma: prisma || null, // Fallback для локальной разработки
   };
 };
 
