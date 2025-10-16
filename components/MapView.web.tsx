@@ -468,26 +468,26 @@ export const MapView = (props: any) => {
       // Preload resources with higher priority and correct crossorigin
       const preloadScript = document.createElement('link');
       preloadScript.rel = 'preload';
-      preloadScript.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
+      preloadScript.href = 'https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.js';
       preloadScript.as = 'script';
       preloadScript.crossOrigin = 'anonymous';
       document.head.appendChild(preloadScript);
       
       const preloadCSS = document.createElement('link');
       preloadCSS.rel = 'preload';
-      preloadCSS.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
+      preloadCSS.href = 'https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css';
       preloadCSS.as = 'style';
       preloadCSS.crossOrigin = 'anonymous';
       document.head.appendChild(preloadCSS);
       
       // Load Mapbox GL JS
       const script = document.createElement('script');
-      script.src = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
+      script.src = 'https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.js';
       script.async = true;
       script.crossOrigin = 'anonymous';
       script.onload = () => {
         const link = document.createElement('link');
-        link.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
+        link.href = 'https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css';
         link.rel = 'stylesheet';
         link.crossOrigin = 'anonymous';
         link.onload = () => {

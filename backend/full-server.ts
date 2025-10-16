@@ -166,7 +166,7 @@ if (process.env.NODE_ENV === "production") {
           return new Response(indexContent, {
             headers: { 
               'Content-Type': 'text/html; charset=utf-8',
-              'Content-Security-Policy': "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org https://*.telegram.org https://api.telegram.org https://*.mapbox.com https://api.mapbox.com; img-src 'self' data: https: blob:; connect-src 'self' https: wss: ws:;"
+              'Content-Security-Policy': "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org https://*.telegram.org https://api.telegram.org https://*.mapbox.com https://api.mapbox.com; img-src 'self' data: https: blob:; connect-src 'self' https: wss: ws:; worker-src blob:;"
             }
           });
         } catch (error) {
