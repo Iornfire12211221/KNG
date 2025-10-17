@@ -634,8 +634,8 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     backgroundColor: '#F8F9FA',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
     marginHorizontal: 12,
     marginTop: 8,
     borderRadius: 12,
@@ -643,12 +643,13 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 2,
     alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 8,
     backgroundColor: 'transparent',
-    minHeight: 36,
+    minHeight: 32,
   },
   activeTab: {
     backgroundColor: '#FFFFFF',
@@ -659,15 +660,16 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tabText: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#8E8E93',
     fontWeight: '500',
     textAlign: 'center',
+    lineHeight: 12,
   },
   activeTabText: {
     color: '#000000',
     fontWeight: '600',
-    fontSize: 11,
+    fontSize: 10,
   },
   listContainer: {
     padding: 12,
