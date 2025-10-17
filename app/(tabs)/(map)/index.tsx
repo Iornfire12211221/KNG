@@ -1758,7 +1758,11 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               try {
                 setIsLoadingLocation(true);
                 setLocationError(null);
-                hapticFeedback('light');
+                try {
+                  hapticFeedback('light');
+                } catch (e) {
+                  console.log('Haptic feedback not available:', e);
+                }
                 console.log('✅ Starting location request...');
                 
                 // Простая и надежная функция запроса локации
@@ -1822,12 +1826,12 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                   } else {
                         console.log('❌ Telegram location denied or no location data');
                         console.log('❌ Result details:', result);
-                    hapticFeedback('error');
+                    try { hapticFeedback('error'); } catch (e) {}
                     setLocationError('Доступ к геолокации запрещен');
                       }
                     } catch (error) {
                       console.log('❌ Telegram location request failed:', error);
-                      hapticFeedback('error');
+                      try { hapticFeedback('error'); } catch (e) {}
                       setLocationError('Ошибка запроса локации через Telegram');
                   }
                 } else if (navigator.geolocation) {
@@ -1879,19 +1883,19 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                           centerMapOnLocation(latitude, longitude, 0.01, 0.01);
                         }
                         
-                        hapticFeedback('success');
+                        try { hapticFeedback('success'); } catch (e) {}
                         console.log('✅ Browser location request completed successfully!');
                     },
                     (error) => {
                         console.log('❌ Browser geolocation error:', error);
-                      hapticFeedback('error');
+                      try { hapticFeedback('error'); } catch (e) {}
                       setLocationError('Ошибка определения местоположения');
                     },
                     { enableHighAccuracy: true, maximumAge: 60000, timeout: 8000 }
                   );
                   } else {
                     console.log('❌ No geolocation available');
-                    hapticFeedback('error');
+                    try { hapticFeedback('error'); } catch (e) {}
                     setLocationError('Геолокация не поддерживается');
                   }
                 };
@@ -1925,7 +1929,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                 
               } catch (error) {
                 console.error('❌ Location request error:', error);
-                hapticFeedback('error');
+                try { hapticFeedback('error'); } catch (e) {}
                 setLocationError('Ошибка запроса локации');
               } finally {
                 console.log('🏁 Location request finished');
