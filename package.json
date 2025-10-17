@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
-    "@hono/node-server": "^2.0.2",
+    "@hono/node-server": "^1.19.1",
     "@hono/trpc-server": "^0.4.0",
     "@nkzw/create-context-hook": "^1.1.0",
     "@prisma/client": "^6.16.3",
@@ -44,7 +44,7 @@
     "expo-symbols": "~0.4.4",
     "expo-system-ui": "~5.0.6",
     "expo-web-browser": "~14.2.0",
-    "express": "^4.21.2",
+    "express": "^4.18.2",
     "hono": "^4.9.6",
     "lucide-react-native": "^0.475.0",
     "nativewind": "^4.1.23",
@@ -65,13 +65,13 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
-    "@babel/core": "^7.26.0",
+    "@babel/core": "^7.25.2",
     "@expo/ngrok": "^4.1.0",
     "@types/react": "~19.0.10",
     "eslint": "^9.31.0",
     "eslint-config-expo": "^9.2.0",
     "metro": "^0.83.3",
-    "tsx": "^4.21.0",
+    "tsx": "^4.20.6",
     "typescript": "~5.8.3"
   },
   "private": true
