@@ -853,6 +853,8 @@ export default function MapScreen() {
   }, []);
 
   const handleMapLongPress = useCallback((event: any) => {
+    console.log('🗺️ handleMapLongPress called');
+    
     // Проверяем кулдаун
     if (cooldownSeconds > 0) {
       Alert.alert(
@@ -864,9 +866,14 @@ export default function MapScreen() {
     }
     
     const { latitude, longitude } = event.nativeEvent.coordinate;
+    console.log('📍 Long press coordinates:', latitude, longitude);
     
     // Анимация нажатия на карту
-    hapticFeedback('medium');
+    try {
+      hapticFeedback('medium');
+    } catch (e) {
+      console.log('Haptic feedback not available:', e);
+    }
     
     // Анимация масштабирования
     Animated.sequence([
@@ -906,6 +913,7 @@ export default function MapScreen() {
       rippleOpacity.setValue(0);
     });
     
+    console.log('✅ Setting quickAddLocation:', { latitude, longitude });
     setQuickAddLocation({ latitude, longitude });
     setQuickAddDescription('');
     setQuickAddType('dps');
@@ -913,6 +921,7 @@ export default function MapScreen() {
     setQuickAddPhotos([]);
     
     // Анимация открытия модального окна (снизу вверх как в Telegram)
+    console.log('✅ Opening quickAdd modal');
     setShowQuickAdd(true);
     // Optimized animation for better performance
     if (isLowEndDevice || Platform.OS === 'web') {
