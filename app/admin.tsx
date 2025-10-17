@@ -216,7 +216,7 @@ export default function AdminScreen() {
   // Рендер поста
   const renderPost = useCallback(({ item: post }: { item: any }) => {
     // Находим пользователя по userId для получения фото
-    const postUser = users.find(u => u.id === post.userId);
+    const postUser = managedUsers.find(u => u.id === post.userId);
     
     return (
     <View style={styles.postCard} key={post.id}>
@@ -261,7 +261,7 @@ export default function AdminScreen() {
                         )}
                       </View>
     );
-  }, [users]);
+  }, [managedUsers]);
 
   // Рендер сообщения
   const renderMessage = useCallback(({ item: message }: { item: Message }) => (
