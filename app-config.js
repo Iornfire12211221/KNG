@@ -4,5 +4,7 @@ module.exports = {
   NODE_ENV: "production",
   PORT: 8081,
   WS_PORT: 8080,
-  EXPO_PUBLIC_WS_URL: "ws://localhost:8080/ws"
+  EXPO_PUBLIC_WS_URL: process.env.NODE_ENV === 'production' 
+    ? "wss://24dps.ru/ws"  // Production WebSocket URL
+    : "ws://localhost:8080/ws"
 };
