@@ -87,34 +87,8 @@ function AppContent() {
     }
   }, [telegram.isTelegramWebApp]);
 
-  // Preload Mapbox resources for faster map loading
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      // Preload Mapbox resources as soon as app starts
-      const preloadMapboxResources = () => {
-        // Preload script
-        const preloadScript = document.createElement('link');
-        preloadScript.rel = 'preload';
-        preloadScript.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
-        preloadScript.as = 'script';
-        preloadScript.crossOrigin = 'anonymous';
-        document.head.appendChild(preloadScript);
-        
-        // Preload CSS
-        const preloadCSS = document.createElement('link');
-        preloadCSS.rel = 'preload';
-        preloadCSS.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
-        preloadCSS.as = 'style';
-        preloadCSS.crossOrigin = 'anonymous';
-        document.head.appendChild(preloadCSS);
-        
-        console.log('Mapbox resources preloaded');
-      };
-      
-      // Preload immediately
-      preloadMapboxResources();
-    }
-  }, []);
+  // Mapbox resources are loaded dynamically when MapView component mounts
+  // This prevents unnecessary preloading and console warnings
 
   const onLayoutRootView = React.useCallback(() => {
     if (telegram.isReady) {

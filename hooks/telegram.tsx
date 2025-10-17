@@ -135,12 +135,21 @@ export interface TelegramWebApp {
   invokeCustomMethod: (method: string, params?: object, callback?: (data: object) => void) => void;
 }
 
+// Глобальный флаг для предотвращения множественных инициализаций
+let isTelegramInitialized = false;
+
 export const useTelegram = () => {
   const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
   const [user, setUser] = useState<TelegramWebApp['initDataUnsafe']['user'] | null>(null);
   const [isReady, setIsReady] = useState(false); // Изначально не готовы
 
   useEffect(() => {
+    // Предотвращаем множественные инициализации
+    if (isReady || isTelegramInitialized) {
+      console.log('🔄 useTelegram: Already initialized, skipping...');
+      return;
+    }
+    
     console.log('🔄 useTelegram: Starting initialization...');
     console.log('🔄 useTelegram: Current URL:', typeof window !== 'undefined' ? window.location.href : 'SSR');
     console.log('🔄 useTelegram: Platform.OS:', Platform.OS);
@@ -176,6 +185,7 @@ export const useTelegram = () => {
           console.error('❌ useTelegram: Error initializing Telegram WebApp:', error);
         }
         console.log('✅ useTelegram: Telegram WebApp готов');
+        isTelegramInitialized = true;
         setIsReady(true);
       };
 
@@ -261,6 +271,7 @@ export const useTelegram = () => {
               setUser(realUser);
               console.log('✅ useTelegram: Реальные данные пользователя загружены из URL');
               console.log('✅ useTelegram: User:', realUser);
+              isTelegramInitialized = true;
               setIsReady(true);
               return true; // Данные успешно распарсены
             }

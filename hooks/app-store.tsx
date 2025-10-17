@@ -643,35 +643,44 @@ ${description ? `Описание от пользователя: "${description}
       console.log('Logging in with Telegram data:', telegramData);
       
       // Сначала синхронизируемся с базой данных через tRPC
+      let dbUser = null;
       try {
-        const dbUser = await trpc.users.upsert.mutate({
-          telegramId: telegramData.telegramId.toString(),
-          name: `${telegramData.firstName} ${telegramData.lastName || ''}`.trim(),
-          username: telegramData.username,
-          photoUrl: telegramData.photoUrl,
-        });
-        
-        console.log('✅ User synced with database:', dbUser);
+        // Проверяем, что trpc.users.upsert существует и является функцией
+        if (trpc?.users?.upsert?.mutate && typeof trpc.users.upsert.mutate === 'function') {
+          dbUser = await trpc.users.upsert.mutate({
+            telegramId: telegramData.telegramId.toString(),
+            name: `${telegramData.firstName} ${telegramData.lastName || ''}`.trim(),
+            username: telegramData.username,
+            photoUrl: telegramData.photoUrl,
+          });
+          console.log('✅ User synced with database:', dbUser);
+        } else {
+          console.warn('⚠️ tRPC users.upsert not available, using local data only');
+        }
+      } catch (dbError) {
+        console.error('❌ Database sync failed:', dbError);
+        console.log('📦 Using local data as fallback');
+      }
         
         // Обновляем локальные данные на основе данных из БД
         const isOwner = (telegramData.username ?? '').toLowerCase() === 'herlabsn';
         const syncedUser: User = {
-          id: dbUser.id,
-          name: dbUser.name,
-          telegramId: dbUser.telegramId,
+          id: dbUser?.id || `user_${telegramData.telegramId}`,
+          name: dbUser?.name || `${telegramData.firstName} ${telegramData.lastName || ''}`.trim(),
+          telegramId: dbUser?.telegramId || telegramData.telegramId.toString(),
           firstName: telegramData.firstName,
           lastName: telegramData.lastName,
           telegramUsername: telegramData.username,
           languageCode: telegramData.languageCode,
           isPremium: telegramData.isPremium,
           photoUrl: telegramData.photoUrl,
-          isAdmin: dbUser.role === 'ADMIN' || dbUser.role === 'FOUNDER',
-          isModerator: dbUser.role === 'MODERATOR' || dbUser.role === 'ADMIN' || dbUser.role === 'FOUNDER',
-          role: dbUser.role,
-          isMuted: dbUser.isMuted,
-          isBanned: dbUser.isBanned,
-          isKicked: dbUser.isKicked,
-          locationPermission: dbUser.locationPermission,
+          isAdmin: dbUser?.role === 'ADMIN' || dbUser?.role === 'FOUNDER' || isOwner,
+          isModerator: dbUser?.role === 'MODERATOR' || dbUser?.role === 'ADMIN' || dbUser?.role === 'FOUNDER' || isOwner,
+          role: dbUser?.role || (isOwner ? 'FOUNDER' : 'USER'),
+          isMuted: dbUser?.isMuted || false,
+          isBanned: dbUser?.isBanned || false,
+          isKicked: dbUser?.isKicked || false,
+          locationPermission: dbUser?.locationPermission || false,
           registeredAt: Date.now(),
         };
         
