@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Platform, Text, Animated } from 'react-native';
 
 // Mapbox token
-const MAPBOX_TOKEN = 'pk.eyJ1IjoicnJheG85NiIsImEiOiJjbWZ0Zzg5bjEwNTJ2MmlwaHNlNnh4ajd2In0.kPa-PYwEP58w8-QJKGHz5A';
+const MAPBOX_TOKEN = 'pk.eyJ1IjoicnJheG85NiIsImEiOiJjbWdxcDFlYXcxM3QyMmxxd20ybmEzYmQ0In0.IxKyZvn0hy6e6y_pX4ij-w';
 
 // Cache for loaded Mapbox resources
 let mapboxResourcesLoaded = false;
