@@ -661,50 +661,45 @@ ${description ? `Описание от пользователя: "${description}
         console.error('❌ Database sync failed:', dbError);
         console.log('📦 Using local data as fallback');
       }
-        
-        // Обновляем локальные данные на основе данных из БД
-        const isOwner = (telegramData.username ?? '').toLowerCase() === 'herlabsn';
-        const syncedUser: User = {
-          id: dbUser?.id || `user_${telegramData.telegramId}`,
-          name: dbUser?.name || `${telegramData.firstName} ${telegramData.lastName || ''}`.trim(),
-          telegramId: dbUser?.telegramId || telegramData.telegramId.toString(),
-          firstName: telegramData.firstName,
-          lastName: telegramData.lastName,
-          telegramUsername: telegramData.username,
-          languageCode: telegramData.languageCode,
-          isPremium: telegramData.isPremium,
-          photoUrl: telegramData.photoUrl,
-          isAdmin: dbUser?.role === 'ADMIN' || dbUser?.role === 'FOUNDER' || isOwner,
-          isModerator: dbUser?.role === 'MODERATOR' || dbUser?.role === 'ADMIN' || dbUser?.role === 'FOUNDER' || isOwner,
-          role: dbUser?.role || (isOwner ? 'FOUNDER' : 'USER'),
-          isMuted: dbUser?.isMuted || false,
-          isBanned: dbUser?.isBanned || false,
-          isKicked: dbUser?.isKicked || false,
-          locationPermission: dbUser?.locationPermission || false,
-          registeredAt: Date.now(),
-        };
-        
-        // Обновляем локальные данные
-        const updatedUsers = users.map(u => u.id === syncedUser.id ? syncedUser : u);
-        if (!users.find(u => u.id === syncedUser.id)) {
-          updatedUsers.push(syncedUser);
-        }
-        
-        setUsers(updatedUsers);
-        setCurrentUser(syncedUser);
-        
-        await Promise.all([
-          AsyncStorage.setItem('all_users', JSON.stringify(updatedUsers)),
-          AsyncStorage.setItem('current_user', JSON.stringify(syncedUser)),
-        ]);
-        
-        console.log('✅ Telegram user logged in with database sync:', syncedUser);
-        return true;
-        
-      } catch (dbError) {
-        console.error('❌ Database sync failed, using local data:', dbError);
-        // Fallback to local data if database sync fails
+      
+      // Обновляем локальные данные на основе данных из БД
+      const isOwner = (telegramData.username ?? '').toLowerCase() === 'herlabsn';
+      const syncedUser: User = {
+        id: dbUser?.id || `user_${telegramData.telegramId}`,
+        name: dbUser?.name || `${telegramData.firstName} ${telegramData.lastName || ''}`.trim(),
+        telegramId: dbUser?.telegramId || telegramData.telegramId.toString(),
+        firstName: telegramData.firstName,
+        lastName: telegramData.lastName,
+        telegramUsername: telegramData.username,
+        languageCode: telegramData.languageCode,
+        isPremium: telegramData.isPremium,
+        photoUrl: telegramData.photoUrl,
+        isAdmin: dbUser?.role === 'ADMIN' || dbUser?.role === 'FOUNDER' || isOwner,
+        isModerator: dbUser?.role === 'MODERATOR' || dbUser?.role === 'ADMIN' || dbUser?.role === 'FOUNDER' || isOwner,
+        role: dbUser?.role || (isOwner ? 'FOUNDER' : 'USER'),
+        isMuted: dbUser?.isMuted || false,
+        isBanned: dbUser?.isBanned || false,
+        isKicked: dbUser?.isKicked || false,
+        locationPermission: dbUser?.locationPermission || false,
+        registeredAt: Date.now(),
+      };
+      
+      // Обновляем локальные данные
+      const updatedUsers = users.map(u => u.id === syncedUser.id ? syncedUser : u);
+      if (!users.find(u => u.id === syncedUser.id)) {
+        updatedUsers.push(syncedUser);
       }
+      
+      setUsers(updatedUsers);
+      setCurrentUser(syncedUser);
+      
+      await Promise.all([
+        AsyncStorage.setItem('all_users', JSON.stringify(updatedUsers)),
+        AsyncStorage.setItem('current_user', JSON.stringify(syncedUser)),
+      ]);
+      
+      console.log('✅ Telegram user logged in with database sync:', syncedUser);
+      return true;
       
       // Проверяем локальные данные (клиентская версия без TRPC)
       let existingUser = users.find(u => u.telegramId === telegramData.telegramId);
