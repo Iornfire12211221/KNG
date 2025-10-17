@@ -137,11 +137,12 @@ export interface TelegramWebApp {
 
 // Глобальный флаг для предотвращения множественных инициализаций
 let isTelegramInitialized = false;
+let globalIsReady = false; // Глобальное состояние готовности
 
 export const useTelegram = () => {
   const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
   const [user, setUser] = useState<TelegramWebApp['initDataUnsafe']['user'] | null>(null);
-  const [isReady, setIsReady] = useState(false); // Изначально не готовы
+  const [isReady, setIsReady] = useState(globalIsReady); // Инициализируем из глобального состояния
 
   useEffect(() => {
     // Предотвращаем множественные инициализации
@@ -162,6 +163,54 @@ export const useTelegram = () => {
 
     if (Platform.OS === 'web') {
       console.log('🔄 useTelegram: Web platform detected');
+
+      // ТАЙМАУТ: Если Telegram не загрузится за 5 секунд, используем демо режим
+      const initTimeout = setTimeout(() => {
+        if (!globalIsReady && !isTelegramInitialized) {
+          console.log('⏰ useTelegram: Init timeout reached (5s), using demo mode');
+          console.log('⚠️ Telegram WebApp не загрузился - используется демо режим');
+          
+          const mockUser = {
+            id: 123456789,
+            first_name: 'Демо',
+            last_name: 'Пользователь',
+            username: 'demo_user',
+            language_code: 'ru',
+            is_premium: false,
+            allows_write_to_pm: true
+          };
+
+          const mockWebApp: TelegramWebApp = {
+            initData: '',
+            initDataUnsafe: { user: mockUser },
+            version: '6.0',
+            platform: 'unknown',
+            colorScheme: 'light',
+            themeParams: {
+              bg_color: '#ffffff', text_color: '#000000', hint_color: '#707579', link_color: '#00488f',
+              button_color: '#3390ec', button_text_color: '#ffffff', secondary_bg_color: '#f4f4f5'
+            },
+            ready: () => {}, expand: () => {}, close: () => {}, isClosingConfirmationEnabled: false,
+            MainButton: {
+              text: '', color: '', textColor: '', isVisible: false, isActive: false, isProgressVisible: false,
+              setText: () => {}, onClick: () => {}, show: () => {}, hide: () => {}, enable: () => {},
+              disable: () => {}, showProgress: () => {}, hideProgress: () => {}, setParams: () => {}
+            },
+            BackButton: { isVisible: false, onClick: () => {}, show: () => {}, hide: () => {} },
+            HapticFeedback: { impactOccurred: () => {}, notificationOccurred: () => {}, selectionChanged: () => {} },
+            sendData: () => {}, openLink: () => {}, openTelegramLink: () => {}, showPopup: () => {},
+            showAlert: () => {}, showConfirm: () => {}, showScanQrPopup: () => {}, closeScanQrPopup: () => {},
+            readTextFromClipboard: () => {}, requestWriteAccess: () => {}, requestContact: () => {},
+            requestLocation: () => {}, invokeCustomMethod: () => {}
+          };
+
+          setWebApp(mockWebApp);
+          setUser(mockUser);
+          isTelegramInitialized = true;
+          globalIsReady = true;
+          setIsReady(true);
+        }
+      }, 5000); // 5 секунд таймаут
 
       const initWebApp = (tg: TelegramWebApp) => {
         console.log('🔄 useTelegram: Initializing real Telegram WebApp...');
@@ -185,7 +234,10 @@ export const useTelegram = () => {
           console.error('❌ useTelegram: Error initializing Telegram WebApp:', error);
         }
         console.log('✅ useTelegram: Telegram WebApp готов');
+        console.log('✅ useTelegram: User data:', tg.initDataUnsafe?.user);
+        clearTimeout(initTimeout);
         isTelegramInitialized = true;
+        globalIsReady = true;
         setIsReady(true);
       };
 
@@ -271,7 +323,10 @@ export const useTelegram = () => {
               setUser(realUser);
               console.log('✅ useTelegram: Реальные данные пользователя загружены из URL');
               console.log('✅ useTelegram: User:', realUser);
+              console.log('✅ useTelegram: Photo URL:', realUser.photo_url);
+              clearTimeout(initTimeout);
               isTelegramInitialized = true;
+              globalIsReady = true;
               setIsReady(true);
               return true; // Данные успешно распарсены
             }
@@ -321,7 +376,10 @@ export const useTelegram = () => {
         setWebApp(mockWebApp);
         setUser(mockUser);
         console.log('✅ useTelegram: Браузерный режим активирован');
-        console.log('✅ useTelegram: Mock user set:', mockUser);
+        console.log('⚠️ useTelegram: Это ДЕМО пользователь для тестирования!');
+        clearTimeout(initTimeout);
+        isTelegramInitialized = true;
+        globalIsReady = true;
         setIsReady(true);
       };
 
@@ -344,10 +402,12 @@ export const useTelegram = () => {
       };
 
       // Запускаем проверку после небольшой задержки, чтобы дать Telegram API время загрузиться
-      // Увеличиваем задержку, чтобы дать больше времени для загрузки скрипта Telegram
       const timeoutId = setTimeout(checkAndInitialize, 500); // 500ms задержка
 
-      return () => clearTimeout(timeoutId);
+      return () => {
+        clearTimeout(timeoutId);
+        clearTimeout(initTimeout);
+      };
     } else {
       console.log('🔄 useTelegram: Non-web platform');
       setIsReady(true);
