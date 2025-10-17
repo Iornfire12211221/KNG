@@ -2009,6 +2009,9 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
             (cooldownSeconds > 0) && styles.mapControlButtonDisabled
           ]}
           onPress={() => {
+            console.log('➕ PLUS BUTTON PRESSED!');
+            console.log('cooldownSeconds:', cooldownSeconds);
+            
             if (cooldownSeconds > 0) {
               Alert.alert(
                 'Подождите',
