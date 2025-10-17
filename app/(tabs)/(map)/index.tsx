@@ -2022,7 +2022,11 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
             }
             
             // Анимация кнопки плюс
-            hapticFeedback('light');
+            try {
+              hapticFeedback('light');
+            } catch (e) {
+              console.log('Haptic feedback not available:', e);
+            }
             
             Animated.parallel([
               Animated.sequence([
