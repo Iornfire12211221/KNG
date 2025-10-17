@@ -1722,7 +1722,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
       )}
 
       {/* Right Side Control Buttons - Точь в точь как на скриншоте */}
-      <View style={styles.mapControlsContainer} pointerEvents="box-none">
+      <View style={styles.mapControlsContainer} pointerEvents="auto">
         {/* Зеленая кнопка - тренды/статистика */}
         <TouchableOpacity
           style={styles.mapControlButtonGreen}
