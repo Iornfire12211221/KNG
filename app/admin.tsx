@@ -196,16 +196,18 @@ export default function AdminScreen() {
         {canManage && user.id !== currentUser?.id && userRole === 'USER' && (
           <View style={styles.userActions}>
             <TouchableOpacity
-              style={[styles.actionButton, styles.adminButton]}
-              onPress={() => handleMakeAdmin(user.id)}
-            >
-              <Ionicons name="shield" size={14} color="#FFFFFF" />
-            </TouchableOpacity>
-            <TouchableOpacity
               style={[styles.actionButton, styles.moderatorButton]}
               onPress={() => handleMakeModerator(user.id)}
             >
-              <Ionicons name="checkmark-circle" size={14} color="#FFFFFF" />
+              <Ionicons name="shield-checkmark" size={16} color="#FFFFFF" />
+              <Text style={styles.actionButtonText}>Модератор</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.adminButton]}
+              onPress={() => handleMakeAdmin(user.id)}
+            >
+              <Ionicons name="shield" size={16} color="#FFFFFF" />
+              <Text style={styles.actionButtonText}>Админ</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -282,7 +284,8 @@ export default function AdminScreen() {
           style={styles.deleteButton}
           onPress={() => handleDeleteMessage(message.id)}
                       >
-          <Ionicons name="trash" size={14} color="#FF4757" />
+          <Ionicons name="trash" size={16} color="#FF4757" />
+          <Text style={styles.deleteButtonText}>Удалить</Text>
                       </TouchableOpacity>
       </View>
       <Text style={styles.messageContent}>{message.content}</Text>
@@ -746,20 +749,29 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   actionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
     backgroundColor: '#F8F9FA',
     justifyContent: 'center',
-    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E5E5E5',
   },
+  actionButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
   adminButton: {
     backgroundColor: '#3390EC',
+    borderColor: '#3390EC',
   },
   moderatorButton: {
     backgroundColor: '#34C759',
+    borderColor: '#34C759',
   },
   postCard: {
     backgroundColor: '#FFFFFF',
@@ -977,14 +989,21 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   deleteButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#F8F9FA',
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#FFF5F5',
+    justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderColor: '#FFE5E5',
+  },
+  deleteButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FF4757',
   },
   aiSettingsContainer: {
     flex: 1,
