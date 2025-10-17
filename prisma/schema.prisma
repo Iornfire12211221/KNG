@@ -89,6 +89,7 @@ model User {
   updatedAt       DateTime @updatedAt
 
   @@map("users")
+  @@index([telegramId]) // Индекс для быстрого поиска по Telegram ID
 }
 
 // Модель для комментариев к постам

@@ -20,6 +20,7 @@ import {
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useApp } from '@/hooks/app-store';
 import { useTelegram } from '@/hooks/telegram';
+import { safeHapticFeedback } from '@/hooks/safe-haptic';
 import { usePerformanceOptimization, useOptimizedAnimation } from '@/hooks/performance';
 import { router } from 'expo-router';
 import { Plus, Navigation, AlertCircle, Clock, Trash2, Heart, Shield, Car, AlertTriangle, Camera, Construction, CheckCircle2, X, Settings, Rabbit, TrendingUp, Filter, MapPin as MapPinIcon, Zap, Target, Users, CarFront, Wrench, MoreHorizontal, CheckCheck, MessageCircle } from 'lucide-react-native';
@@ -869,11 +870,7 @@ export default function MapScreen() {
     console.log('📍 Long press coordinates:', latitude, longitude);
     
     // Анимация нажатия на карту
-    try {
-      hapticFeedback('medium');
-    } catch (e) {
-      console.log('Haptic feedback not available:', e);
-    }
+    safeHapticFeedback(hapticFeedback, 'medium');
     
     // Анимация масштабирования
     Animated.sequence([
@@ -1758,11 +1755,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               try {
                 setIsLoadingLocation(true);
                 setLocationError(null);
-                try {
-                  hapticFeedback('light');
-                } catch (e) {
-                  console.log('Haptic feedback not available:', e);
-                }
+                safeHapticFeedback(hapticFeedback, 'light');
                 console.log('✅ Starting location request...');
                 
                 // Простая и надежная функция запроса локации
@@ -1821,17 +1814,17 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                         centerMapOnLocation(latitude, longitude, 0.01, 0.01);
                       }
                       
-                    hapticFeedback('success');
+                    safeHapticFeedback(hapticFeedback, 'success');
                         console.log('✅ Location request completed successfully!');
                   } else {
                         console.log('❌ Telegram location denied or no location data');
                         console.log('❌ Result details:', result);
-                    try { hapticFeedback('error'); } catch (e) {}
+                    safeHapticFeedback(hapticFeedback, 'error');
                     setLocationError('Доступ к геолокации запрещен');
                       }
                     } catch (error) {
                       console.log('❌ Telegram location request failed:', error);
-                      try { hapticFeedback('error'); } catch (e) {}
+                      safeHapticFeedback(hapticFeedback, 'error');
                       setLocationError('Ошибка запроса локации через Telegram');
                   }
                 } else if (navigator.geolocation) {
@@ -1883,19 +1876,19 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                           centerMapOnLocation(latitude, longitude, 0.01, 0.01);
                         }
                         
-                        try { hapticFeedback('success'); } catch (e) {}
+                        safeHapticFeedback(hapticFeedback, 'success');
                         console.log('✅ Browser location request completed successfully!');
                     },
                     (error) => {
                         console.log('❌ Browser geolocation error:', error);
-                      try { hapticFeedback('error'); } catch (e) {}
+                      safeHapticFeedback(hapticFeedback, 'error');
                       setLocationError('Ошибка определения местоположения');
                     },
                     { enableHighAccuracy: true, maximumAge: 60000, timeout: 8000 }
                   );
                   } else {
                     console.log('❌ No geolocation available');
-                    try { hapticFeedback('error'); } catch (e) {}
+                    safeHapticFeedback(hapticFeedback, 'error');
                     setLocationError('Геолокация не поддерживается');
                   }
                 };
@@ -1929,7 +1922,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                 
               } catch (error) {
                 console.error('❌ Location request error:', error);
-                try { hapticFeedback('error'); } catch (e) {}
+                safeHapticFeedback(hapticFeedback, 'error');
                 setLocationError('Ошибка запроса локации');
               } finally {
                 console.log('🏁 Location request finished');
@@ -2035,11 +2028,7 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
             }
             
             // Анимация кнопки плюс
-            try {
-              hapticFeedback('light');
-            } catch (e) {
-              console.log('Haptic feedback not available:', e);
-            }
+            safeHapticFeedback(hapticFeedback, 'light');
             
             Animated.parallel([
               Animated.sequence([
@@ -2633,6 +2622,19 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                     </Text>
                     
                     <View style={styles.eventUserInfo}>
+                      {/* Avatar */}
+                      <View style={styles.eventUserAvatar}>
+                        {currentUser?.photoUrl ? (
+                          <Image source={{ uri: currentUser.photoUrl }} style={styles.eventUserAvatarImage} />
+                        ) : (
+                          <View style={styles.eventUserAvatarPlaceholder}>
+                            <Text style={styles.eventUserAvatarText}>
+                              {post.userName && post.userName.length > 0 ? post.userName.charAt(0).toUpperCase() : '?'}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      
                       <Text style={styles.eventUserName}>Сообщил: {post.userName}</Text>
                       {post.verified && (
                         <CheckCircle2 size={18} color="#34C759" />
@@ -4239,8 +4241,30 @@ const styles = StyleSheet.create({
   eventUserInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     marginBottom: 6,
+  },
+  eventUserAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  eventUserAvatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  eventUserAvatarPlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#3B82F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  eventUserAvatarText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   eventUserName: {
     fontSize: 16,

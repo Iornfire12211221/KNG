@@ -214,13 +214,17 @@ export default function AdminScreen() {
   }, [currentUser, handleMakeAdmin, handleMakeModerator]);
 
   // Рендер поста
-  const renderPost = useCallback(({ item: post }: { item: any }) => (
+  const renderPost = useCallback(({ item: post }: { item: any }) => {
+    // Находим пользователя по userId для получения фото
+    const postUser = users.find(u => u.id === post.userId);
+    
+    return (
     <View style={styles.postCard} key={post.id}>
       <View style={styles.postHeader}>
         <View style={styles.postAuthorInfo}>
           <View style={styles.postAuthorAvatar}>
-            {post.photo ? (
-              <Image source={{ uri: post.photo }} style={styles.postAuthorAvatarImage} />
+            {postUser?.photoUrl ? (
+              <Image source={{ uri: postUser.photoUrl }} style={styles.postAuthorAvatarImage} />
             ) : (
               <Text style={styles.postAuthorAvatarText}>
                 {post.userName && post.userName.length > 0 ? post.userName.charAt(0).toUpperCase() : '?'}
@@ -256,7 +260,8 @@ export default function AdminScreen() {
                         </View>
                         )}
                       </View>
-  ), []);
+    );
+  }, [users]);
 
   // Рендер сообщения
   const renderMessage = useCallback(({ item: message }: { item: Message }) => (
