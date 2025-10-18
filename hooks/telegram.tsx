@@ -164,6 +164,38 @@ export const useTelegram = () => {
     if (Platform.OS === 'web') {
       console.log('🔄 useTelegram: Web platform detected');
 
+      // Динамически загружаем Telegram WebApp API если он не загружен
+      const loadTelegramScript = () => {
+        if (typeof window === 'undefined') return;
+        
+        // Проверяем, не загружен ли уже скрипт
+        if (window.Telegram && window.Telegram.WebApp) {
+          console.log('✅ Telegram WebApp API уже загружен');
+          return;
+        }
+
+        // Проверяем, не загружается ли уже скрипт
+        if (document.querySelector('script[src*="telegram.org/js/telegram-web-app.js"]')) {
+          console.log('🔄 Telegram WebApp API скрипт уже загружается...');
+          return;
+        }
+
+        console.log('🔄 Загружаем Telegram WebApp API скрипт...');
+        const script = document.createElement('script');
+        script.src = 'https://telegram.org/js/telegram-web-app.js';
+        script.async = true;
+        script.onload = () => {
+          console.log('✅ Telegram WebApp API скрипт загружен');
+        };
+        script.onerror = () => {
+          console.error('❌ Ошибка загрузки Telegram WebApp API скрипта');
+        };
+        document.head.appendChild(script);
+      };
+
+      // Загружаем скрипт сразу
+      loadTelegramScript();
+
       // ТАЙМАУТ: Если Telegram не загрузится за 10 секунд, используем демо режим
       const initTimeout = setTimeout(() => {
         if (!globalIsReady && !isTelegramInitialized) {

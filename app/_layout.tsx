@@ -42,6 +42,8 @@ function AppContent() {
   const telegram = useTelegram();
   
   console.log('🔄 AppContent: telegram.isReady =', telegram.isReady);
+  console.log('🔄 AppContent: window.Telegram exists:', typeof window !== 'undefined' && !!window.Telegram);
+  console.log('🔄 AppContent: window.Telegram.WebApp exists:', typeof window !== 'undefined' && !!window.Telegram?.WebApp);
 
   const colorScheme = useMemo(() => {
     if (Platform.OS === 'web' && telegram.isTelegramWebApp) {
