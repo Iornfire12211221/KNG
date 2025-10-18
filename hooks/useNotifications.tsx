@@ -223,12 +223,8 @@ export function useNotifications() {
 
     if (!currentUser?.id || wsRef.current?.readyState === WebSocket.OPEN) return;
 
-    // WebSocket ОТКЛЮЧЕН до настройки сервера
-    console.log('⚠️ WebSocket отключен - сервер не настроен');
-    return;
-
     const wsUrl = 'wss://24dps.ru/ws'; // Production WebSocket URL
-    const ws = new WebSocket(`${wsUrl}?userId=${currentUser.id}`);
+    const ws = new WebSocket(`${wsUrl}?userId=${currentUser.id}&token=${currentUser.id}`);
 
     ws.onopen = () => {
       console.log('🔌 WebSocket подключен');
@@ -267,11 +263,13 @@ export function useNotifications() {
           console.log(`🔄 Попытка переподключения ${reconnectAttempts.current}/${maxReconnectAttempts}`);
           connectWebSocket();
         }, delay);
+      } else {
+        console.log('⚠️ WebSocket: достигнут лимит попыток переподключения');
       }
     };
 
     ws.onerror = (error) => {
-      console.error('❌ WebSocket ошибка:', error);
+      // Не логируем ошибки - они будут в onclose
     };
 
     wsRef.current = ws;
