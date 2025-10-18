@@ -113,9 +113,16 @@ export class WebSocketManager {
    */
   private handleConnection(ws: WebSocket, request: IncomingMessage): void {
     try {
+      console.log('🔌 New WebSocket connection attempt');
+      console.log('🔌 Request URL:', request.url);
+      console.log('🔌 Request headers:', request.headers);
+      
       const url = new URL(request.url || '', `http://${request.headers.host}`);
       const userId = url.searchParams.get('userId');
       const token = url.searchParams.get('token');
+
+      console.log('🔌 Parsed userId:', userId);
+      console.log('🔌 Parsed token:', token);
 
       if (!userId) {
         console.log('❌ WebSocket connection rejected: no userId');

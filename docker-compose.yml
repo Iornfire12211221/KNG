@@ -6,7 +6,8 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8081:8081"
+      - "8081:8081"  # HTTP сервер
+      - "8080:8080"  # WebSocket сервер
     environment:
       - NODE_ENV=production
       - EXPO_USE_FAST_RESOLVER=1
