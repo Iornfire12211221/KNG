@@ -12,7 +12,7 @@ services:
       - NODE_ENV=production
       - EXPO_USE_FAST_RESOLVER=1
       - EXPO_NO_TELEMETRY=1
-      - DATABASE_URL=postgresql://gen_user:Dima122111@5b185a49c11b0959c8173153.twc1.net:5432/default_db
+      - DATABASE_URL=postgresql://gen_user:Dima12211221@82.97.243.173:5432/default_db?sslmode=require
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/"]
