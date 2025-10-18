@@ -10,7 +10,22 @@ WORKDIR /app
 
 # Copy package files first for better layer caching
 COPY package.json package-lock.json ./
-RUN npm install --legacy-peer-deps
+
+# Configure npm for better network reliability
+RUN npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-timeout 300000 && \
+    npm config set registry https://registry.npmjs.org/
+
+# Install dependencies with retry logic
+# Retry up to 3 times with exponential backoff
+RUN for i in 1 2 3; do \
+      echo "Attempt $i: Installing npm packages..." && \
+      npm install --legacy-peer-deps --no-audit --no-fund && \
+      break || \
+      (echo "Attempt $i failed, waiting before retry..." && sleep $((i * 10))); \
+    done
 
 # Copy source code
 COPY . .
