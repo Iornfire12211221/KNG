@@ -301,6 +301,8 @@ export default function MapScreen() {
 
   // Перехват console.log, console.error, console.warn
   useEffect(() => {
+    if (!showLogs) return; // Не перехватываем логи, если панель закрыта
+    
     const originalLog = console.log;
     const originalError = console.error;
     const originalWarn = console.warn;
@@ -334,7 +336,7 @@ export default function MapScreen() {
       console.error = originalError;
       console.warn = originalWarn;
     };
-  }, []);
+  }, [showLogs]); // Зависимость от showLogs
 
   const lastMyPostTs = React.useMemo(() => {
     try {

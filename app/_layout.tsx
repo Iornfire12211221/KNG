@@ -127,23 +127,35 @@ function AppContent() {
   );
 }
 
-class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error?: unknown }> {
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error?: unknown; errorInfo?: any }> {
   constructor(props: { children: React.ReactNode }) {
     super(props);
     this.state = { hasError: false };
   }
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error: unknown) {
+    return { hasError: true, error };
   }
-  componentDidCatch(error: unknown) {
-    console.error('App error boundary caught:', error);
+  componentDidCatch(error: unknown, errorInfo: any) {
+    console.error('❌ App error boundary caught:', error);
+    console.error('❌ Error info:', errorInfo);
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack');
+    this.setState({ error, errorInfo });
   }
   render() {
     if (this.state.hasError) {
+      const errorMessage = this.state.error instanceof Error 
+        ? this.state.error.message 
+        : String(this.state.error).substring(0, 100);
+      
       return (
         <View style={styles.loadingContainer} testID="app-error">
           <Text style={styles.errorTitle}>Произошла ошибка</Text>
           <Text style={styles.loadingText}>Перезагрузите страницу</Text>
+          {errorMessage && (
+            <Text style={styles.errorDetails}>
+              {errorMessage}
+            </Text>
+          )}
         </View>
       );
     }
@@ -189,6 +201,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#FF3B30',
     fontWeight: '600' as const,
+  },
+  errorDetails: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginTop: 8,
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
   gestureContainer: {
     flex: 1,
