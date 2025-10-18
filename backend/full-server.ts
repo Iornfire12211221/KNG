@@ -151,12 +151,19 @@ if (process.env.NODE_ENV === "production") {
             const telegramScript = `
               <script src="https://telegram.org/js/telegram-web-app.js"></script>
               <script>
-                // Ensure Telegram WebApp is available
-                if (window.Telegram && window.Telegram.WebApp) {
-                  console.log('✅ Telegram WebApp API loaded successfully');
-                } else {
-                  console.log('⚠️ Telegram WebApp API not loaded, will use URL parsing');
-                }
+                // Проверяем загрузку Telegram WebApp API
+                (function checkTelegramWebApp() {
+                  if (window.Telegram && window.Telegram.WebApp) {
+                    console.log('✅ Telegram WebApp API loaded successfully');
+                    console.log('✅ Telegram WebApp version:', window.Telegram.WebApp.version);
+                    console.log('✅ Telegram WebApp platform:', window.Telegram.WebApp.platform);
+                    console.log('✅ Telegram WebApp user:', window.Telegram.WebApp.initDataUnsafe?.user);
+                  } else {
+                    console.log('⚠️ Telegram WebApp API not loaded yet, will retry...');
+                    // Повторяем проверку через 100ms
+                    setTimeout(checkTelegramWebApp, 100);
+                  }
+                })();
               </script>
             `;
             indexContent = indexContent.replace('</head>', `${telegramScript}</head>`);

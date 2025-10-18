@@ -164,11 +164,13 @@ export const useTelegram = () => {
     if (Platform.OS === 'web') {
       console.log('🔄 useTelegram: Web platform detected');
 
-      // ТАЙМАУТ: Если Telegram не загрузится за 5 секунд, используем демо режим
+      // ТАЙМАУТ: Если Telegram не загрузится за 10 секунд, используем демо режим
       const initTimeout = setTimeout(() => {
         if (!globalIsReady && !isTelegramInitialized) {
-          console.log('⏰ useTelegram: Init timeout reached (5s), using demo mode');
+          console.log('⏰ useTelegram: Init timeout reached (10s), using demo mode');
           console.log('⚠️ Telegram WebApp не загрузился - используется демо режим');
+          console.log('⚠️ window.Telegram exists:', !!window.Telegram);
+          console.log('⚠️ window.Telegram.WebApp exists:', !!window.Telegram?.WebApp);
           
           const mockUser = {
             id: 123456789,
@@ -210,7 +212,7 @@ export const useTelegram = () => {
           globalIsReady = true;
           setIsReady(true);
         }
-      }, 5000); // 5 секунд таймаут
+      }, 10000); // 10 секунд таймаут (увеличено для мобильных устройств)
 
       const initWebApp = (tg: TelegramWebApp) => {
         console.log('🔄 useTelegram: Initializing real Telegram WebApp...');
@@ -383,26 +385,35 @@ export const useTelegram = () => {
         setIsReady(true);
       };
 
-      const checkAndInitialize = () => {
+      const checkAndInitialize = (retryCount = 0) => {
         const tg = window.Telegram?.WebApp;
+        console.log('🔄 useTelegram: Check attempt', retryCount + 1);
         console.log('🔄 useTelegram: window.Telegram exists:', !!window.Telegram);
         console.log('🔄 useTelegram: window.Telegram.WebApp exists:', !!window.Telegram?.WebApp);
         console.log('🔄 useTelegram: Telegram WebApp found:', !!tg);
 
         if (tg) {
+          console.log('✅ useTelegram: Telegram WebApp API found!');
           initWebApp(tg);
         } else {
           // Если API не загрузился, пытаемся распарсить из URL
           const parsedFromUrl = parseTgWebAppData();
           if (!parsedFromUrl) {
-            // Если и из URL не удалось, создаем полностью моковый WebApp
-            createMockWebApp();
+            // Если и из URL не удалось, пытаемся еще раз (до 10 попыток)
+            if (retryCount < 10) {
+              console.log(`🔄 useTelegram: Retrying... (${retryCount + 1}/10)`);
+              setTimeout(() => checkAndInitialize(retryCount + 1), 500);
+            } else {
+              // Если и из URL не удалось, создаем полностью моковый WebApp
+              console.log('⚠️ useTelegram: Max retries reached, using demo mode');
+              createMockWebApp();
+            }
           }
         }
       };
 
       // Запускаем проверку после небольшой задержки, чтобы дать Telegram API время загрузиться
-      const timeoutId = setTimeout(checkAndInitialize, 500); // 500ms задержка
+      const timeoutId = setTimeout(() => checkAndInitialize(0), 500); // 500ms задержка
 
       return () => {
         clearTimeout(timeoutId);
