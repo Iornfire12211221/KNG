@@ -36,13 +36,13 @@ export interface WebSocketSettings {
 }
 
 const DEFAULT_SETTINGS: WebSocketSettings = {
-  enabled: true, // ВКЛЮЧЕН
+  enabled: false, // ОТКЛЮЧЕН - сервер не настроен
   url: 'wss://24dps.ru/ws', // Production WebSocket URL
   autoReconnect: true,
-  maxReconnectAttempts: 3, // Уменьшили количество попыток
-  reconnectDelay: 3000, // Увеличили задержку между попытками
-  heartbeatInterval: 30000, // 30 секунд
-  messageTimeout: 10000, // 10 секунд
+  maxReconnectAttempts: 3,
+  reconnectDelay: 3000,
+  heartbeatInterval: 30000,
+  messageTimeout: 10000,
 };
 
 export function useRealTimeUpdates() {

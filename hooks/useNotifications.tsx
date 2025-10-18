@@ -216,10 +216,15 @@ export function useNotifications() {
   // WebSocket подключение
   const connectWebSocket = useCallback(() => {
     // Отключаем WebSocket в development режиме
+    // WebSocket ОТКЛЮЧЕН - сервер не настроен
     if (process.env.NODE_ENV === 'development') {
       console.log('🔧 WebSocket disabled in development mode');
       return;
     }
+
+    // WebSocket отключен до настройки сервера
+    console.log('⚠️ WebSocket disabled - server not configured');
+    return;
 
     if (!currentUser?.id || wsRef.current?.readyState === WebSocket.OPEN) return;
 
