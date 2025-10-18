@@ -50,19 +50,33 @@ function AppContent() {
 
   // Автоматическая авторизация пользователя из Telegram WebApp
   useEffect(() => {
-    if (telegram.isReady && telegram.user && !currentUser) {
-      console.log('🔄 AppContent: Auto-login with Telegram user:', telegram.user);
-      loginWithTelegram({
-        telegramId: telegram.user.id,
-        firstName: telegram.user.first_name,
-        lastName: telegram.user.last_name || '',
-        username: telegram.user.username,
-        languageCode: telegram.user.language_code,
-        isPremium: telegram.user.is_premium || false,
-        photoUrl: telegram.user.photo_url,
-      }).then(success => {
-        console.log('🔄 AppContent: Auto-login result:', success);
-      });
+    if (telegram.isReady && telegram.user) {
+      // Проверяем, что это реальный пользователь (не демо)
+      const isRealUser = telegram.user.id !== 123456789 && telegram.user.username !== 'demo_user';
+      
+      // Авторизуем, если:
+      // 1. Пользователь не авторизован ИЛИ
+      // 2. Текущий пользователь - демо ИЛИ
+      // 3. ID текущего пользователя не совпадает с ID из Telegram
+      const shouldLogin = !currentUser || 
+                         currentUser.telegramUsername === 'demo_user' ||
+                         (currentUser.telegramId && String(currentUser.telegramId) !== String(telegram.user.id));
+      
+      if (isRealUser && shouldLogin) {
+        console.log('🔄 AppContent: Auto-login with Telegram user:', telegram.user);
+        console.log('🔄 AppContent: Current user:', currentUser);
+        loginWithTelegram({
+          telegramId: telegram.user.id,
+          firstName: telegram.user.first_name,
+          lastName: telegram.user.last_name || '',
+          username: telegram.user.username,
+          languageCode: telegram.user.language_code,
+          isPremium: telegram.user.is_premium || false,
+          photoUrl: telegram.user.photo_url,
+        }).then(success => {
+          console.log('🔄 AppContent: Auto-login result:', success);
+        });
+      }
     }
   }, [telegram.isReady, telegram.user, currentUser, loginWithTelegram]);
 
