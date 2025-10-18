@@ -102,7 +102,11 @@ export default function AdminScreen() {
       const message = args.map(arg => 
         typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
       ).join(' ');
-      setLogs(prev => [...prev.slice(-199), `[LOG] ${message}`]); // Храним последние 200 строк
+      
+      // Фильтруем спам от Telegram WebView
+      if (!message.includes('[Telegram.WebView]') && !message.includes('viewport_changed')) {
+        setLogs(prev => [...prev.slice(-199), `[LOG] ${message}`]); // Храним последние 200 строк
+      }
     };
 
     console.error = (...args: any[]) => {
@@ -110,7 +114,11 @@ export default function AdminScreen() {
       const message = args.map(arg => 
         typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
       ).join(' ');
-      setLogs(prev => [...prev.slice(-199), `[ERROR] ${message}`]);
+      
+      // Фильтруем спам от Telegram WebView
+      if (!message.includes('[Telegram.WebView]') && !message.includes('viewport_changed')) {
+        setLogs(prev => [...prev.slice(-199), `[ERROR] ${message}`]);
+      }
     };
 
     console.warn = (...args: any[]) => {
@@ -118,7 +126,11 @@ export default function AdminScreen() {
       const message = args.map(arg => 
         typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
       ).join(' ');
-      setLogs(prev => [...prev.slice(-199), `[WARN] ${message}`]);
+      
+      // Фильтруем спам от Telegram WebView
+      if (!message.includes('[Telegram.WebView]') && !message.includes('viewport_changed')) {
+        setLogs(prev => [...prev.slice(-199), `[WARN] ${message}`]);
+      }
     };
 
     return () => {
