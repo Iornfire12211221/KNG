@@ -39,8 +39,8 @@ const DEFAULT_SETTINGS: WebSocketSettings = {
   enabled: true, // ВКЛЮЧЕН
   url: 'wss://24dps.ru/ws', // Production WebSocket URL
   autoReconnect: true,
-  maxReconnectAttempts: 1, // Только 1 попытка - не спамить
-  reconnectDelay: 10000, // 10 секунд задержка
+  maxReconnectAttempts: 1,
+  reconnectDelay: 10000,
   heartbeatInterval: 30000,
   messageTimeout: 10000,
 };
