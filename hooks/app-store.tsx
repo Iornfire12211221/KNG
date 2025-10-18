@@ -40,23 +40,13 @@ export const [AppProviderInternal, useAppInternal] = createContextHook(() => {
     const loadData = async () => {
       console.log('🔄 useApp: Starting data load from AsyncStorage');
       
-      // Добавляем timeout для загрузки данных
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('AsyncStorage timeout')), 3000);
-      });
-      
       try {
-        const dataPromise = Promise.all([
+        const [storedPosts, storedMessages, storedUser, storedUsers] = await Promise.all([
           AsyncStorage.getItem('dps_posts'),
           AsyncStorage.getItem('chat_messages'),
           AsyncStorage.getItem('current_user'),
           AsyncStorage.getItem('all_users'),
         ]);
-        
-        const [storedPosts, storedMessages, storedUser, storedUsers] = await Promise.race([
-          dataPromise,
-          timeoutPromise
-        ]) as any;
         
         console.log('🔄 useApp: AsyncStorage data loaded:', {
           posts: !!storedPosts,
