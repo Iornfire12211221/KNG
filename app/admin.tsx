@@ -102,7 +102,7 @@ export default function AdminScreen() {
       const message = args.map(arg => 
         typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
       ).join(' ');
-      setLogs(prev => [...prev.slice(-99), `[LOG] ${message}`]);
+      setLogs(prev => [...prev.slice(-199), `[LOG] ${message}`]); // Храним последние 200 строк
     };
 
     console.error = (...args: any[]) => {
@@ -110,7 +110,7 @@ export default function AdminScreen() {
       const message = args.map(arg => 
         typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
       ).join(' ');
-      setLogs(prev => [...prev.slice(-99), `[ERROR] ${message}`]);
+      setLogs(prev => [...prev.slice(-199), `[ERROR] ${message}`]);
     };
 
     console.warn = (...args: any[]) => {
@@ -118,7 +118,7 @@ export default function AdminScreen() {
       const message = args.map(arg => 
         typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
       ).join(' ');
-      setLogs(prev => [...prev.slice(-99), `[WARN] ${message}`]);
+      setLogs(prev => [...prev.slice(-199), `[WARN] ${message}`]);
     };
 
     return () => {
@@ -619,7 +619,7 @@ export default function AdminScreen() {
       {showLogs && (
         <View style={styles.logsContainer}>
           <View style={styles.logsHeader}>
-            <Text style={styles.logsTitle}>📋 Логи консоли (последние 100 строк)</Text>
+            <Text style={styles.logsTitle}>📋 Логи консоли (последние 200 строк)</Text>
             <View style={styles.logsActions}>
               <TouchableOpacity style={styles.logsButton} onPress={() => setLogs([])}>
                 <Ionicons name="trash-outline" size={16} color="#FF4757" />
@@ -627,7 +627,17 @@ export default function AdminScreen() {
               </TouchableOpacity>
               <TouchableOpacity style={styles.logsButton} onPress={() => {
                 const logsText = logs.join('\n');
-                Alert.alert('Логи', logsText.length > 500 ? logsText.substring(0, 500) + '...' : logsText);
+                // Копируем в буфер обмена
+                if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                  navigator.clipboard.writeText(logsText).then(() => {
+                    Alert.alert('✅ Скопировано!', `Скопировано ${logs.length} строк логов в буфер обмена`);
+                  }).catch(() => {
+                    Alert.alert('❌ Ошибка', 'Не удалось скопировать логи');
+                  });
+                } else {
+                  // Fallback для мобильных устройств
+                  Alert.alert('Логи', logsText);
+                }
               }}>
                 <Ionicons name="copy-outline" size={16} color="#3390EC" />
                 <Text style={styles.logsButtonText}>Копировать</Text>
