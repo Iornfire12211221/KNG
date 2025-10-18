@@ -256,8 +256,6 @@ export default function MapScreen() {
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const longPressScale = useRef(new Animated.Value(1)).current;
   const [showWeeklySummary, setShowWeeklySummary] = useState<boolean>(false);
-  const [showLogs, setShowLogs] = useState(false);
-  const [logs, setLogs] = useState<string[]>([]);
   const [userHasMovedMap, setUserHasMovedMap] = useState<boolean>(false);
   const panY = useRef(new Animated.Value(0)).current;
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -298,45 +296,6 @@ export default function MapScreen() {
   useEffect(() => {
     requestLocationPermission();
   }, []);
-
-  // Перехват console.log, console.error, console.warn
-  useEffect(() => {
-    if (!showLogs) return; // Не перехватываем логи, если панель закрыта
-    
-    const originalLog = console.log;
-    const originalError = console.error;
-    const originalWarn = console.warn;
-
-    console.log = (...args: any[]) => {
-      originalLog(...args);
-      const message = args.map(arg => 
-        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-      ).join(' ');
-      setLogs(prev => [...prev.slice(-99), `[LOG] ${message}`]);
-    };
-
-    console.error = (...args: any[]) => {
-      originalError(...args);
-      const message = args.map(arg => 
-        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-      ).join(' ');
-      setLogs(prev => [...prev.slice(-99), `[ERROR] ${message}`]);
-    };
-
-    console.warn = (...args: any[]) => {
-      originalWarn(...args);
-      const message = args.map(arg => 
-        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-      ).join(' ');
-      setLogs(prev => [...prev.slice(-99), `[WARN] ${message}`]);
-    };
-
-    return () => {
-      console.log = originalLog;
-      console.error = originalError;
-      console.warn = originalWarn;
-    };
-  }, [showLogs]); // Зависимость от showLogs
 
   const lastMyPostTs = React.useMemo(() => {
     try {
@@ -2911,46 +2870,6 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
         postId={selectedPostForComments?.id || ''}
         postTitle={selectedPostForComments ? `${getTypeLabel(selectedPostForComments.type)} - ${selectedPostForComments.description.substring(0, 50)}...` : ''}
       />
-
-      {/* Кнопка логов */}
-      <TouchableOpacity
-        style={styles.logsButton}
-        onPress={() => setShowLogs(!showLogs)}
-      >
-        <Text style={styles.logsButtonText}>📋</Text>
-      </TouchableOpacity>
-
-      {/* Панель логов */}
-      {showLogs && (
-        <View style={styles.logsContainer}>
-          <View style={styles.logsHeader}>
-            <Text style={styles.logsTitle}>📋 Логи (последние 100 строк)</Text>
-            <View style={styles.logsActions}>
-              <TouchableOpacity style={styles.logsActionButton} onPress={() => setLogs([])}>
-                <Text style={styles.logsActionButtonText}>Очистить</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.logsActionButton} onPress={() => {
-                const logsText = logs.join('\n');
-                Alert.alert('Логи', logsText.length > 500 ? logsText.substring(0, 500) + '...' : logsText);
-              }}>
-                <Text style={styles.logsActionButtonText}>Копировать</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.logsActionButton} onPress={() => setShowLogs(false)}>
-                <Text style={styles.logsActionButtonText}>Закрыть</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-          <ScrollView style={styles.logsScrollView} nestedScrollEnabled>
-            {logs.length === 0 ? (
-              <Text style={styles.logsEmpty}>Логов пока нет</Text>
-            ) : (
-              logs.map((log, index) => (
-                <Text key={index} style={styles.logLine}>{log}</Text>
-              ))
-            )}
-          </ScrollView>
-        </View>
-      )}
       
       {/* Убрали глобальный лоадер, чтобы не перекрывал карту */}
     </View>
@@ -4656,91 +4575,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-
-  // Logs button and panel
-  logsButton: {
-    position: 'absolute',
-    top: 60,
-    right: 16,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-    zIndex: 1000,
-  },
-  logsButtonText: {
-    fontSize: 24,
-  },
-  logsContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '50%',
-    backgroundColor: '#1E1E1E',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
-    zIndex: 1001,
-  },
-  logsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333333',
-  },
-  logsTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  logsActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  logsActionButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: '#2E2E2E',
-  },
-  logsActionButtonText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    fontWeight: '500',
-  },
-  logsScrollView: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  logsEmpty: {
-    fontSize: 14,
-    color: '#8E8E93',
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  logLine: {
-    fontSize: 11,
-    fontFamily: 'monospace',
-    color: '#E0E0E0',
-    marginBottom: 2,
-    lineHeight: 14,
   },
 });
 
