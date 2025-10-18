@@ -1,6 +1,6 @@
 // Application configuration
 module.exports = {
-  DATABASE_URL: "postgresql://gen_user:Dima122111@5b185a49c11b0959c8173153.twc1.net:5432/default_db",
+  DATABASE_URL: "postgresql://gen_user:Dima12211221@7f43f55089d91f30067cda7d.twc1.net:5432/default_db?sslmode=require",
   NODE_ENV: "production",
   PORT: 8081,
   WS_PORT: 8080,
