@@ -255,31 +255,12 @@ export default function AuthScreen() {
   };
   
   const handleFallbackAuth = async () => {
-    setIsLoading(true);
-    try {
-      console.log('Starting demo login...');
-      const success = await loginWithTelegram({
-        telegramId: 12345,
-        firstName: 'Демо',
-        lastName: 'Пользователь',
-        username: 'demo_user',
-      });
-      console.log('Demo login result:', success);
-      if (success) {
-        console.log('Demo login successful, redirecting...');
-        router.replace('/');
-      } else {
-        console.log('Demo login failed');
-        setErrorMessage('Не удалось войти в демо режим');
-        setAuthStatus('error');
-      }
-    } catch (error) {
-      console.error('Demo login error:', error);
-      setErrorMessage('Ошибка входа в демо режим');
-      setAuthStatus('error');
-    } finally {
-      setIsLoading(false);
-    }
+    // УБРАЛИ ДЕМО РЕЖИМ - приложение работает только в Telegram Mini App
+    Alert.alert(
+      'Приложение работает только в Telegram',
+      'Откройте приложение через Telegram Mini App для доступа к функциям',
+      [{ text: 'OK' }]
+    );
   };
 
   if (isLoading && authStatus === 'checking') {

@@ -196,50 +196,15 @@ export const useTelegram = () => {
       // Загружаем скрипт сразу
       loadTelegramScript();
 
-      // ТАЙМАУТ: Если Telegram не загрузится за 10 секунд, используем демо режим
+      // ТАЙМАУТ: Если Telegram не загрузится за 10 секунд, НЕ создаем демо режим
       const initTimeout = setTimeout(() => {
         if (!globalIsReady && !isTelegramInitialized) {
-          console.log('⏰ useTelegram: Init timeout reached (10s), using demo mode');
-          console.log('⚠️ Telegram WebApp не загрузился - используется демо режим');
-          console.log('⚠️ window.Telegram exists:', !!window.Telegram);
-          console.log('⚠️ window.Telegram.WebApp exists:', !!window.Telegram?.WebApp);
-          
-          const mockUser = {
-            id: 123456789,
-            first_name: 'Демо',
-            last_name: 'Пользователь',
-            username: 'demo_user',
-            language_code: 'ru',
-            is_premium: false,
-            allows_write_to_pm: true
-          };
-
-          const mockWebApp: TelegramWebApp = {
-            initData: '',
-            initDataUnsafe: { user: mockUser },
-            version: '6.0',
-            platform: 'unknown',
-            colorScheme: 'light',
-            themeParams: {
-              bg_color: '#ffffff', text_color: '#000000', hint_color: '#707579', link_color: '#00488f',
-              button_color: '#3390ec', button_text_color: '#ffffff', secondary_bg_color: '#f4f4f5'
-            },
-            ready: () => {}, expand: () => {}, close: () => {}, isClosingConfirmationEnabled: false,
-            MainButton: {
-              text: '', color: '', textColor: '', isVisible: false, isActive: false, isProgressVisible: false,
-              setText: () => {}, onClick: () => {}, show: () => {}, hide: () => {}, enable: () => {},
-              disable: () => {}, showProgress: () => {}, hideProgress: () => {}, setParams: () => {}
-            },
-            BackButton: { isVisible: false, onClick: () => {}, show: () => {}, hide: () => {} },
-            HapticFeedback: { impactOccurred: () => {}, notificationOccurred: () => {}, selectionChanged: () => {} },
-            sendData: () => {}, openLink: () => {}, openTelegramLink: () => {}, showPopup: () => {},
-            showAlert: () => {}, showConfirm: () => {}, showScanQrPopup: () => {}, closeScanQrPopup: () => {},
-            readTextFromClipboard: () => {}, requestWriteAccess: () => {}, requestContact: () => {},
-            requestLocation: () => {}, invokeCustomMethod: () => {}
-          };
-
-          setWebApp(mockWebApp);
-          setUser(mockUser);
+          console.log('⏰ useTelegram: Init timeout reached (10s)');
+          console.log('❌ Telegram WebApp не загрузился за 10 секунд');
+          console.log('❌ window.Telegram exists:', !!window.Telegram);
+          console.log('❌ window.Telegram.WebApp exists:', !!window.Telegram?.WebApp);
+          console.log('❌ Приложение работает только в Telegram Mini App!');
+          // НЕ создаем демо пользователя, просто устанавливаем isReady = true
           isTelegramInitialized = true;
           globalIsReady = true;
           setIsReady(true);
@@ -371,51 +336,7 @@ export const useTelegram = () => {
         return false; // Данные не найдены или не распарсены
       };
 
-      const createMockWebApp = () => {
-        console.log('ℹ️ useTelegram: Creating mock user for browser mode');
-        const mockUser = {
-          id: 123456789,
-          first_name: 'Демо',
-          last_name: 'Пользователь',
-          username: 'demo_user',
-          language_code: 'ru',
-          is_premium: false,
-          allows_write_to_pm: true
-        };
-
-        const mockWebApp: TelegramWebApp = {
-          initData: '',
-          initDataUnsafe: { user: mockUser },
-          version: '6.0',
-          platform: 'unknown',
-          colorScheme: 'light',
-          themeParams: {
-            bg_color: '#ffffff', text_color: '#000000', hint_color: '#707579', link_color: '#00488f',
-            button_color: '#3390ec', button_text_color: '#ffffff', secondary_bg_color: '#f4f4f5'
-          },
-          ready: () => {}, expand: () => {}, close: () => {}, isClosingConfirmationEnabled: false,
-          MainButton: {
-            text: '', color: '', textColor: '', isVisible: false, isActive: false, isProgressVisible: false,
-            setText: () => {}, onClick: () => {}, show: () => {}, hide: () => {}, enable: () => {},
-            disable: () => {}, showProgress: () => {}, hideProgress: () => {}, setParams: () => {}
-          },
-          BackButton: { isVisible: false, onClick: () => {}, show: () => {}, hide: () => {} },
-          HapticFeedback: { impactOccurred: () => {}, notificationOccurred: () => {}, selectionChanged: () => {} },
-          sendData: () => {}, openLink: () => {}, openTelegramLink: () => {}, showPopup: () => {},
-          showAlert: () => {}, showConfirm: () => {}, showScanQrPopup: () => {}, closeScanQrPopup: () => {},
-          readTextFromClipboard: () => {}, requestWriteAccess: () => {}, requestContact: () => {},
-          requestLocation: () => {}, invokeCustomMethod: () => {}
-        };
-
-        setWebApp(mockWebApp);
-        setUser(mockUser);
-        console.log('✅ useTelegram: Браузерный режим активирован');
-        console.log('⚠️ useTelegram: Это ДЕМО пользователь для тестирования!');
-        clearTimeout(initTimeout);
-        isTelegramInitialized = true;
-        globalIsReady = true;
-        setIsReady(true);
-      };
+      // УБРАЛИ ДЕМО РЕЖИМ - теперь только реальные пользователи Telegram
 
       const checkAndInitialize = (retryCount = 0) => {
         const tg = window.Telegram?.WebApp;
@@ -437,11 +358,16 @@ export const useTelegram = () => {
               console.log(`🔄 useTelegram: Retrying... (${retryCount + 1}/20)`);
               setTimeout(() => checkAndInitialize(retryCount + 1), 500);
             } else {
-              // Если и из URL не удалось, создаем полностью моковый WebApp
-              console.log('⚠️ useTelegram: Max retries reached (20), using demo mode');
-              console.log('⚠️ useTelegram: Final check - window.Telegram:', !!window.Telegram);
-              console.log('⚠️ useTelegram: Final check - window.Telegram.WebApp:', !!window.Telegram?.WebApp);
-              createMockWebApp();
+              // Если и из URL не удалось, НЕ СОЗДАЕМ демо пользователя
+              console.log('❌ useTelegram: Max retries reached (20) - Telegram WebApp not found');
+              console.log('❌ useTelegram: Final check - window.Telegram:', !!window.Telegram);
+              console.log('❌ useTelegram: Final check - window.Telegram.WebApp:', !!window.Telegram?.WebApp);
+              console.log('❌ useTelegram: Приложение работает только в Telegram Mini App!');
+              // НЕ создаем демо пользователя, просто устанавливаем isReady = true
+              clearTimeout(initTimeout);
+              isTelegramInitialized = true;
+              globalIsReady = true;
+              setIsReady(true);
             }
           }
         }

@@ -6,7 +6,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ActivityIndicator, Platform, StyleSheet, Text, View, useColorScheme } from "react-native";
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import { AppProvider } from "@/hooks/app-store";
+import { AppProvider, useApp } from "@/hooks/app-store";
 import { AILearningProvider } from "@/hooks/ai-learning";
 import { trpc, trpcClient } from "@/lib/trpc";
 import { useTelegram } from "@/hooks/telegram";
@@ -40,10 +40,31 @@ function RootLayoutNav() {
 function AppContent() {
   const systemColorScheme = useColorScheme();
   const telegram = useTelegram();
+  const { loginWithTelegram, currentUser } = useApp();
   
   console.log('🔄 AppContent: telegram.isReady =', telegram.isReady);
   console.log('🔄 AppContent: window.Telegram exists:', typeof window !== 'undefined' && !!window.Telegram);
   console.log('🔄 AppContent: window.Telegram.WebApp exists:', typeof window !== 'undefined' && !!window.Telegram?.WebApp);
+  console.log('🔄 AppContent: telegram.user =', telegram.user);
+  console.log('🔄 AppContent: currentUser =', currentUser);
+
+  // Автоматическая авторизация пользователя из Telegram WebApp
+  useEffect(() => {
+    if (telegram.isReady && telegram.user && !currentUser) {
+      console.log('🔄 AppContent: Auto-login with Telegram user:', telegram.user);
+      loginWithTelegram({
+        telegramId: telegram.user.id,
+        firstName: telegram.user.first_name,
+        lastName: telegram.user.last_name || '',
+        username: telegram.user.username,
+        languageCode: telegram.user.language_code,
+        isPremium: telegram.user.is_premium || false,
+        photoUrl: telegram.user.photo_url,
+      }).then(success => {
+        console.log('🔄 AppContent: Auto-login result:', success);
+      });
+    }
+  }, [telegram.isReady, telegram.user, currentUser, loginWithTelegram]);
 
   const colorScheme = useMemo(() => {
     if (Platform.OS === 'web' && telegram.isTelegramWebApp && telegram.webApp) {
