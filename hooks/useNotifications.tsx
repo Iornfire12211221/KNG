@@ -216,15 +216,10 @@ export function useNotifications() {
   // WebSocket подключение
   const connectWebSocket = useCallback(() => {
     // Отключаем WebSocket в development режиме
-    // WebSocket ОТКЛЮЧЕН - сервер не настроен
     if (process.env.NODE_ENV === 'development') {
       console.log('🔧 WebSocket disabled in development mode');
       return;
     }
-
-    // WebSocket отключен до настройки сервера
-    console.log('⚠️ WebSocket disabled - server not configured');
-    return;
 
     if (!currentUser?.id || wsRef.current?.readyState === WebSocket.OPEN) return;
 
@@ -232,7 +227,7 @@ export function useNotifications() {
     const ws = new WebSocket(`${wsUrl}?userId=${currentUser.id}&token=${currentUser.id}`);
 
     ws.onopen = () => {
-      console.log('🔌 WebSocket подключен');
+      console.log('✅ WebSocket подключен - real-time уведомления активны');
       setIsConnected(true);
       reconnectAttempts.current = 0;
     };
@@ -255,9 +250,11 @@ export function useNotifications() {
       }
     };
 
-    ws.onclose = () => {
-      console.log('🔌 WebSocket отключен');
+    ws.onclose = (event) => {
       setIsConnected(false);
+      
+      // Не логируем ошибки подключения - сервер может быть не настроен
+      // Просто молча переподключаемся
       
       // Попытка переподключения
       if (reconnectAttempts.current < maxReconnectAttempts) {
@@ -265,16 +262,14 @@ export function useNotifications() {
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
         
         reconnectTimeoutRef.current = setTimeout(() => {
-          console.log(`🔄 Попытка переподключения ${reconnectAttempts.current}/${maxReconnectAttempts}`);
           connectWebSocket();
         }, delay);
-      } else {
-        console.log('⚠️ WebSocket: достигнут лимит попыток переподключения');
       }
+      // Если достигли лимита - просто молча работаем без WebSocket
     };
 
-    ws.onerror = (error) => {
-      // Не логируем ошибки - они будут в onclose
+    ws.onerror = () => {
+      // Молча игнорируем ошибки - сервер может быть не настроен
     };
 
     wsRef.current = ws;
