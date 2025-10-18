@@ -81,6 +81,8 @@ export default function AdminScreen() {
   // Состояние
   const [activeTab, setActiveTab] = useState('users');
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [showLogs, setShowLogs] = useState(false);
+  const [logs, setLogs] = useState<string[]>([]);
   const [aiSettings, setAISettings] = useState<AISettings>({
     autoModeration: false,
     smartFiltering: false,
@@ -88,6 +90,43 @@ export default function AdminScreen() {
     spamProtection: false,
     toxicityFilter: false,
   });
+
+  // Перехват console.log, console.error, console.warn
+  useEffect(() => {
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+
+    console.log = (...args: any[]) => {
+      originalLog(...args);
+      const message = args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+      ).join(' ');
+      setLogs(prev => [...prev.slice(-99), `[LOG] ${message}`]);
+    };
+
+    console.error = (...args: any[]) => {
+      originalError(...args);
+      const message = args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+      ).join(' ');
+      setLogs(prev => [...prev.slice(-99), `[ERROR] ${message}`]);
+    };
+
+    console.warn = (...args: any[]) => {
+      originalWarn(...args);
+      const message = args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+      ).join(' ');
+      setLogs(prev => [...prev.slice(-99), `[WARN] ${message}`]);
+    };
+
+    return () => {
+      console.log = originalLog;
+      console.error = originalError;
+      console.warn = originalWarn;
+    };
+  }, []);
 
   // Проверка доступа
   if (!currentUser || (!currentUser.isAdmin && !currentUser.isModerator)) {
@@ -516,6 +555,12 @@ export default function AdminScreen() {
           <NotificationBell size={20} />
           <TouchableOpacity
             style={styles.cleanupButton}
+            onPress={() => setShowLogs(!showLogs)}
+          >
+            <Ionicons name={showLogs ? "eye-off-outline" : "terminal-outline"} size={20} color={showLogs ? "#FF4757" : "#8E8E93"} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.cleanupButton}
             onPress={clearExpiredPosts}
           >
             <Ionicons name="trash-outline" size={20} color="#8E8E93" />
@@ -569,6 +614,41 @@ export default function AdminScreen() {
 
       {/* Контент */}
       {renderContent()}
+
+      {/* Панель логов */}
+      {showLogs && (
+        <View style={styles.logsContainer}>
+          <View style={styles.logsHeader}>
+            <Text style={styles.logsTitle}>📋 Логи консоли (последние 100 строк)</Text>
+            <View style={styles.logsActions}>
+              <TouchableOpacity style={styles.logsButton} onPress={() => setLogs([])}>
+                <Ionicons name="trash-outline" size={16} color="#FF4757" />
+                <Text style={styles.logsButtonText}>Очистить</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.logsButton} onPress={() => {
+                const logsText = logs.join('\n');
+                Alert.alert('Логи', logsText.length > 500 ? logsText.substring(0, 500) + '...' : logsText);
+              }}>
+                <Ionicons name="copy-outline" size={16} color="#3390EC" />
+                <Text style={styles.logsButtonText}>Копировать</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.logsButton} onPress={() => setShowLogs(false)}>
+                <Ionicons name="close-outline" size={16} color="#8E8E93" />
+                <Text style={styles.logsButtonText}>Закрыть</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <ScrollView style={styles.logsScrollView} nestedScrollEnabled>
+            {logs.length === 0 ? (
+              <Text style={styles.logsEmpty}>Логов пока нет</Text>
+            ) : (
+              logs.map((log, index) => (
+                <Text key={index} style={styles.logLine}>{log}</Text>
+              ))
+            )}
+          </ScrollView>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -1058,6 +1138,71 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#8E8E93',
     lineHeight: 18,
+  },
+  logsContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+    backgroundColor: '#1E1E1E',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  logsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333333',
+  },
+  logsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  logsActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  logsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: '#2E2E2E',
+  },
+  logsButtonText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  logsScrollView: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  logsEmpty: {
+    fontSize: 14,
+    color: '#8E8E93',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  logLine: {
+    fontSize: 11,
+    fontFamily: 'monospace',
+    color: '#E0E0E0',
+    marginBottom: 2,
+    lineHeight: 14,
   },
   resetButton: {
     flexDirection: 'row',
