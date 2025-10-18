@@ -241,9 +241,9 @@ export function useGeofencing() {
 
   // Начало отслеживания
   const startTracking = useCallback(async () => {
-    // Отключаем геofencing в development режиме
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔧 Geofencing disabled in development mode');
+    // Отключаем геofencing в development режиме и на веб-платформе
+    if (process.env.NODE_ENV === 'development' || Platform.OS === 'web') {
+      console.log('🔧 Geofencing disabled in development mode or web platform');
       return;
     }
 
@@ -409,7 +409,8 @@ export function useGeofencing() {
     return () => {
       stopTracking();
     };
-  }, [settings.enabled, currentUser?.id, startTracking, stopTracking]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.enabled, currentUser?.id]); // Убрали startTracking и stopTracking из зависимостей
 
   return {
     // Состояние
