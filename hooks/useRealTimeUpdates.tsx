@@ -36,7 +36,7 @@ export interface WebSocketSettings {
 }
 
 const DEFAULT_SETTINGS: WebSocketSettings = {
-  enabled: true, // Всегда включен
+  enabled: false, // ОТКЛЮЧЕН до настройки WebSocket сервера на production
   url: 'wss://24dps.ru/ws', // Production WebSocket URL
   autoReconnect: true,
   maxReconnectAttempts: 5,

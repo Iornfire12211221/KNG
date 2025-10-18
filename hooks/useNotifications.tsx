@@ -223,6 +223,10 @@ export function useNotifications() {
 
     if (!currentUser?.id || wsRef.current?.readyState === WebSocket.OPEN) return;
 
+    // WebSocket ОТКЛЮЧЕН до настройки сервера
+    console.log('⚠️ WebSocket отключен - сервер не настроен');
+    return;
+
     const wsUrl = 'wss://24dps.ru/ws'; // Production WebSocket URL
     const ws = new WebSocket(`${wsUrl}?userId=${currentUser.id}`);
 
