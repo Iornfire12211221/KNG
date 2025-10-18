@@ -36,8 +36,8 @@ export interface WebSocketSettings {
 }
 
 const DEFAULT_SETTINGS: WebSocketSettings = {
-  enabled: process.env.NODE_ENV !== 'development', // Отключаем в development режиме
-  url: process.env.EXPO_PUBLIC_WS_URL || 'ws://localhost:8080/ws',
+  enabled: true, // Всегда включен
+  url: 'wss://24dps.ru/ws', // Production WebSocket URL
   autoReconnect: true,
   maxReconnectAttempts: 5,
   reconnectDelay: 1000,

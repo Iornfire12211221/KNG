@@ -223,7 +223,7 @@ export function useNotifications() {
 
     if (!currentUser?.id || wsRef.current?.readyState === WebSocket.OPEN) return;
 
-    const wsUrl = process.env.EXPO_PUBLIC_WS_URL || 'ws://localhost:8080/ws';
+    const wsUrl = 'wss://24dps.ru/ws'; // Production WebSocket URL
     const ws = new WebSocket(`${wsUrl}?userId=${currentUser.id}`);
 
     ws.onopen = () => {
