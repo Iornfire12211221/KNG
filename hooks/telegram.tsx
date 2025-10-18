@@ -426,18 +426,21 @@ export const useTelegram = () => {
 
         if (tg) {
           console.log('✅ useTelegram: Telegram WebApp API found!');
+          console.log('✅ useTelegram: User data:', tg.initDataUnsafe?.user);
           initWebApp(tg);
         } else {
           // Если API не загрузился, пытаемся распарсить из URL
           const parsedFromUrl = parseTgWebAppData();
           if (!parsedFromUrl) {
-            // Если и из URL не удалось, пытаемся еще раз (до 10 попыток)
-            if (retryCount < 10) {
-              console.log(`🔄 useTelegram: Retrying... (${retryCount + 1}/10)`);
+            // Если и из URL не удалось, пытаемся еще раз (до 20 попыток)
+            if (retryCount < 20) {
+              console.log(`🔄 useTelegram: Retrying... (${retryCount + 1}/20)`);
               setTimeout(() => checkAndInitialize(retryCount + 1), 500);
             } else {
               // Если и из URL не удалось, создаем полностью моковый WebApp
-              console.log('⚠️ useTelegram: Max retries reached, using demo mode');
+              console.log('⚠️ useTelegram: Max retries reached (20), using demo mode');
+              console.log('⚠️ useTelegram: Final check - window.Telegram:', !!window.Telegram);
+              console.log('⚠️ useTelegram: Final check - window.Telegram.WebApp:', !!window.Telegram?.WebApp);
               createMockWebApp();
             }
           }
@@ -445,7 +448,7 @@ export const useTelegram = () => {
       };
 
       // Запускаем проверку после небольшой задержки, чтобы дать Telegram API время загрузиться
-      const timeoutId = setTimeout(() => checkAndInitialize(0), 500); // 500ms задержка
+      const timeoutId = setTimeout(() => checkAndInitialize(0), 1000); // 1 секунда задержка
 
       return () => {
         clearTimeout(timeoutId);

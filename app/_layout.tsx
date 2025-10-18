@@ -46,16 +46,16 @@ function AppContent() {
   console.log('🔄 AppContent: window.Telegram.WebApp exists:', typeof window !== 'undefined' && !!window.Telegram?.WebApp);
 
   const colorScheme = useMemo(() => {
-    if (Platform.OS === 'web' && telegram.isTelegramWebApp) {
-      return telegram.colorScheme;
+    if (Platform.OS === 'web' && telegram.isTelegramWebApp && telegram.webApp) {
+      return telegram.webApp.colorScheme;
     }
     return systemColorScheme;
-  }, [telegram.colorScheme, telegram.isTelegramWebApp, systemColorScheme]);
+  }, [telegram.webApp, telegram.isTelegramWebApp, systemColorScheme]);
 
   const telegramTheme = useMemo(() => {
-    if (Platform.OS === 'web' && telegram.isTelegramWebApp && telegram.themeParams) {
-      const { themeParams } = telegram;
-      const isDark = telegram.colorScheme === 'dark';
+    if (Platform.OS === 'web' && telegram.isTelegramWebApp && telegram.webApp?.themeParams) {
+      const { themeParams } = telegram.webApp;
+      const isDark = telegram.webApp.colorScheme === 'dark';
       const baseTheme = isDark ? DarkTheme : DefaultTheme;
       return {
         ...baseTheme,
@@ -105,7 +105,12 @@ function AppContent() {
     return (
       <View style={styles.loadingContainer} testID="app-loading">
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Загрузка...</Text>
+        <Text style={styles.loadingText}>Загрузка Telegram WebApp...</Text>
+        <Text style={styles.loadingSubtext}>
+          {typeof window !== 'undefined' && window.Telegram?.WebApp 
+            ? '✅ Telegram API найден' 
+            : '⏳ Ожидание Telegram API...'}
+        </Text>
       </View>
     );
   }
@@ -173,6 +178,12 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: '#666666',
+    marginTop: 12,
+  },
+  loadingSubtext: {
+    fontSize: 14,
+    color: '#999999',
+    marginTop: 8,
   },
   errorTitle: {
     fontSize: 18,
