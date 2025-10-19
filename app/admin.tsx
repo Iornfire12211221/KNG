@@ -83,6 +83,8 @@ export default function AdminScreen() {
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
+  const [adminPosts, setAdminPosts] = useState<any[]>([]);
+  const [postsLoading, setPostsLoading] = useState(false);
   const [aiSettings, setAISettings] = useState<AISettings>({
     autoModeration: false,
     smartFiltering: false,
@@ -192,10 +194,25 @@ export default function AdminScreen() {
     }
   }, []);
 
+  // Загрузка постов для админа
+  const loadPosts = useCallback(async () => {
+    try {
+      setPostsLoading(true);
+      const { trpc } = await import('@/lib/trpc');
+      const allPosts = await trpc.posts.getAllForAdmin.query();
+      setAdminPosts(allPosts);
+    } catch (error) {
+      console.error('Ошибка загрузки постов для админа:', error);
+    } finally {
+      setPostsLoading(false);
+    }
+  }, []);
+
   // Инициализация
   useEffect(() => {
     loadAISettings();
-  }, [loadAISettings]);
+    loadPosts();
+  }, [loadAISettings, loadPosts]);
 
   // Управление пользователями
   const handleMakeAdmin = useCallback((userId: string) => {
@@ -210,6 +227,30 @@ export default function AdminScreen() {
     Alert.alert('✅ Успех', 'Сообщение удалено');
   }, []);
 
+  // Модерация постов
+  const handleModeratePost = useCallback(async (postId: string, decision: 'APPROVED' | 'REJECTED') => {
+    try {
+      const { trpc } = await import('@/lib/trpc');
+      
+      await trpc.posts.moderate.mutate({
+        postId,
+        decision,
+        reason: decision === 'APPROVED' ? 'Одобрено модератором' : 'Отклонено модератором',
+        moderatorId: currentUser?.id || 'admin',
+      });
+      
+      Alert.alert(
+        '✅ Успех', 
+        decision === 'APPROVED' ? 'Пост одобрен' : 'Пост отклонен'
+      );
+      
+      // Обновляем список постов
+      loadPosts();
+    } catch (error) {
+      console.error('Ошибка модерации поста:', error);
+      Alert.alert('❌ Ошибка', 'Не удалось изменить статус поста');
+    }
+  }, [currentUser, loadPosts]);
 
   // Рендер пользователя
   const renderUser = useCallback(({ item: user }: { item: User }) => {
@@ -310,9 +351,46 @@ export default function AdminScreen() {
         <View style={styles.postLocationContainer}>
           <Ionicons name="location" size={14} color="#8E8E93" />
           <Text style={styles.postLocation}>{post.address}</Text>
-                        </View>
-                        )}
-                      </View>
+        </View>
+      )}
+      
+      {/* Кнопки модерации для постов, ожидающих одобрения */}
+      {post.moderationStatus === 'PENDING' && (
+        <View style={styles.postModerationActions}>
+          <TouchableOpacity 
+            style={[styles.moderationButton, styles.approveButton]}
+            onPress={() => handleModeratePost(post.id, 'APPROVED')}
+          >
+            <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
+            <Text style={styles.moderationButtonText}>Одобрить</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.moderationButton, styles.rejectButton]}
+            onPress={() => handleModeratePost(post.id, 'REJECTED')}
+          >
+            <Ionicons name="close-circle" size={16} color="#FFFFFF" />
+            <Text style={styles.moderationButtonText}>Отклонить</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      
+      {/* Статус модерации */}
+      {post.moderationStatus && (
+        <View style={styles.postModerationStatus}>
+          <Text style={[
+            styles.postModerationStatusText,
+            post.moderationStatus === 'APPROVED' && { color: '#34C759' },
+            post.moderationStatus === 'PENDING' && { color: '#FF9500' },
+            post.moderationStatus === 'REJECTED' && { color: '#FF3B30' }
+          ]}>
+            {post.moderationStatus === 'APPROVED' && '✅ Одобрен'}
+            {post.moderationStatus === 'PENDING' && '⏳ На модерации'}
+            {post.moderationStatus === 'REJECTED' && '❌ Отклонен'}
+          </Text>
+        </View>
+      )}
+    </View>
     );
   }, [managedUsers]);
 
@@ -520,11 +598,13 @@ export default function AdminScreen() {
       case 'posts':
         return (
         <FlatList
-          data={posts as any}
+          data={adminPosts}
           renderItem={renderPost}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContainer}
+          refreshing={postsLoading}
+          onRefresh={loadPosts}
         />
         );
       case 'messages':
@@ -1038,6 +1118,44 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#8E8E93',
     fontWeight: '500',
+  },
+  postModerationActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  moderationButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  approveButton: {
+    backgroundColor: '#34C759',
+  },
+  rejectButton: {
+    backgroundColor: '#FF3B30',
+  },
+  moderationButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  postModerationStatus: {
+    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 6,
+  },
+  postModerationStatusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   messageCard: {
     backgroundColor: '#FFFFFF',

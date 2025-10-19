@@ -257,6 +257,49 @@ export default function AddPostScreen() {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const moderatePostWithAI = async (post: DPSPost): Promise<{ approved: boolean; reason?: string }> => {
+    try {
+      // Используем улучшенную ИИ-модерацию
+      const { EnhancedAIModeration } = await import('../../lib/enhanced-ai-moderation');
+      
+      const analysis = {
+        type: post.type,
+        description: post.description,
+        severity: post.severity,
+        hasPhoto: !!post.photo,
+        photo: post.photo || undefined,
+        location: post.address || post.landmark
+      };
+
+      const result = await EnhancedAIModeration.moderatePost(analysis);
+      
+      return {
+        approved: result.decision === 'APPROVED',
+        reason: result.reasoning
+      };
+    } catch (error) {
+      console.error('AI moderation error:', error);
+      
+      // Fallback: простая проверка
+      const roadKeywords = [
+        'дпс', 'дтп', 'камера', 'ремонт', 'дорог', 'патруль', 'пробк', 'светофор', 'объезд', 'знак', 'машин', 'авто',
+        'гайц', 'мусор', 'мент', 'гибдд', 'полиц', 'радар', 'пушка',
+        'куст', 'слева', 'справа', 'поворот', 'засад', 'засел', 'скрыт',
+        'стоят', 'сидят', 'дежур', 'провер', 'тормоз', 'останавл', 'объезж',
+        'трасс', 'шоссе', 'мост', 'перекресток', 'разворот', 'въезд', 'выезд'
+      ];
+      
+      const hasRoadKeywords = roadKeywords.some(keyword => 
+        post.description.toLowerCase().includes(keyword)
+      );
+      
+      return { 
+        approved: hasRoadKeywords,
+        reason: hasRoadKeywords ? 'Содержит дорожную информацию' : 'Не содержит дорожной информации'
+      };
+    }
+  };
+
   const analyzeSeverityWithAI = async (typeId: DPSPost['type'], desc: string) => {
     try {
       setIsAnalyzingSeverity(true);
@@ -538,10 +581,22 @@ export default function AddPostScreen() {
           likedBy: [],
           photo: selectedImages.length > 0 ? selectedImages[0] : undefined,
           photos: selectedImages.length > 0 ? selectedImages : undefined,
-          needsModeration: true,
+          needsModeration: false, // По умолчанию не требует модерации
           isRelevant: true,
           relevanceCheckedAt: now,
         };
+        
+        // AI модерация поста
+        console.log('🤖 Running AI moderation...');
+        const moderationResult = await moderatePostWithAI(post);
+        
+        if (!moderationResult.approved) {
+          post.needsModeration = true;
+          post.moderationReason = moderationResult.reason;
+          console.log('⚠️ Post requires moderation:', moderationResult.reason);
+        } else {
+          console.log('✅ Post approved by AI');
+        }
         
         console.log('📤 Calling addPost with:', post);
         const result = await addPost(post);

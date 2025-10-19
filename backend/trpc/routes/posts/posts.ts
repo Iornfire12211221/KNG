@@ -68,7 +68,7 @@ export const postsRouter = createTRPCRouter({
           expiresAt: {
             gt: now
           },
-          needsModeration: false // Показываем только одобренные посты
+          moderationStatus: 'APPROVED' // Показываем только одобренные посты
         },
         orderBy: {
           timestamp: 'desc'
@@ -105,11 +105,45 @@ export const postsRouter = createTRPCRouter({
     }
   }),
 
+  // Получить все посты для админов (включая ожидающие модерации)
+  getAllForAdmin: publicProcedure.query(async ({ ctx }) => {
+    try {
+      const now = Date.now();
+      
+      // Fallback для локальной разработки
+      if (!ctx.prisma) {
+        console.log('🔄 Using mock data for local development (admin)');
+        return [];
+      }
+      
+      const posts = await ctx.prisma.post.findMany({
+        where: {
+          expiresAt: {
+            gt: now
+          }
+          // Не фильтруем по moderationStatus - показываем все посты
+        },
+        orderBy: {
+          timestamp: 'desc'
+        }
+      });
+      
+      console.log(`📥 Fetched ${posts.length} posts for admin (including moderation)`);
+      return posts;
+    } catch (error) {
+      console.error('❌ Error fetching posts for admin:', error);
+      return [];
+    }
+  }),
+
   // Создать новый пост
   create: publicProcedure
     .input(CreatePostSchema)
     .mutation(async ({ input, ctx }) => {
       try {
+        // Определяем статус модерации на основе needsModeration
+        const moderationStatus = input.needsModeration ? 'PENDING' : 'APPROVED';
+        
         // Пытаемся создать пост в базе данных
         const post = await ctx.prisma.post.create({
           data: {
@@ -117,30 +151,45 @@ export const postsRouter = createTRPCRouter({
             timestamp: BigInt(input.timestamp),
             expiresAt: BigInt(input.expiresAt),
             relevanceCheckedAt: input.relevanceCheckedAt ? BigInt(input.relevanceCheckedAt) : null,
+            moderationStatus: moderationStatus as any,
           }
         });
         
-        console.log(`📤 Created new post: ${post.id} by ${post.userName}`);
+        console.log(`📤 Created new post: ${post.id} by ${post.userName} (${moderationStatus})`);
         
-        // НЕ отправляем уведомления сразу - только после модерации!
-        console.log('📱 Уведомление будет отправлено после одобрения модератором');
+        // Отправляем уведомления только если пост одобрен
+        if (moderationStatus === 'APPROVED') {
+          console.log('✅ Post approved by AI, sending notifications');
+          
+          // Отправляем уведомление в Telegram
+          try {
+            const { NotificationService } = await import('../../../notification-service');
+            await NotificationService.notifyNewPost(post.id);
+          } catch (error) {
+            console.error('❌ Ошибка отправки уведомления в Telegram:', error);
+          }
+        } else {
+          console.log('⏳ Post pending moderation, notifications will be sent after approval');
+        }
         
-        // Отправляем WebSocket уведомление о новом посте
-        try {
-          const { wsManager } = await import('../../../websocket-server');
-          await wsManager.notifyNewPost({
-            id: post.id,
-            type: post.type,
-            severity: post.severity,
-            description: post.description,
-            latitude: post.latitude,
-            longitude: post.longitude,
-            address: post.address,
-            timestamp: Number(post.timestamp),
-            userName: post.userName,
-          });
-        } catch (error) {
-          console.error('❌ Error sending WebSocket notification:', error);
+        // Отправляем WebSocket уведомление только для одобренных постов
+        if (moderationStatus === 'APPROVED') {
+          try {
+            const { wsManager } = await import('../../../websocket-server');
+            await wsManager.notifyNewPost({
+              id: post.id,
+              type: post.type,
+              severity: post.severity,
+              description: post.description,
+              latitude: post.latitude,
+              longitude: post.longitude,
+              address: post.address,
+              timestamp: Number(post.timestamp),
+              userName: post.userName,
+            });
+          } catch (error) {
+            console.error('❌ Error sending WebSocket notification:', error);
+          }
         }
         
         return post;
