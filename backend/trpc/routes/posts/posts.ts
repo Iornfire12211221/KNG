@@ -49,8 +49,8 @@ export const postsRouter = createTRPCRouter({
             latitude: 59.3765,
             longitude: 28.6123,
             address: "Кингисепп, ул. Тестовая",
-            timestamp: BigInt(now),
-            expiresAt: BigInt(now + 3600000),
+            timestamp: now,
+            expiresAt: now + 3600000,
             userId: "test-user",
             userName: "Тестовый пользователь",
             type: "dps",
@@ -66,7 +66,7 @@ export const postsRouter = createTRPCRouter({
       const posts = await ctx.prisma.post.findMany({
         where: {
           expiresAt: {
-            gt: now
+            gt: BigInt(now)
           },
           moderationStatus: 'APPROVED' // Показываем только одобренные посты
         },
@@ -75,8 +75,16 @@ export const postsRouter = createTRPCRouter({
         }
       });
       
-      console.log(`📥 Fetched ${posts.length} approved posts from database`);
-      return posts;
+      // Преобразуем BigInt в число для клиента
+      const postsWithNumbers = posts.map(post => ({
+        ...post,
+        timestamp: Number(post.timestamp),
+        expiresAt: Number(post.expiresAt),
+        relevanceCheckedAt: post.relevanceCheckedAt ? Number(post.relevanceCheckedAt) : null,
+      }));
+      
+      console.log(`📥 Fetched ${postsWithNumbers.length} approved posts from database`);
+      return postsWithNumbers;
     } catch (error) {
       console.error('❌ Error fetching posts from database:', error);
       
@@ -90,8 +98,8 @@ export const postsRouter = createTRPCRouter({
           latitude: 59.3765,
           longitude: 28.6123,
           address: "Кингисепп, ул. Тестовая",
-          timestamp: BigInt(now),
-          expiresAt: BigInt(now + 3600000),
+          timestamp: now,
+          expiresAt: now + 3600000,
           userId: "test-user",
           userName: "Тестовый пользователь",
           type: "dps",
@@ -119,7 +127,7 @@ export const postsRouter = createTRPCRouter({
       const posts = await ctx.prisma.post.findMany({
         where: {
           expiresAt: {
-            gt: now
+            gt: BigInt(now)
           }
           // Не фильтруем по moderationStatus - показываем все посты
         },
@@ -128,8 +136,16 @@ export const postsRouter = createTRPCRouter({
         }
       });
       
-      console.log(`📥 Fetched ${posts.length} posts for admin (including moderation)`);
-      return posts;
+      // Преобразуем BigInt в число для клиента
+      const postsWithNumbers = posts.map(post => ({
+        ...post,
+        timestamp: Number(post.timestamp),
+        expiresAt: Number(post.expiresAt),
+        relevanceCheckedAt: post.relevanceCheckedAt ? Number(post.relevanceCheckedAt) : null,
+      }));
+      
+      console.log(`📥 Fetched ${postsWithNumbers.length} posts for admin (including moderation)`);
+      return postsWithNumbers;
     } catch (error) {
       console.error('❌ Error fetching posts for admin:', error);
       return [];
@@ -321,14 +337,14 @@ export const postsRouter = createTRPCRouter({
   // Получить посты конкретного пользователя
   getByUserId: publicProcedure
     .input(z.object({ userId: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       try {
         const now = Date.now();
         const posts = await ctx.prisma.post.findMany({
           where: {
             userId: input.userId,
             expiresAt: {
-              gt: now
+              gt: BigInt(now)
             }
           },
           orderBy: {
@@ -336,8 +352,16 @@ export const postsRouter = createTRPCRouter({
           }
         });
         
-        console.log(`📥 Fetched ${posts.length} posts for user ${input.userId}`);
-        return posts;
+        // Преобразуем BigInt в число для клиента
+        const postsWithNumbers = posts.map(post => ({
+          ...post,
+          timestamp: Number(post.timestamp),
+          expiresAt: Number(post.expiresAt),
+          relevanceCheckedAt: post.relevanceCheckedAt ? Number(post.relevanceCheckedAt) : null,
+        }));
+        
+        console.log(`📥 Fetched ${postsWithNumbers.length} posts for user ${input.userId}`);
+        return postsWithNumbers;
       } catch (error) {
         console.error('❌ Error fetching posts for user:', error);
         throw error;
@@ -363,7 +387,7 @@ export const postsRouter = createTRPCRouter({
     }),
 
   // Получить посты на модерации
-  getPendingModeration: publicProcedure.query(async () => {
+  getPendingModeration: publicProcedure.query(async ({ ctx }) => {
     try {
       const posts = await ctx.prisma.post.findMany({
         where: {
@@ -374,8 +398,16 @@ export const postsRouter = createTRPCRouter({
         take: 20
       });
       
-      console.log(`📥 Fetched ${posts.length} posts pending moderation`);
-      return posts;
+      // Преобразуем BigInt в число для клиента
+      const postsWithNumbers = posts.map(post => ({
+        ...post,
+        timestamp: Number(post.timestamp),
+        expiresAt: Number(post.expiresAt),
+        relevanceCheckedAt: post.relevanceCheckedAt ? Number(post.relevanceCheckedAt) : null,
+      }));
+      
+      console.log(`📥 Fetched ${postsWithNumbers.length} posts pending moderation`);
+      return postsWithNumbers;
     } catch (error) {
       console.error('❌ Error fetching pending posts:', error);
       throw error;
