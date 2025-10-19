@@ -103,16 +103,16 @@ export class SmartAISystem {
       correctDecisions: 0,
       patterns: [],
       weights: {
-        toxicity: 0.25,
-        relevance: 0.30,
-        quality: 0.20,
-        context: 0.15,
-        image: 0.10
+        toxicity: 0.40,  // Токсичность - самый важный фактор
+        relevance: 0.35, // Релевантность - второй по важности
+        quality: 0.10,   // Качество - менее важно (даже короткие посты полезны)
+        context: 0.10,   // Контекст - менее важно
+        image: 0.05      // Изображение - наименее важно
       },
       thresholds: {
-        approve: 0.80,
-        reject: 0.20,
-        moderate: 0.50
+        approve: 0.50,   // Одобряем посты с score >= 0.5 (более лояльно)
+        reject: 0.10,    // Отклоняем только явно плохие посты (score <= 0.1)
+        moderate: 0.30   // На модерацию только сомнительные посты (0.1 < score < 0.5)
       },
       lastTraining: Date.now()
     };
@@ -215,12 +215,11 @@ export class SmartAISystem {
     
     let toxicityScore = 0;
     toxicWords.forEach(word => {
-      if (text.includes(word)) toxicityScore += 0.3;
+      if (text.includes(word)) toxicityScore += 0.5; // Больший штраф за токсичность
     });
     
-    // Проверяем длину (слишком короткие или длинные могут быть спамом)
-    if (description.length < 10) toxicityScore += 0.2;
-    if (description.length > 500) toxicityScore += 0.1;
+    // Проверяем длину (только очень длинные могут быть спамом)
+    if (description.length > 500) toxicityScore += 0.2; // Увеличили штраф
     
     return Math.min(toxicityScore, 1.0);
   }
@@ -231,14 +230,15 @@ export class SmartAISystem {
   private async analyzeRelevance(post: SmartPost, learningData: any): Promise<number> {
     const roadKeywords = [
       'дпс', 'дтп', 'камера', 'ремонт', 'дорог', 'патруль', 'пробк', 
-      'светофор', 'объезд', 'знак', 'машин', 'авто', 'трасс', 'шоссе'
+      'светофор', 'объезд', 'знак', 'машин', 'авто', 'трасс', 'шоссе',
+      'стоят', 'сидят', 'есть', 'тут', 'внимание', 'осторожно'
     ];
     
     const text = post.description.toLowerCase();
-    let relevanceScore = 0;
+    let relevanceScore = 0.5; // Базовый score (выше, чем раньше)
     
     roadKeywords.forEach(keyword => {
-      if (text.includes(keyword)) relevanceScore += 0.1;
+      if (text.includes(keyword)) relevanceScore += 0.15; // Больший бонус
     });
     
     // Бонус за фото
@@ -256,23 +256,23 @@ export class SmartAISystem {
    * Анализ качества
    */
   private async analyzeQuality(post: SmartPost, learningData: any): Promise<number> {
-    let qualityScore = 0.5; // Базовое качество
+    let qualityScore = 0.7; // Базовое качество (выше, чем раньше)
     
-    // Проверяем длину описания
-    if (post.description.length >= 20 && post.description.length <= 200) {
-      qualityScore += 0.2;
+    // Проверяем длину описания (более лояльно к коротким постам)
+    if (post.description.length >= 10) {
+      qualityScore += 0.2; // Любой пост с описанием >= 10 символов получает бонус
     }
     
     // Проверяем наличие полезной информации
-    const usefulWords = ['сейчас', 'только что', 'внимание', 'осторожно', 'срочно'];
+    const usefulWords = ['сейчас', 'только что', 'внимание', 'осторожно', 'срочно', 'стоят', 'сидят', 'есть', 'тут'];
     const text = post.description.toLowerCase();
     usefulWords.forEach(word => {
-      if (text.includes(word)) qualityScore += 0.1;
+      if (text.includes(word)) qualityScore += 0.05; // Меньший бонус
     });
     
     // Проверяем время суток (дневные посты обычно качественнее)
     if (learningData.timeOfDay === 'day' || learningData.timeOfDay === 'morning') {
-      qualityScore += 0.1;
+      qualityScore += 0.05; // Меньший бонус
     }
     
     return Math.min(qualityScore, 1.0);
