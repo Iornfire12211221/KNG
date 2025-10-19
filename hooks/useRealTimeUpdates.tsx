@@ -39,8 +39,8 @@ const DEFAULT_SETTINGS: WebSocketSettings = {
   enabled: true, // ✅ ВКЛЮЧЕН - WebSocket сервер работает
   url: 'wss://24dps.ru/ws', // Production WebSocket URL
   autoReconnect: true,
-  maxReconnectAttempts: 5,
-  reconnectDelay: 5000,
+  maxReconnectAttempts: 999, // Неограниченное количество попыток
+  reconnectDelay: 1000, // Быстрое переподключение
   heartbeatInterval: 30000,
   messageTimeout: 10000,
 };
@@ -61,6 +61,7 @@ export function useRealTimeUpdates() {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const messageTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const cloudflareReconnectRef = useRef<NodeJS.Timeout | null>(null); // Автоматическое переподключение каждые 90 секунд
 
   // Загрузка настроек
   const loadSettings = useCallback(async () => {
@@ -243,6 +244,18 @@ export function useRealTimeUpdates() {
 
         // Обрабатываем очередь сообщений
         processMessageQueue();
+
+        // Автоматическое переподключение каждые 90 секунд (до лимита Cloudflare в 100 секунд)
+        if (cloudflareReconnectRef.current) {
+          clearTimeout(cloudflareReconnectRef.current);
+        }
+        cloudflareReconnectRef.current = setTimeout(() => {
+          console.log('🔄 Автоматическое переподключение (Cloudflare 100s limit)');
+          if (wsRef.current) {
+            wsRef.current.close();
+          }
+          connect();
+        }, 90000); // 90 секунд
       };
 
       ws.onmessage = handleMessage;
@@ -310,6 +323,11 @@ export function useRealTimeUpdates() {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
+    }
+
+    if (cloudflareReconnectRef.current) {
+      clearTimeout(cloudflareReconnectRef.current);
+      cloudflareReconnectRef.current = null;
     }
 
     stopHeartbeat();

@@ -79,7 +79,8 @@ export function useNotifications() {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttempts = useRef(0);
-  const maxReconnectAttempts = 5;
+  const maxReconnectAttempts = 999; // Неограниченное количество попыток
+  const cloudflareReconnectRef = useRef<NodeJS.Timeout | null>(null); // Автоматическое переподключение каждые 90 секунд
 
   // Загрузка настроек
   const loadSettings = useCallback(async () => {
@@ -230,6 +231,18 @@ export function useNotifications() {
       console.log('✅ WebSocket подключен - real-time уведомления активны');
       setIsConnected(true);
       reconnectAttempts.current = 0;
+
+      // Автоматическое переподключение каждые 90 секунд (до лимита Cloudflare в 100 секунд)
+      if (cloudflareReconnectRef.current) {
+        clearTimeout(cloudflareReconnectRef.current);
+      }
+      cloudflareReconnectRef.current = setTimeout(() => {
+        console.log('🔄 Автоматическое переподключение (Cloudflare 100s limit)');
+        if (wsRef.current) {
+          wsRef.current.close();
+        }
+        connectWebSocket();
+      }, 90000); // 90 секунд
     };
 
     ws.onmessage = (event) => {
@@ -280,6 +293,11 @@ export function useNotifications() {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
+    }
+
+    if (cloudflareReconnectRef.current) {
+      clearTimeout(cloudflareReconnectRef.current);
+      cloudflareReconnectRef.current = null;
     }
     
     if (wsRef.current) {
