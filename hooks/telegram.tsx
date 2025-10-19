@@ -370,7 +370,6 @@ export const useTelegram = () => {
       checkAndInitialize(0);
 
       return () => {
-        clearTimeout(timeoutId);
         clearTimeout(initTimeout);
       };
     } else {
