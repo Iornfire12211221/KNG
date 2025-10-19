@@ -169,7 +169,7 @@ if (process.env.NODE_ENV === "production") {
             indexContent = indexContent.replace('</head>', `${telegramScript}</head>`);
           }
           
-          console.log('Serving index.html with Telegram WebApp support');
+          // console.log('Serving index.html with Telegram WebApp support');
           return new Response(indexContent, {
             headers: { 
               'Content-Type': 'text/html; charset=utf-8',

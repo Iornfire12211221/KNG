@@ -113,26 +113,26 @@ export class WebSocketManager {
    */
   private handleConnection(ws: WebSocket, request: IncomingMessage): void {
     try {
-      console.log('🔌 New WebSocket connection attempt');
-      console.log('🔌 Request URL:', request.url);
-      console.log('🔌 Request headers:', request.headers);
+      // console.log('🔌 New WebSocket connection attempt');
+      // console.log('🔌 Request URL:', request.url);
+      // console.log('🔌 Request headers:', request.headers);
       
       const url = new URL(request.url || '', `http://${request.headers.host}`);
       const userId = url.searchParams.get('userId');
       const token = url.searchParams.get('token');
 
-      console.log('🔌 Parsed userId:', userId);
-      console.log('🔌 Parsed token:', token);
+      // console.log('🔌 Parsed userId:', userId);
+      // console.log('🔌 Parsed token:', token);
 
       if (!userId) {
-        console.log('❌ WebSocket connection rejected: no userId');
+        // console.log('❌ WebSocket connection rejected: no userId');
         ws.close(1008, 'User ID required');
         return;
       }
 
       // Простая проверка токена (в реальном приложении используйте JWT)
       if (!token || token !== userId) {
-        console.log('❌ WebSocket connection rejected: invalid token');
+        // console.log('❌ WebSocket connection rejected: invalid token');
         ws.close(1008, 'Invalid token');
         return;
       }
@@ -152,7 +152,7 @@ export class WebSocketManager {
 
       this.connectedUsers.set(userId, user);
 
-      console.log(`🔌 User ${userId} connected. Total users: ${this.connectedUsers.size}`);
+      // console.log(`🔌 User ${userId} connected. Total users: ${this.connectedUsers.size}`);
 
       // Отправляем приветственное сообщение
       this.sendMessage(userId, {
@@ -239,7 +239,7 @@ export class WebSocketManager {
         longitude: locationData.longitude,
         accuracy: locationData.accuracy || 100,
       };
-      console.log(`📍 Location updated for user ${userId}:`, user.location);
+      // console.log(`📍 Location updated for user ${userId}:`, user.location);
     }
   }
 
@@ -250,7 +250,7 @@ export class WebSocketManager {
     const user = this.connectedUsers.get(userId);
     if (user) {
       user.subscriptions = { ...user.subscriptions, ...subscriptionData };
-      console.log(`📋 Subscriptions updated for user ${userId}:`, user.subscriptions);
+      // console.log(`📋 Subscriptions updated for user ${userId}:`, user.subscriptions);
     }
   }
 
@@ -259,7 +259,7 @@ export class WebSocketManager {
    */
   private handleDisconnection(userId: string): void {
     this.connectedUsers.delete(userId);
-    console.log(`🔌 User ${userId} disconnected. Total users: ${this.connectedUsers.size}`);
+    // console.log(`🔌 User ${userId} disconnected. Total users: ${this.connectedUsers.size}`);
   }
 
   /**
@@ -310,7 +310,7 @@ export class WebSocketManager {
       }
     }
 
-    console.log(`📢 Broadcast message sent to ${sentCount} users`);
+    // console.log(`📢 Broadcast message sent to ${sentCount} users`);
     return sentCount;
   }
 
@@ -355,7 +355,7 @@ export class WebSocketManager {
       }
     }
 
-    console.log(`📢 New post notification sent for post ${post.id}`);
+    // console.log(`📢 New post notification sent for post ${post.id}`);
   }
 
   /**
@@ -405,7 +405,7 @@ export class WebSocketManager {
       
       for (const [userId, user] of this.connectedUsers) {
         if (now - user.lastPing > this.PING_TIMEOUT) {
-          console.log(`💔 User ${userId} timed out, closing connection`);
+          // console.log(`💔 User ${userId} timed out, closing connection`);
           user.ws.terminate();
           this.connectedUsers.delete(userId);
         } else {
