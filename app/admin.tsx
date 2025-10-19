@@ -24,6 +24,7 @@ import { useGeofencing } from '../hooks/useGeofencing';
 import { useRealTimeUpdates } from '../hooks/useRealTimeUpdates';
 import { NotificationBell } from '../components/NotificationBell';
 import { NotificationSettings } from '../components/NotificationSettings';
+import { trpc } from '@/lib/trpc';
 
 
 // Типы данных
@@ -194,19 +195,27 @@ export default function AdminScreen() {
     }
   }, []);
 
+  // Используем tRPC хук для загрузки постов
+  const { data: adminPostsData, isLoading: postsLoadingData, refetch: refetchPosts } = trpc.posts.getAllForAdmin.useQuery();
+
   // Загрузка постов для админа
   const loadPosts = useCallback(async () => {
     try {
       setPostsLoading(true);
-      const { trpc } = await import('@/lib/trpc');
-      const allPosts = await trpc.posts.getAllForAdmin.query();
-      setAdminPosts(allPosts);
+      await refetchPosts();
     } catch (error) {
       console.error('Ошибка загрузки постов для админа:', error);
     } finally {
       setPostsLoading(false);
     }
-  }, []);
+  }, [refetchPosts]);
+
+  // Обновляем состояние постов при изменении данных
+  useEffect(() => {
+    if (adminPostsData) {
+      setAdminPosts(adminPostsData);
+    }
+  }, [adminPostsData]);
 
   // Инициализация
   useEffect(() => {
@@ -227,30 +236,31 @@ export default function AdminScreen() {
     Alert.alert('✅ Успех', 'Сообщение удалено');
   }, []);
 
+  // Используем tRPC хук для модерации постов
+  const moderatePostMutation = trpc.posts.moderate.useMutation({
+    onSuccess: () => {
+      Alert.alert('✅ Успех', 'Статус поста изменен');
+      refetchPosts();
+    },
+    onError: (error) => {
+      console.error('Ошибка модерации поста:', error);
+      Alert.alert('❌ Ошибка', 'Не удалось изменить статус поста');
+    },
+  });
+
   // Модерация постов
   const handleModeratePost = useCallback(async (postId: string, decision: 'APPROVED' | 'REJECTED') => {
     try {
-      const { trpc } = await import('@/lib/trpc');
-      
-      await trpc.posts.moderate.mutate({
+      moderatePostMutation.mutate({
         postId,
         decision,
         reason: decision === 'APPROVED' ? 'Одобрено модератором' : 'Отклонено модератором',
         moderatorId: currentUser?.id || 'admin',
       });
-      
-      Alert.alert(
-        '✅ Успех', 
-        decision === 'APPROVED' ? 'Пост одобрен' : 'Пост отклонен'
-      );
-      
-      // Обновляем список постов
-      loadPosts();
     } catch (error) {
       console.error('Ошибка модерации поста:', error);
-      Alert.alert('❌ Ошибка', 'Не удалось изменить статус поста');
     }
-  }, [currentUser, loadPosts]);
+  }, [currentUser, moderatePostMutation]);
 
   // Рендер пользователя
   const renderUser = useCallback(({ item: user }: { item: User }) => {

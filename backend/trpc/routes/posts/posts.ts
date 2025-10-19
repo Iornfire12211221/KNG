@@ -318,30 +318,6 @@ export const postsRouter = createTRPCRouter({
     }
   }),
 
-  // Получить все посты для админов (включая на модерации)
-  getAllForAdmin: publicProcedure.query(async ({ ctx }) => {
-    try {
-      const now = Date.now();
-      const posts = await ctx.prisma.post.findMany({
-        where: {
-          expiresAt: {
-            gt: now
-          }
-          // Показываем все посты, включая на модерации
-        },
-        orderBy: {
-          timestamp: 'desc'
-        }
-      });
-      
-      console.log(`📥 Fetched ${posts.length} posts for admin (including moderation)`);
-      return posts;
-    } catch (error) {
-      console.error('❌ Error fetching posts for admin:', error);
-      throw error;
-    }
-  }),
-
   // Получить посты конкретного пользователя
   getByUserId: publicProcedure
     .input(z.object({ userId: z.string() }))
