@@ -20,8 +20,4 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.telegram-app.rule=Host(`your-domain.timeweb.ru`)"
-      - "traefik.http.routers.telegram-app.tls=true"
-      - "traefik.http.routers.telegram-app.tls.certresolver=letsencrypt"
+    # Traefik labels removed - using Nginx for SSL
