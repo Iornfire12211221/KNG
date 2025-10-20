@@ -157,10 +157,47 @@ export const postsRouter = createTRPCRouter({
     .input(CreatePostSchema)
     .mutation(async ({ input, ctx }) => {
       try {
-        // Определяем статус модерации на основе needsModeration
-        const moderationStatus = input.needsModeration ? 'PENDING' : 'APPROVED';
+        // 🤖 AI МОДЕРАЦИЯ НА СЕРВЕРЕ
+        let moderationStatus: 'PENDING' | 'APPROVED' | 'REJECTED' = 'PENDING';
+        let moderationScore: number | null = null;
+        let moderationReason: string | null = null;
         
-        // Пытаемся создать пост в базе данных
+        try {
+          const { SmartAISystem } = await import('../../../lib/smart-ai-system');
+          const aiSystem = SmartAISystem.getInstance();
+          
+          const aiResult = await aiSystem.moderatePost({
+            id: input.id || 'new',
+            type: input.type,
+            description: input.description,
+            severity: input.severity,
+            hasPhoto: !!(input.photo || input.photos?.length),
+            photo: input.photo,
+            location: input.address,
+            userId: input.userId,
+            userName: input.userName,
+            timestamp: input.timestamp,
+          });
+          
+          moderationScore = aiResult.confidence;
+          moderationReason = aiResult.reasoning;
+          
+          if (aiResult.decision === 'APPROVED') {
+            moderationStatus = 'APPROVED';
+            console.log(`✅ AI approved post (confidence: ${aiResult.confidence})`);
+          } else if (aiResult.decision === 'REJECTED') {
+            moderationStatus = 'REJECTED';
+            console.log(`❌ AI rejected post: ${aiResult.reasoning}`);
+          } else {
+            moderationStatus = 'PENDING';
+            console.log(`⏳ AI flagged post for moderation: ${aiResult.reasoning}`);
+          }
+        } catch (error) {
+          console.error('❌ AI moderation error, defaulting to PENDING:', error);
+          moderationStatus = 'PENDING';
+        }
+        
+        // Создаем пост в базе данных
         const post = await ctx.prisma.post.create({
           data: {
             ...input,
@@ -168,6 +205,10 @@ export const postsRouter = createTRPCRouter({
             expiresAt: BigInt(input.expiresAt),
             relevanceCheckedAt: input.relevanceCheckedAt ? BigInt(input.relevanceCheckedAt) : null,
             moderationStatus: moderationStatus as any,
+            moderationScore,
+            moderationReason,
+            moderatedAt: moderationStatus !== 'PENDING' ? BigInt(Date.now()) : null,
+            moderatedBy: moderationStatus !== 'PENDING' ? 'AI' : null,
           }
         });
         

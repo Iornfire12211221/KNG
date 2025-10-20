@@ -581,22 +581,10 @@ export default function AddPostScreen() {
           likedBy: [],
           photo: selectedImages.length > 0 ? selectedImages[0] : undefined,
           photos: selectedImages.length > 0 ? selectedImages : undefined,
-          needsModeration: false, // По умолчанию не требует модерации
+          needsModeration: true, // Всегда отправляем на модерацию, сервер решит
           isRelevant: true,
           relevanceCheckedAt: now,
         };
-        
-        // AI модерация поста
-        console.log('🤖 Running AI moderation...');
-        const moderationResult = await moderatePostWithAI(post);
-        
-        if (!moderationResult.approved) {
-          post.needsModeration = true;
-          post.moderationReason = moderationResult.reason;
-          console.log('⚠️ Post requires moderation:', moderationResult.reason);
-        } else {
-          console.log('✅ Post approved by AI');
-        }
         
         console.log('📤 Calling addPost with:', post);
         const result = await addPost(post);
