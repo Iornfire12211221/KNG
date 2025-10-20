@@ -81,14 +81,14 @@ export const postsRouter = createTRPCRouter({
           }
         });
         
-        // Если передан userId, получаем также посты автора на модерации
+        // Если передан userId, получаем также посты автора на модерации и отклоненные
         let pendingPosts: any[] = [];
         if (userId) {
           pendingPosts = await ctx.prisma.post.findMany({
             where: {
               userId: userId,
               moderationStatus: {
-                in: ['PENDING', 'FLAGGED']
+                in: ['PENDING', 'FLAGGED', 'REJECTED']
               }
             },
             orderBy: {
@@ -138,27 +138,21 @@ export const postsRouter = createTRPCRouter({
     }
   }),
 
-  // Получить все посты для админов (включая ожидающие модерации)
+  // Получить все посты для админов (включая ожидающие модерации и просроченные)
   getAllForAdmin: publicProcedure.query(async ({ ctx }) => {
     try {
-      const now = Date.now();
-      
       // Fallback для локальной разработки
       if (!ctx.prisma) {
         console.log('🔄 Using mock data for local development (admin)');
         return [];
       }
       
+      // Получаем ВСЕ посты (включая просроченные) для админа
       const posts = await ctx.prisma.post.findMany({
-        where: {
-          expiresAt: {
-            gt: BigInt(now)
-          }
-          // Не фильтруем по moderationStatus - показываем все посты
-        },
         orderBy: {
           timestamp: 'desc'
-        }
+        },
+        take: 100 // Ограничиваем 100 последними постами
       });
       
       // Преобразуем BigInt в число для клиента

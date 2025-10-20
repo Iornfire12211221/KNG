@@ -629,7 +629,18 @@ export default function MapScreen() {
 
   // Мемоизируем отфильтрованные посты с оптимизацией для слабых устройств
   const filteredPosts = useMemo(() => {
-    const filtered = posts.filter(post => !post.needsModeration || post.userId === currentUser?.id);
+    // Фильтруем посты:
+    // 1. APPROVED - показываем всем
+    // 2. PENDING/FLAGGED/REJECTED - показываем только автору
+    const filtered = posts.filter(post => {
+      const isApproved = post.moderationStatus === 'APPROVED';
+      const isAuthor = post.userId === currentUser?.id;
+      const isPendingOrRejected = post.moderationStatus === 'PENDING' || 
+                                   post.moderationStatus === 'FLAGGED' || 
+                                   post.moderationStatus === 'REJECTED';
+      
+      return isApproved || (isPendingOrRejected && isAuthor);
+    });
     
     // Для слабых устройств ограничиваем количество постов
     if (isLowEndDevice) {
