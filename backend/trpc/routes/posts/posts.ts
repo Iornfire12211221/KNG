@@ -163,7 +163,7 @@ export const postsRouter = createTRPCRouter({
         let moderationReason: string | null = null;
         
         try {
-          const { SmartAISystem } = await import('../../lib/smart-ai-system');
+          const { SmartAISystem } = await import('../../../lib/smart-ai-system');
           const aiSystem = SmartAISystem.getInstance();
           
           const aiResult = await aiSystem.moderatePost({
