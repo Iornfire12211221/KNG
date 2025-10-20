@@ -73,15 +73,7 @@ export class NotificationService {
     try {
       // Получаем пост из базы данных
       const post = await prisma.post.findUnique({
-        where: { id: postId },
-        include: {
-          user: {
-            select: {
-              name: true,
-              username: true
-            }
-          }
-        }
+        where: { id: postId }
       });
 
       if (!post) {
@@ -113,7 +105,7 @@ export class NotificationService {
           landmark: post.landmark || undefined
         },
         timestamp: post.timestamp,
-        userName: post.user?.name || post.userName || 'Аноним',
+        userName: post.userName || 'Аноним',
         photos: post.photos || undefined
       };
 
