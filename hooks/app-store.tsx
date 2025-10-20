@@ -983,6 +983,7 @@ ${description ? `Описание от пользователя: "${description}
   }, [currentUser, posts]);
 
   const removePost = useCallback((postId: string) => {
+    // Удаляем пост сразу (анимация будет на клиенте)
     setPosts((prev) => prev.filter((p) => p.id !== postId));
   }, []);
 
@@ -1071,8 +1072,14 @@ ${description ? `Описание от пользователя: "${description}
     try {
       console.log('🌐 Syncing posts with server...');
       
+      // Передаем userId, чтобы получить также посты на модерации
+      const userId = currentUser?.id;
+      const url = userId 
+        ? `${process.env.EXPO_PUBLIC_RORK_API_BASE_URL || ''}/api/trpc/posts.getAll?input=${encodeURIComponent(JSON.stringify({ userId }))}`
+        : `${process.env.EXPO_PUBLIC_RORK_API_BASE_URL || ''}/api/trpc/posts.getAll`;
+      
       // Используем прямой вызов fetch к API для обхода проблем с минификацией
-      const response = await fetch(`${process.env.EXPO_PUBLIC_RORK_API_BASE_URL || ''}/api/trpc/posts.getAll`, {
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -1107,7 +1114,7 @@ ${description ? `Описание от пользователя: "${description}
       await refreshPosts();
       return posts;
     }
-  }, [refreshPosts, posts]);
+  }, [refreshPosts, posts, currentUser]);
 
   const updateUser = useCallback(
     async (updates: Partial<Omit<User, 'id'>>) => {

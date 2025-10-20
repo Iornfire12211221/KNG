@@ -34,57 +34,82 @@ const CreatePostSchema = z.object({
 });
 
 export const postsRouter = createTRPCRouter({
-  // Получить все активные посты (только одобренные для обычных пользователей)
-  getAll: publicProcedure.query(async ({ ctx }) => {
-    try {
-      const now = Date.now();
-      
-      // Fallback для локальной разработки
-      if (!ctx.prisma) {
-        console.log('🔄 Using mock data for local development');
-        return [
-          {
-            id: "1",
-            description: "Тестовый пост для локальной разработки",
-            latitude: 59.3765,
-            longitude: 28.6123,
-            address: "Кингисепп, ул. Тестовая",
-            timestamp: now,
-            expiresAt: now + 3600000,
-            userId: "test-user",
-            userName: "Тестовый пользователь",
-            type: "dps",
-            severity: "medium",
-            likes: 0,
-            likedBy: [],
-            needsModeration: false,
-            isRelevant: true
-          }
-        ];
-      }
-      
-      const posts = await ctx.prisma.post.findMany({
-        where: {
-          expiresAt: {
-            gt: BigInt(now)
-          },
-          moderationStatus: 'APPROVED' // Показываем только одобренные посты
-        },
-        orderBy: {
-          timestamp: 'desc'
+  // Получить все активные посты (одобренные + посты автора на модерации)
+  getAll: publicProcedure
+    .input(z.object({
+      userId: z.string().optional(),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      try {
+        const now = Date.now();
+        const userId = input?.userId;
+        
+        // Fallback для локальной разработки
+        if (!ctx.prisma) {
+          console.log('🔄 Using mock data for local development');
+          return [
+            {
+              id: "1",
+              description: "Тестовый пост для локальной разработки",
+              latitude: 59.3765,
+              longitude: 28.6123,
+              address: "Кингисепп, ул. Тестовая",
+              timestamp: now,
+              expiresAt: now + 3600000,
+              userId: "test-user",
+              userName: "Тестовый пользователь",
+              type: "dps",
+              severity: "medium",
+              likes: 0,
+              likedBy: [],
+              needsModeration: false,
+              isRelevant: true
+            }
+          ];
         }
-      });
-      
-      // Преобразуем BigInt в число для клиента
-      const postsWithNumbers = posts.map(post => ({
-        ...post,
-        timestamp: Number(post.timestamp),
-        expiresAt: Number(post.expiresAt),
-        relevanceCheckedAt: post.relevanceCheckedAt ? Number(post.relevanceCheckedAt) : null,
-      }));
-      
-      console.log(`📥 Fetched ${postsWithNumbers.length} approved posts from database`);
-      return postsWithNumbers;
+        
+        // Получаем одобренные посты
+        const approvedPosts = await ctx.prisma.post.findMany({
+          where: {
+            expiresAt: {
+              gt: BigInt(now)
+            },
+            moderationStatus: 'APPROVED'
+          },
+          orderBy: {
+            timestamp: 'desc'
+          }
+        });
+        
+        // Если передан userId, получаем также посты автора на модерации
+        let pendingPosts: any[] = [];
+        if (userId) {
+          pendingPosts = await ctx.prisma.post.findMany({
+            where: {
+              userId: userId,
+              moderationStatus: {
+                in: ['PENDING', 'FLAGGED']
+              }
+            },
+            orderBy: {
+              timestamp: 'desc'
+            }
+          });
+        }
+        
+        // Объединяем посты
+        const allPosts = [...approvedPosts, ...pendingPosts];
+        
+        // Преобразуем BigInt в число для клиента
+        const postsWithNumbers = allPosts.map(post => ({
+          ...post,
+          timestamp: Number(post.timestamp),
+          expiresAt: Number(post.expiresAt),
+          relevanceCheckedAt: post.relevanceCheckedAt ? Number(post.relevanceCheckedAt) : null,
+        }));
+        
+        console.log(`📥 Fetched ${postsWithNumbers.length} posts from database (${approvedPosts.length} approved, ${pendingPosts.length} pending)`);
+        return postsWithNumbers;
     } catch (error) {
       console.error('❌ Error fetching posts from database:', error);
       

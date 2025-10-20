@@ -1544,6 +1544,8 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
               {filteredPosts.map((post) => {
                 const PostIcon = getPostTypeIcon(post.type);
                 const typeLabel = getPostTypeLabel(post.type);
+                const isPendingModeration = post.moderationStatus === 'PENDING' || post.moderationStatus === 'FLAGGED';
+                const isRejected = post.moderationStatus === 'REJECTED';
                 return (
                   <MarkerComponent
                     key={post.id}
@@ -1565,7 +1567,8 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                         styles.customMarker,
                         { 
                           backgroundColor: getPostTypeColor(post.type),
-                          borderColor: post.severity === 'high' ? '#FF3B30' : post.severity === 'medium' ? '#FF9500' : '#FFFFFF'
+                          borderColor: post.severity === 'high' ? '#FF3B30' : post.severity === 'medium' ? '#FF9500' : '#FFFFFF',
+                          opacity: isRejected ? 0.5 : 1
                         },
                         post.severity === 'high' && styles.markerHigh,
                         post.severity === 'medium' && styles.markerMedium
@@ -1584,6 +1587,16 @@ ${desc.trim() ? `Описание: ${desc.trim()}` : 'Описание отсу�
                       ]}>
                         <Text style={styles.markerLabelText}>{typeLabel}</Text>
                       </View>
+                      {isPendingModeration && (
+                        <View style={styles.moderationBadge}>
+                          <Text style={styles.moderationBadgeText}>⏳</Text>
+                        </View>
+                      )}
+                      {isRejected && (
+                        <View style={[styles.moderationBadge, { backgroundColor: '#FF3B30' }]}>
+                          <Text style={styles.moderationBadgeText}>✖</Text>
+                        </View>
+                      )}
                     </View>
                   </MarkerComponent>
                 );
@@ -2990,6 +3003,30 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
     textAlign: 'center',
+  },
+  // Бейдж модерации
+  moderationBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#FF9500',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  moderationBadgeText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
   // Стили для маркеров с разной важностью
   markerHigh: {
